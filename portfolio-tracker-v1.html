@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for line chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #151b2e;
+            --bg-tertiary: #1e2840;
+            --accent-cyan: #00f5ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff3366;
+            --text-primary: #e0e6f0;
+            --text-secondary: #8b96b0;
+            --border: #2a3752;
+            --shadow: rgba(0, 245, 255, 0.1);
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(0, 245, 255, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 255, 136, 0.03) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+            animation: slideDown 0.5s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: clamp(24px, 4vw, 36px);
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-green) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .month-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-secondary);
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .month-selector label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        select, input {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 2px rgba(0, 245, 255, 0.1);
+        }
+
+        .btn {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--accent-cyan);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-primary {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+            border-color: var(--accent-cyan);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+        }
+
+        .btn-danger {
+            background: var(--accent-red);
+            border-color: var(--accent-red);
+            color: white;
+        }
+
+        .table-container {
+            overflow: auto;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            animation: fadeIn 0.6s ease-out 0.1s both;
+            /* cap height so sticky top on thead actually engages */
+            max-height: calc(100vh - 180px);
+            /* smooth native scroll */
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            /* pan cursor when grabbing */
+            cursor: grab;
+            user-select: none;
+        }
+
+        .table-container.panning {
+            cursor: grabbing;
+            scroll-behavior: auto; /* disable smooth while dragging for instant response */
+        }
+
+        /* ─── Custom Scrollbars ─── */
+        .table-container::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+            border-radius: 6px;
+            margin: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
+            border-radius: 6px;
+            border: 2px solid var(--bg-primary);
+            min-height: 40px;
+            min-width: 40px;
+            transition: filter 0.2s;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            filter: brightness(1.3) saturate(1.3);
+        }
+
+        .table-container::-webkit-scrollbar-corner {
+            background: var(--bg-primary);
+        }
+
+        /* Firefox */
+        .table-container {
+            scrollbar-width: thick;
+            scrollbar-color: var(--accent-cyan) var(--bg-primary);
+        }
+
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            /* let width grow with content; sticky left column needs this */
+            width: max-content;
+            min-width: 100%;
+        }
+
+        th, td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 17px;
+        }
+
+        /* ---- sticky header row ---- */
+        th {
+            background: var(--bg-tertiary);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        /* ---- sticky first column (contracts) ---- */
+        .contract-cell {
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            background: var(--bg-secondary);
+            font-weight: 600;
+            border-right: 2px solid var(--border);
+            min-width: 200px;
+            max-width: 200px;
+        }
+
+        /* sticky header + sticky column intersection has higher z-index */
+        thead th.contract-cell {
+            z-index: 15;
+        }
+
+        .cell-editable {
+            cursor: text;
+            transition: background 0.2s;
+            position: relative;
+        }
+
+        .cell-editable:hover {
+            background: rgba(0, 245, 255, 0.05);
+        }
+
+        .cell-editing input {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 2px solid var(--accent-cyan);
+            padding: 8px;
+            width: 100%;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            border-radius: 4px;
+        }
+
+        .positive {
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        .negative {
+            color: var(--accent-red);
+            font-weight: 600;
+        }
+
+        .standing-row {
+            background: rgba(0, 245, 255, 0.05);
+            font-weight: 700;
+        }
+
+        .standing-row td {
+            border-top: 2px solid var(--accent-cyan);
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+
+        .row-actions, .col-actions {
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        tr:hover .row-actions {
+            opacity: 1;
+        }
+
+        th:hover .col-actions {
+            opacity: 1;
+        }
+
+        .action-btn {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+        }
+
+        .notes-section {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            animation: fadeIn 0.6s ease-out 0.3s both;
+        }
+
+        .notes-section h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: var(--accent-cyan);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .note-toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .note-toolbar button {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        #notes {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 4px;
+            min-height: 150px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        #notes:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 2px rgba(0, 245, 255, 0.1);
+        }
+
+        /* ─── Daily P&L Chart Section ─── */
+        .chart-section {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            animation: fadeIn 0.6s ease-out 0.4s both;
+        }
+
+        .chart-section h3 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: var(--accent-cyan);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            padding: 15px;
+            border: 1px solid var(--border);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            max-width: 500px;
+            width: 90%;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-content h3 {
+            margin-bottom: 20px;
+            color: var(--accent-cyan);
+            font-size: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        .form-group input {
+            width: 100%;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .drag-handle {
+            cursor: grab;
+            color: var(--text-secondary);
+            margin-right: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        tr:hover .drag-handle {
+            opacity: 1;
+        }
+
+        tr.dragging {
+            opacity: 0.5;
+        }
+
+        tr.drag-over {
+            border-top: 3px solid var(--accent-cyan);
+        }
+
+        .formatting-toolbar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            display: none;
+            gap: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            z-index: 100;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .formatting-toolbar.active {
+            display: flex;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .format-btn {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .format-btn:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .format-btn.active {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+            border-color: var(--accent-cyan);
+        }
+
+        /* ─── Cloud Sync Badge ─── */
+        .sync-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid;
+            transition: all 0.3s;
+        }
+
+        .sync-badge.synced {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .sync-badge.pending {
+            background: rgba(255, 200, 0, 0.1);
+            border-color: #ffc800;
+            color: #ffc800;
+        }
+
+        .sync-badge.syncing {
+            background: rgba(0, 245, 255, 0.1);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .sync-badge.offline {
+            background: rgba(255, 51, 102, 0.1);
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .sync-badge.disabled {
+            background: rgba(139, 150, 176, 0.1);
+            border-color: var(--text-secondary);
+            color: var(--text-secondary);
+        }
+
+        .sync-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .controls {
+                width: 100%;
+            }
+
+            .month-selector {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            th, td {
+                padding: 12px 8px;
+                font-size: 11px;
+            }
+
+            .formatting-toolbar {
+                bottom: 10px;
+                right: 10px;
+                left: 10px;
+                flex-wrap: wrap;
+            }
+
+            .chart-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>◢ PORTFOLIO TRACKER</h1>
+            <div class="controls">
+                <div class="month-selector">
+                    <label>Month:</label>
+                    <select id="month-select">
+                        <option value="0">January</option>
+                        <option value="1">February</option>
+                        <option value="2">March</option>
+                        <option value="3">April</option>
+                        <option value="4">May</option>
+                        <option value="5">June</option>
+                        <option value="6">July</option>
+                        <option value="7">August</option>
+                        <option value="8">September</option>
+                        <option value="9">October</option>
+                        <option value="10">November</option>
+                        <option value="11">December</option>
+                    </select>
+                    <input type="number" id="year-input" placeholder="Year" value="2026" min="2000" max="2100">
+                </div>
+                <button class="btn btn-primary" onclick="addContract()">+ Add Contract</button>
+                <div id="sync-badge" class="sync-badge disabled">
+                    <span class="dot"></span>
+                    <span id="sync-text">No Sync</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container" id="table-container-wrap">
+            <table>
+                <thead id="table-head"></thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+
+        <!-- Daily P&L Chart Section -->
+        <div class="chart-section">
+            <h3>◢ DAILY P&L CHART</h3>
+            <div class="chart-container">
+                <canvas id="plChart"></canvas>
+            </div>
+        </div>
+
+        <div class="notes-section">
+            <h3>◢ Trading Notes</h3>
+            <div class="note-toolbar">
+                <button class="btn" onclick="formatNote('bold')">Bold</button>
+                <button class="btn" onclick="formatNote('italic')">Italic</button>
+                <button class="btn" onclick="formatNote('underline')">Underline</button>
+                <button class="btn" onclick="formatNote('insertUnorderedList')">• List</button>
+                <button class="btn" onclick="formatNote('insertOrderedList')">1. List</button>
+                <select id="font-size" class="btn" onchange="changeFontSize()">
+                    <option value="">Font Size</option>
+                    <option value="1">Small</option>
+                    <option value="3">Normal</option>
+                    <option value="5">Large</option>
+                    <option value="7">XLarge</option>
+                </select>
+                <input type="color" id="text-color" onchange="applyTextColor()" style="width: 50px; height: 38px;">
+                <button class="btn btn-danger" onclick="clearFormatting()">Clear Format</button>
+            </div>
+            <div id="notes" contenteditable="true" placeholder="Enter your trading notes here..."></div>
+        </div>
+    </div>
+
+    <!-- Add Contract Modal -->
+    <div id="add-contract-modal" class="modal">
+        <div class="modal-content">
+            <h3>Add New Contract</h3>
+            <div class="form-group">
+                <label>Contract Name</label>
+                <input type="text" id="contract-name-input" placeholder="e.g., AAPL, GOOGL">
+            </div>
+            <div class="modal-actions">
+                <button class="btn" onclick="closeAddContractModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmAddContract()">Add Contract</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formatting Toolbar -->
+    <div id="formatting-toolbar" class="formatting-toolbar">
+        <button class="format-btn" onclick="formatCell('bold')" title="Bold">
+            <strong>B</strong>
+        </button>
+        <button class="format-btn" onclick="formatCell('larger')" title="Larger">
+            A+
+        </button>
+    </div>
+
+    <script>
+        // ─── JSONBin.io Cloud Sync Configuration ───
+        const SYNC_BIN_ID     = '';   // e.g. '65a3f...'
+        const SYNC_MASTER_KEY = '';   // from jsonbin.io → Account → API Keys
+
+        const JSONBIN_ENDPOINT = `https://api.jsonbin.io/v3/b/${SYNC_BIN_ID}`;
+        const SYNC_ENABLED = Boolean(SYNC_BIN_ID && SYNC_MASTER_KEY);
+
+        // ─── Debounce & retry logic ───
+        let pushTimeoutId = null;
+        const PUSH_DEBOUNCE_MS = 60_000; // 60s quiet → push
+
+        function schedulePush() {
+            if (!SYNC_ENABLED) return;
+            clearTimeout(pushTimeoutId);
+            updateBadge('pending');
+            pushTimeoutId = setTimeout(() => {
+                pushToCloud();
+            }, PUSH_DEBOUNCE_MS);
+        }
+
+        async function pushToCloud(attemptNum = 1) {
+            if (!SYNC_ENABLED) return;
+            updateBadge('syncing');
+
+            try {
+                const response = await fetch(JSONBIN_ENDPOINT, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': SYNC_MASTER_KEY
+                    },
+                    body: JSON.stringify(allMonthsData)
+                });
+
+                if (!response.ok) {
+                    const reason = response.headers.get('X-Deny-Reason') || response.statusText;
+                    throw new Error(`Push failed: ${response.status} - ${reason}`);
+                }
+
+                updateBadge('synced');
+            } catch (err) {
+                console.error(`Push attempt ${attemptNum} failed:`, err);
+                if (attemptNum < 3) {
+                    const backoff = attemptNum * 5000; // 5s, 10s, 15s
+                    setTimeout(() => pushToCloud(attemptNum + 1), backoff);
+                } else {
+                    updateBadge('offline');
+                }
+            }
+        }
+
+        async function pullFromCloud() {
+            if (!SYNC_ENABLED) return;
+            updateBadge('syncing');
+
+            try {
+                const response = await fetch(JSONBIN_ENDPOINT + '/latest', {
+                    headers: { 'X-Master-Key': SYNC_MASTER_KEY }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Pull failed: ${response.status}`);
+                }
+
+                const json = await response.json();
+                const cloudData = json.record;
+
+                // Merge if cloud is newer
+                const localTimestamp = localStorage.getItem('lastSyncTimestamp') || 0;
+                const cloudTimestamp = new Date(json.metadata.createdAt).getTime();
+
+                if (cloudTimestamp > localTimestamp) {
+                    allMonthsData = cloudData;
+                    localStorage.setItem('allMonthsPortfolioData', JSON.stringify(allMonthsData));
+                    localStorage.setItem('lastSyncTimestamp', cloudTimestamp);
+                    loadMonthData(currentMonth, currentYear);
+                    renderTable();
+                    renderPLChart(); // Update chart after pulling data
+                    loadNotes();
+                }
+
+                updateBadge('synced');
+            } catch (err) {
+                console.error('Pull failed:', err);
+                updateBadge('offline');
+            }
+        }
+
+        function updateBadge(status) {
+            const badge = document.getElementById('sync-badge');
+            const text = document.getElementById('sync-text');
+
+            if (!SYNC_ENABLED) {
+                badge.className = 'sync-badge disabled';
+                text.textContent = 'No Sync';
+                return;
+            }
+
+            badge.className = `sync-badge ${status}`;
+            switch (status) {
+                case 'synced':   text.textContent = '● Synced'; break;
+                case 'pending':  text.textContent = '● Pending'; break;
+                case 'syncing':  text.textContent = '↻ Syncing…'; break;
+                case 'offline':  text.textContent = '⚠ Offline'; break;
+            }
+        }
+
+        // ─── Push on tab close ───
+        window.addEventListener('beforeunload', () => {
+            if (SYNC_ENABLED && pushTimeoutId) {
+                clearTimeout(pushTimeoutId);
+                // Use sendBeacon for reliable last-second push
+                const blob = new Blob([JSON.stringify(allMonthsData)], { type: 'application/json' });
+                navigator.sendBeacon(JSONBIN_ENDPOINT, blob);
+            }
+        });
+
+        // Global state
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        let allMonthsData = {};
+        let portfolioData = {
+            contracts: [],
+            dates: [],
+            cells: {},
+            hiddenRows: new Set(),
+            hiddenCols: new Set(),
+            notes: ''
+        };
+
+        let currentEditingCell = null;
+        let draggedRow = null;
+
+        // Chart instance (global so we can destroy and recreate)
+        let plChartInstance = null;
+
+        function init() {
+            loadAllData();
+            loadData(); // Legacy migration
+            loadMonthData(currentMonth, currentYear);
+            generateDatesForMonth();
+            renderTable();
+            renderPLChart(); // Initial chart render
+            loadNotes();
+            
+            // Month selector
+            document.getElementById('month-select').value = currentMonth;
+            document.getElementById('year-input').value = currentYear;
+            
+            document.getElementById('month-select').addEventListener('change', (e) => {
+                saveCurrentMonthData();
+                currentMonth = parseInt(e.target.value);
+                loadMonthData(currentMonth, currentYear);
+                generateDatesForMonth();
+                renderTable();
+                renderPLChart(); // Update chart on month change
+                loadNotes();
+            });
+            
+            document.getElementById('year-input').addEventListener('change', (e) => {
+                saveCurrentMonthData();
+                currentYear = parseInt(e.target.value);
+                loadMonthData(currentMonth, currentYear);
+                generateDatesForMonth();
+                renderTable();
+                renderPLChart(); // Update chart on year change
+                loadNotes();
+            });
+
+            // Auto-save every 5 seconds
+            setInterval(() => {
+                saveCurrentMonthData();
+            }, 5000);
+
+            // Pull from cloud on init
+            if (SYNC_ENABLED) {
+                pullFromCloud();
+            }
+        }
+
+        function generateDatesForMonth() {
+            const year = currentYear;
+            const month = currentMonth;
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            portfolioData.dates = [];
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const dateStr = date.toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
+                portfolioData.dates.push(dateStr);
+            }
+        }
+
+        function renderTable() {
+            renderTableHead();
+            renderTableBody();
+        }
+
+        function renderTableHead() {
+            const thead = document.getElementById('table-head');
+            thead.innerHTML = '';
+            
+            const tr = document.createElement('tr');
+            
+            // Contract column header
+            const thContract = document.createElement('th');
+            thContract.className = 'contract-cell';
+            thContract.textContent = 'Contract';
+            tr.appendChild(thContract);
+            
+            // Date column headers
+            portfolioData.dates.forEach((date, index) => {
+                if (portfolioData.hiddenCols.has(index)) return;
+                
+                const th = document.createElement('th');
+                th.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>${date}</span>
+                        <div class="col-actions">
+                            <button class="action-btn" onclick="hideColumn(${index})" title="Hide column">✕</button>
+                        </div>
+                    </div>
+                `;
+                tr.appendChild(th);
+            });
+            
+            thead.appendChild(tr);
+        }
+
+        function renderTableBody() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            // Render contract rows
+            portfolioData.contracts.forEach((contract, rowIndex) => {
+                if (portfolioData.hiddenRows.has(rowIndex)) return;
+
+                const tr = document.createElement('tr');
+                tr.draggable = true;
+                tr.addEventListener('dragstart', (e) => handleDragStart(e, rowIndex));
+                tr.addEventListener('dragover', handleDragOver);
+                tr.addEventListener('drop', (e) => handleDrop(e, rowIndex));
+                tr.addEventListener('dragend', handleDragEnd);
+
+                // Contract name cell
+                const tdContract = document.createElement('td');
+                tdContract.className = 'contract-cell';
+                tdContract.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span class="drag-handle">⋮⋮</span>
+                            <span>${contract}</span>
+                        </div>
+                        <div class="row-actions">
+                            <button class="action-btn" onclick="deleteRow(${rowIndex})" title="Delete row">🗑</button>
+                            <button class="action-btn" onclick="hideRow(${rowIndex})" title="Hide row">✕</button>
+                        </div>
+                    </div>
+                `;
+                tr.appendChild(tdContract);
+
+                // Data cells
+                portfolioData.dates.forEach((date, colIndex) => {
+                    if (portfolioData.hiddenCols.has(colIndex)) return;
+
+                    const td = document.createElement('td');
+                    const cellKey = `${rowIndex}-${colIndex}`;
+                    const cellData = portfolioData.cells[cellKey] || { value: '', bold: false, larger: false };
+                    
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'cell-editable';
+                    cellDiv.textContent = cellData.value || '';
+                    
+                    // Apply formatting
+                    if (cellData.bold) cellDiv.style.fontWeight = '700';
+                    if (cellData.larger) cellDiv.style.fontSize = '16px';
+                    
+                    // Color coding for numbers
+                    if (cellData.value) {
+                        const numValue = parseFloat(cellData.value.toString().replace(/,/g, ''));
+                        if (!isNaN(numValue)) {
+                            cellDiv.className += numValue >= 0 ? ' positive' : ' negative';
+                        }
+                    }
+                    
+                    cellDiv.addEventListener('click', () => editCell(cellDiv, cellKey, cellData));
+                    td.appendChild(cellDiv);
+                    tr.appendChild(td);
+                });
+
+                tbody.appendChild(tr);
+            });
+
+            // Add calculated rows
+            addCalculatedRow('UnRealized P & L', 'unrealized');
+            addCalculatedRow('Net realised P&L (as of today)', 'realized');
+            addStandingRow();
+        }
+
+        function addCalculatedRow(label, rowType) {
+            const tbody = document.getElementById('table-body');
+            const tr = document.createElement('tr');
+
+            const tdLabel = document.createElement('td');
+            tdLabel.className = 'contract-cell';
+            tdLabel.style.background = rowType === 'unrealized' ? 'rgba(0, 255, 136, 0.1)' : 'rgba(255, 51, 102, 0.1)';
+            tdLabel.textContent = label;
+            tr.appendChild(tdLabel);
+
+            portfolioData.dates.forEach((date, colIndex) => {
+                if (portfolioData.hiddenCols.has(colIndex)) return;
+
+                const td = document.createElement('td');
+                const cellKey = `${rowType}-${colIndex}`;
+                const cellData = portfolioData.cells[cellKey] || { value: '', bold: false, larger: false };
+                
+                const cellDiv = document.createElement('div');
+                cellDiv.className = 'cell-editable';
+                cellDiv.textContent = cellData.value || '';
+                
+                if (cellData.bold) cellDiv.style.fontWeight = '700';
+                if (cellData.larger) cellDiv.style.fontSize = '16px';
+                
+                if (cellData.value) {
+                    const numValue = parseFloat(cellData.value.toString().replace(/,/g, ''));
+                    if (!isNaN(numValue)) {
+                        cellDiv.className += numValue >= 0 ? ' positive' : ' negative';
+                    }
+                }
+                
+                cellDiv.addEventListener('click', () => editCell(cellDiv, cellKey, cellData));
+                td.appendChild(cellDiv);
+                tr.appendChild(td);
+            });
+
+            tbody.appendChild(tr);
+        }
+
+        function addStandingRow() {
+            const tbody = document.getElementById('table-body');
+            const tr = document.createElement('tr');
+            tr.className = 'standing-row';
+
+            const tdLabel = document.createElement('td');
+            tdLabel.className = 'contract-cell';
+            tdLabel.textContent = 'Standing AT';
+            tr.appendChild(tdLabel);
+
+            portfolioData.dates.forEach((date, colIndex) => {
+                if (portfolioData.hiddenCols.has(colIndex)) return;
+
+                const td = document.createElement('td');
+                
+                const unrealizedKey = `unrealized-${colIndex}`;
+                const realizedKey = `realized-${colIndex}`;
+                
+                const unrealizedValue = portfolioData.cells[unrealizedKey]?.value || 0;
+                const realizedValue = portfolioData.cells[realizedKey]?.value || 0;
+                
+                const unrealized = parseFloat(unrealizedValue.toString().replace(/,/g, '')) || 0;
+                const realized = parseFloat(realizedValue.toString().replace(/,/g, '')) || 0;
+                
+                const standing = unrealized + realized;
+                
+                const cellDiv = document.createElement('div');
+                cellDiv.textContent = standing !== 0 ? standing.toLocaleString() : '';
+                cellDiv.style.fontWeight = '700';
+                cellDiv.className = standing >= 0 ? 'positive' : 'negative';
+                
+                td.appendChild(cellDiv);
+                tr.appendChild(td);
+            });
+
+            tbody.appendChild(tr);
+        }
+
+        // ─── Daily P&L Chart Rendering ───
+        function renderPLChart() {
+            const canvas = document.getElementById('plChart');
+            const ctx = canvas.getContext('2d');
+
+            // Destroy existing chart if it exists
+            if (plChartInstance) {
+                plChartInstance.destroy();
+            }
+
+            // Calculate daily P&L data
+            const chartData = calculateDailyPL();
+
+            // Prepare data for Chart.js
+            const labels = chartData.map(d => d.date);
+            const standingValues = chartData.map(d => d.standing);
+
+            // Determine line color based on values (green if mostly positive, red if mostly negative)
+            const positiveCount = standingValues.filter(v => v >= 0).length;
+            const lineColor = positiveCount >= standingValues.length / 2 
+                ? 'rgb(0, 255, 136)' // green
+                : 'rgb(255, 51, 102)'; // red
+
+            // Create gradient for area fill
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            if (positiveCount >= standingValues.length / 2) {
+                gradient.addColorStop(0, 'rgba(0, 255, 136, 0.3)');
+                gradient.addColorStop(1, 'rgba(0, 255, 136, 0.0)');
+            } else {
+                gradient.addColorStop(0, 'rgba(255, 51, 102, 0.3)');
+                gradient.addColorStop(1, 'rgba(255, 51, 102, 0.0)');
+            }
+
+            plChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Standing AT',
+                        data: standingValues,
+                        borderColor: lineColor,
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: lineColor,
+                        pointBorderColor: 'rgb(30, 40, 64)',
+                        pointBorderWidth: 2,
+                        tension: 0.3, // Smooth curve
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: 'rgb(224, 230, 240)',
+                                font: {
+                                    family: 'JetBrains Mono',
+                                    size: 12,
+                                    weight: '600'
+                                },
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(21, 27, 46, 0.95)',
+                            titleColor: 'rgb(0, 245, 255)',
+                            bodyColor: 'rgb(224, 230, 240)',
+                            borderColor: 'rgb(42, 55, 82)',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: true,
+                            titleFont: {
+                                family: 'JetBrains Mono',
+                                size: 13,
+                                weight: '700'
+                            },
+                            bodyFont: {
+                                family: 'JetBrains Mono',
+                                size: 12
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed.y;
+                                    const formatted = value.toLocaleString();
+                                    const sign = value >= 0 ? '+' : '';
+                                    return `Standing AT: ${sign}${formatted}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(42, 55, 82, 0.5)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: 'rgb(139, 150, 176)',
+                                font: {
+                                    family: 'JetBrains Mono',
+                                    size: 11
+                                },
+                                maxRotation: 45,
+                                minRotation: 0
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(42, 55, 82, 0.5)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: 'rgb(139, 150, 176)',
+                                font: {
+                                    family: 'JetBrains Mono',
+                                    size: 11
+                                },
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                }
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function calculateDailyPL() {
+            const dailyData = [];
+
+            portfolioData.dates.forEach((date, colIndex) => {
+                if (portfolioData.hiddenCols.has(colIndex)) return;
+
+                const unrealizedKey = `unrealized-${colIndex}`;
+                const realizedKey = `realized-${colIndex}`;
+                
+                const unrealizedValue = portfolioData.cells[unrealizedKey]?.value || 0;
+                const realizedValue = portfolioData.cells[realizedKey]?.value || 0;
+                
+                const unrealized = parseFloat(unrealizedValue.toString().replace(/,/g, '')) || 0;
+                const realized = parseFloat(realizedValue.toString().replace(/,/g, '')) || 0;
+                
+                const standing = unrealized + realized;
+
+                dailyData.push({
+                    date: date,
+                    unrealized: unrealized,
+                    realized: realized,
+                    standing: standing
+                });
+            });
+
+            return dailyData;
+        }
+
+        function editCell(element, cellKey, currentData) {
+            // Close any existing edit
+            if (currentEditingCell) {
+                currentEditingCell.input.blur();
+            }
+
+            const parent = element.parentElement;
+            parent.classList.add('cell-editing');
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentData.value || '';
+            
+            currentEditingCell = {
+                element,
+                input,
+                cellKey,
+                originalData: { ...currentData }
+            };
+            
+            parent.innerHTML = '';
+            parent.appendChild(input);
+            input.focus();
+            input.select();
+            
+            // Show formatting toolbar
+            const toolbar = document.getElementById('formatting-toolbar');
+            toolbar.classList.add('active');
+            
+            // Update toolbar button states
+            document.querySelectorAll('.format-btn').forEach(btn => btn.classList.remove('active'));
+            if (currentData.bold) {
+                document.querySelector('.format-btn[onclick*="bold"]').classList.add('active');
+            }
+            if (currentData.larger) {
+                document.querySelector('.format-btn[onclick*="larger"]').classList.add('active');
+            }
+            
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    saveCellEdit(input, cellKey);
+                } else if (e.key === 'Escape') {
+                    cancelCellEdit();
+                }
+            });
+            
+            input.addEventListener('blur', () => {
+                setTimeout(() => {
+                    if (currentEditingCell?.input === input) {
+                        saveCellEdit(input, cellKey);
+                    }
+                }, 200);
+            });
+        }
+
+        function saveCellEdit(input, cellKey) {
+            const value = input.value.trim();
+            
+            if (!portfolioData.cells[cellKey]) {
+                portfolioData.cells[cellKey] = { value: '', bold: false, larger: false };
+            }
+            
+            portfolioData.cells[cellKey].value = value;
+            
+            // Hide formatting toolbar
+            document.getElementById('formatting-toolbar').classList.remove('active');
+            
+            currentEditingCell = null;
+            saveCurrentMonthData();
+            renderTable();
+            renderPLChart(); // Update chart when cell values change
+        }
+
+        function cancelCellEdit() {
+            document.getElementById('formatting-toolbar').classList.remove('active');
+            currentEditingCell = null;
+            renderTable();
+        }
+
+        function formatCell(type) {
+            if (!currentEditingCell) return;
+            
+            const cellKey = currentEditingCell.cellKey;
+            if (!portfolioData.cells[cellKey]) {
+                portfolioData.cells[cellKey] = { value: '', bold: false, larger: false };
+            }
+            
+            if (type === 'bold') {
+                portfolioData.cells[cellKey].bold = !portfolioData.cells[cellKey].bold;
+            } else if (type === 'larger') {
+                portfolioData.cells[cellKey].larger = !portfolioData.cells[cellKey].larger;
+            }
+            
+            // Update button states
+            document.querySelectorAll('.format-btn').forEach(btn => btn.classList.remove('active'));
+            if (portfolioData.cells[cellKey].bold) {
+                document.querySelector('.format-btn[onclick*="bold"]').classList.add('active');
+            }
+            if (portfolioData.cells[cellKey].larger) {
+                document.querySelector('.format-btn[onclick*="larger"]').classList.add('active');
+            }
+        }
+
+        function addContract() {
+            document.getElementById('add-contract-modal').classList.add('active');
+            document.getElementById('contract-name-input').value = '';
+            document.getElementById('contract-name-input').focus();
+        }
+
+        function closeAddContractModal() {
+            document.getElementById('add-contract-modal').classList.remove('active');
+        }
+
+        function confirmAddContract() {
+            const name = document.getElementById('contract-name-input').value.trim();
+            if (name) {
+                portfolioData.contracts.push(name);
+                saveCurrentMonthData();
+                renderTable();
+                renderPLChart(); // Update chart when contracts change
+                closeAddContractModal();
+            }
+        }
+
+        function deleteRow(index) {
+            if (confirm('Delete this contract and all its data?')) {
+                // Remove contract
+                portfolioData.contracts.splice(index, 1);
+                
+                // Remove all cells for this row
+                Object.keys(portfolioData.cells).forEach(key => {
+                    const [rowIdx] = key.split('-');
+                    if (parseInt(rowIdx) === index) {
+                        delete portfolioData.cells[key];
+                    }
+                });
+                
+                // Reindex cells with higher row indices
+                const newCells = {};
+                Object.keys(portfolioData.cells).forEach(key => {
+                    const parts = key.split('-');
+                    if (parts.length === 2 && !isNaN(parts[0])) {
+                        const [rowIdx, colIdx] = parts;
+                        const rowNum = parseInt(rowIdx);
+                        if (rowNum > index) {
+                            newCells[`${rowNum - 1}-${colIdx}`] = portfolioData.cells[key];
+                        } else {
+                            newCells[key] = portfolioData.cells[key];
+                        }
+                    } else {
+                        newCells[key] = portfolioData.cells[key];
+                    }
+                });
+                portfolioData.cells = newCells;
+                
+                // Update hiddenRows
+                const newHiddenRows = new Set();
+                portfolioData.hiddenRows.forEach(rowIdx => {
+                    if (rowIdx !== index) {
+                        newHiddenRows.add(rowIdx > index ? rowIdx - 1 : rowIdx);
+                    }
+                });
+                portfolioData.hiddenRows = newHiddenRows;
+                
+                saveCurrentMonthData();
+                renderTable();
+                renderPLChart(); // Update chart when contracts change
+            }
+        }
+
+        function hideRow(index) {
+            portfolioData.hiddenRows.add(index);
+            saveCurrentMonthData();
+            renderTable();
+            renderPLChart(); // Update chart when rows are hidden
+        }
+
+        function hideColumn(index) {
+            portfolioData.hiddenCols.add(index);
+            saveCurrentMonthData();
+            renderTable();
+            renderPLChart(); // Update chart when columns are hidden
+        }
+
+        // Drag and drop for row reordering
+        function handleDragStart(e, rowIndex) {
+            draggedRow = rowIndex;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            
+            const target = e.target.closest('tr');
+            if (target && !target.classList.contains('standing-row')) {
+                target.classList.add('drag-over');
+            }
+        }
+
+        function handleDrop(e, targetIndex) {
+            e.preventDefault();
+            
+            if (draggedRow !== null && draggedRow !== targetIndex) {
+                // Reorder contracts
+                const [movedContract] = portfolioData.contracts.splice(draggedRow, 1);
+                portfolioData.contracts.splice(targetIndex, 0, movedContract);
+                
+                // Reindex all cells
+                const newCells = {};
+                Object.keys(portfolioData.cells).forEach(key => {
+                    const parts = key.split('-');
+                    if (parts.length === 2 && !isNaN(parts[0])) {
+                        const [rowIdx, colIdx] = parts;
+                        const rowNum = parseInt(rowIdx);
+                        let newRowIdx = rowNum;
+                        
+                        if (rowNum === draggedRow) {
+                            newRowIdx = targetIndex;
+                        } else if (draggedRow < targetIndex) {
+                            if (rowNum > draggedRow && rowNum <= targetIndex) {
+                                newRowIdx = rowNum - 1;
+                            }
+                        } else {
+                            if (rowNum >= targetIndex && rowNum < draggedRow) {
+                                newRowIdx = rowNum + 1;
+                            }
+                        }
+                        
+                        newCells[`${newRowIdx}-${colIdx}`] = portfolioData.cells[key];
+                    } else {
+                        newCells[key] = portfolioData.cells[key];
+                    }
+                });
+                portfolioData.cells = newCells;
+                
+                // Update hiddenRows
+                const newHiddenRows = new Set();
+                portfolioData.hiddenRows.forEach(rowIdx => {
+                    let newIdx = rowIdx;
+                    if (rowIdx === draggedRow) {
+                        newIdx = targetIndex;
+                    } else if (draggedRow < targetIndex) {
+                        if (rowIdx > draggedRow && rowIdx <= targetIndex) {
+                            newIdx = rowIdx - 1;
+                        }
+                    } else {
+                        if (rowIdx >= targetIndex && rowIdx < draggedRow) {
+                            newIdx = rowIdx + 1;
+                        }
+                    }
+                    newHiddenRows.add(newIdx);
+                });
+                portfolioData.hiddenRows = newHiddenRows;
+
+                saveCurrentMonthData();
+                renderTable();
+                renderPLChart(); // Update chart when rows are reordered
+            }
+        }
+
+        function handleDragEnd() {
+            document.querySelectorAll('tr').forEach(tr => {
+                tr.classList.remove('dragging', 'drag-over');
+            });
+            draggedRow = null;
+        }
+
+        // Month-specific data management
+        function getMonthKey(month, year) {
+            return `${year}-${month}`;
+        }
+
+        function loadMonthData(month, year) {
+            const monthKey = getMonthKey(month, year);
+            
+            if (allMonthsData[monthKey]) {
+                // Load existing data for this month
+                portfolioData = {
+                    ...allMonthsData[monthKey],
+                    hiddenRows: new Set(allMonthsData[monthKey].hiddenRows || []),
+                    hiddenCols: new Set(allMonthsData[monthKey].hiddenCols || [])
+                };
+            } else {
+                // Create blank data for new month with only default rows
+                portfolioData = {
+                    contracts: [],
+                    dates: [],
+                    cells: {},
+                    hiddenRows: new Set(),
+                    hiddenCols: new Set(),
+                    notes: ''
+                };
+            }
+        }
+
+        function saveCurrentMonthData() {
+            const monthKey = getMonthKey(currentMonth, currentYear);
+            allMonthsData[monthKey] = {
+                ...portfolioData,
+                hiddenRows: Array.from(portfolioData.hiddenRows),
+                hiddenCols: Array.from(portfolioData.hiddenCols)
+            };
+            
+            // Save all months data to localStorage
+            localStorage.setItem('allMonthsPortfolioData', JSON.stringify(allMonthsData));
+
+            // Arm the debounced cloud push
+            schedulePush();
+        }
+
+        function loadAllData() {
+            const saved = localStorage.getItem('allMonthsPortfolioData');
+            if (saved) {
+                allMonthsData = JSON.parse(saved);
+            }
+        }
+
+        let notesListenerAttached = false;
+
+        function loadNotes() {
+            const notesEl = document.getElementById('notes');
+            notesEl.innerHTML = portfolioData.notes || '';
+            
+            if (!notesListenerAttached) {
+                notesEl.addEventListener('input', (e) => {
+                    portfolioData.notes = e.target.innerHTML;
+                    saveCurrentMonthData();
+                });
+                notesEl.addEventListener('blur', () => {
+                    portfolioData.notes = notesEl.innerHTML;
+                    saveCurrentMonthData();
+                });
+                notesListenerAttached = true;
+            }
+        }
+
+        function formatNote(command, value = null) {
+            document.execCommand(command, false, value);
+            document.getElementById('notes').focus();
+        }
+
+        function changeFontSize() {
+            const size = document.getElementById('font-size').value;
+            if (size) {
+                document.execCommand('fontSize', false, size);
+                document.getElementById('notes').focus();
+                // Reset dropdown
+                document.getElementById('font-size').value = '';
+            }
+        }
+
+        function applyTextColor() {
+            const color = document.getElementById('text-color').value;
+            document.execCommand('foreColor', false, color);
+            document.getElementById('notes').focus();
+        }
+
+        function clearFormatting() {
+            document.execCommand('removeFormat', false, null);
+            document.getElementById('notes').focus();
+        }
+
+        function loadData() {
+            // Legacy function - keeping for backwards compatibility
+            const saved = localStorage.getItem('portfolioData');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                const monthKey = getMonthKey(currentMonth, currentYear);
+                allMonthsData[monthKey] = {
+                    ...parsed,
+                    hiddenRows: parsed.hiddenRows || [],
+                    hiddenCols: parsed.hiddenCols || []
+                };
+                // Migrate to new structure
+                localStorage.removeItem('portfolioData');
+                saveCurrentMonthData();
+            }
+        }
+
+        // ─── Pan-to-scroll (PDF-viewer style drag) with momentum ───
+        (function initPan() {
+            const container = document.getElementById('table-container-wrap');
+            // We attach after DOM is ready; use a small delay so the element exists
+            requestAnimationFrame(() => {
+                const el = document.querySelector('.table-container');
+                if (!el) return;
+
+                let startX, startY, scrollLeft, scrollTop;
+                let isDragging = false;
+
+                // velocity tracking for momentum
+                let lastX, lastY, lastTime;
+                let velX = 0, velY = 0;
+                let rafId = null;
+
+                function onPointerDown(e) {
+                    // ignore if the user clicked an interactive element or drag handle
+                    if (e.target.closest('input, button, select, textarea, .cell-editable, .drag-handle')) return;
+
+                    isDragging = true;
+                    el.classList.add('panning');
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    scrollLeft = el.scrollLeft;
+                    scrollTop = el.scrollTop;
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+                    lastTime = Date.now();
+                    velX = 0;
+                    velY = 0;
+                    // kill any running momentum
+                    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+                    e.preventDefault();
+                }
+
+                function onPointerMove(e) {
+                    if (!isDragging) return;
+                    e.preventDefault();
+
+                    const now = Date.now();
+                    const dt = now - lastTime || 1;
+
+                    // track velocity (pixels per ms)
+                    velX = (e.clientX - lastX) / dt;
+                    velY = (e.clientY - lastY) / dt;
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+                    lastTime = now;
+
+                    // scroll = start position – distance dragged
+                    el.scrollLeft = scrollLeft - (e.clientX - startX);
+                    el.scrollTop  = scrollTop  - (e.clientY - startY);
+                }
+
+                function onPointerUp(e) {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    el.classList.remove('panning');
+
+                    // launch momentum if there's velocity
+                    const speed = Math.sqrt(velX * velX + velY * velY);
+                    if (speed > 0.05) {
+                        startMomentum();
+                    }
+                }
+
+                function startMomentum() {
+                    // convert velocity to pixels-per-frame (assume ~16 ms frame)
+                    let mx = velX * 16;
+                    let my = velY * 16;
+                    const friction = 0.92; // higher = slides longer
+
+                    function tick() {
+                        mx *= friction;
+                        my *= friction;
+
+                        el.scrollLeft -= mx;
+                        el.scrollTop  -= my;
+
+                        // stop when negligible
+                        if (Math.abs(mx) < 0.5 && Math.abs(my) < 0.5) return;
+                        rafId = requestAnimationFrame(tick);
+                    }
+                    rafId = requestAnimationFrame(tick);
+                }
+
+                el.addEventListener('pointerdown',  onPointerDown,  { passive: false });
+                el.addEventListener('pointermove',   onPointerMove,  { passive: false });
+                el.addEventListener('pointerup',     onPointerUp);
+                el.addEventListener('pointercancel', onPointerUp);
+                // also end drag if pointer leaves the container
+                el.addEventListener('pointerleave',  onPointerUp);
+            });
+        })();
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                saveCurrentMonthData();
+                alert('Data saved!');
+            }
+        });
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
