@@ -1508,41 +1508,19 @@
             portfolioData.dates.forEach((date, colIndex) => {
                 if (portfolioData.hiddenCols.has(colIndex)) return;
 
-                // Calculate Standing AT for this column (same logic as the table row)
-                let total = 0;
-                portfolioData.contracts.forEach((contract, rowIndex) => {
-                    if (portfolioData.hiddenRows.has(rowIndex)) return;
-                    
-                    const cellKey = `${rowIndex}-${colIndex}`;
-                    const cellData = portfolioData.cells[cellKey];
-                    if (cellData && cellData.value) {
-                        const value = parseFloat(cellData.value) || 0;
-                        total += value;
-                    }
-                });
-
-                // Also add unrealized and realized P&L
+                // Calculate Standing AT for this column (Unrealized + Realized only)
                 const unrealizedKey = `unrealized-${colIndex}`;
                 const unrealizedData = portfolioData.cells[unrealizedKey];
-                if (unrealizedData && unrealizedData.value) {
-                    total += parseFloat(unrealizedData.value) || 0;
-                }
+                const unrealizedValue = parseFloat(unrealizedData?.value?.toString().replace(/,/g, '') || 0);
 
                 const realizedKey = `realized-${colIndex}`;
                 const realizedData = portfolioData.cells[realizedKey];
-                if (realizedData && realizedData.value) {
-                    total += parseFloat(realizedData.value) || 0;
-                }
+                const realizedValue = parseFloat(realizedData?.value?.toString().replace(/,/g, '') || 0);
+
+                const total = unrealizedValue + realizedValue;
 
                 // Only add to chart if there's any data for this date
-                const hasData = portfolioData.contracts.some((contract, rowIndex) => {
-                    if (portfolioData.hiddenRows.has(rowIndex)) return false;
-                    const cellKey = `${rowIndex}-${colIndex}`;
-                    const cellData = portfolioData.cells[cellKey];
-                    return cellData && cellData.value;
-                }) || unrealizedData?.value || realizedData?.value;
-
-                if (hasData) {
+                if (unrealizedData?.value || realizedData?.value) {
                     labels.push(date);
                     data.push(total);
                 }
@@ -1616,8 +1594,7 @@
                             callbacks: {
                                 label: function(context) {
                                     const value = context.parsed.y;
-                                    const sign = value >= 0 ? '+' : '';
-                                    return 'Standing AT: ' + sign + value.toFixed(2);
+                                    return 'Standing AT: ' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                                 }
                             }
                         }
@@ -1650,7 +1627,7 @@
                                     size: 11
                                 },
                                 callback: function(value) {
-                                    return (value >= 0 ? '+' : '') + value;
+                                    return value.toLocaleString('en-US');
                                 }
                             },
                             border: {
