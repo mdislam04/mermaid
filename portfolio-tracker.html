@@ -1875,8 +1875,8 @@
                 let rafId = null;
 
                 function onPointerDown(e) {
-                    // ignore if the user clicked an interactive element
-                    if (e.target.closest('input, button, select, textarea, .cell-editable')) return;
+                    // ignore if the user clicked an interactive element or drag handle
+                    if (e.target.closest('input, button, select, textarea, .cell-editable, .drag-handle')) return;
 
                     isDragging = true;
                     el.classList.add('panning');
