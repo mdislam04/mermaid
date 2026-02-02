@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portfolio Tracker</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -403,6 +404,7 @@
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 20px;
+            margin-bottom: 30px;
             animation: fadeIn 0.6s ease-out 0.2s both;
         }
 
@@ -412,6 +414,27 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             color: var(--text-secondary);
+        }
+
+        .chart-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            animation: fadeIn 0.6s ease-out 0.3s both;
+        }
+
+        .chart-section h3 {
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        #pnl-chart {
+            width: 100% !important;
+            height: 300px !important;
         }
 
         .notes-toolbar {
@@ -948,7 +971,8 @@
                 <button class="btn btn-primary" onclick="addContract()">+ Add Contract</button>
                 <button class="btn" onclick="addColumn()">+ Add Date</button>
                 <button class="btn" onclick="showHiddenItemsModal()">👁 Show Hidden</button>
-                <button class="btn" id="sync-btn" onclick="manualSync()">⇄ Sync</button>
+                <button class="btn" id="push-btn" onclick="pushToCloud()">↑ Push</button>
+                <button class="btn" id="pull-btn" onclick="pullFromCloud()">↓ Pull</button>
             </div>
         </div>
 
@@ -987,6 +1011,11 @@
                 <button class="toolbar-btn" onclick="clearFormatting()" title="Clear Formatting">✕</button>
             </div>
             <div id="notes" class="rich-notes" contenteditable="true" data-placeholder="Enter your trading notes, strategies, and observations..."></div>
+        </div>
+
+        <div class="chart-section">
+            <h3>◢ Standing AT Chart</h3>
+            <canvas id="pnl-chart"></canvas>
         </div>
     </div>
 
@@ -1074,20 +1103,15 @@
         function schedulePush() {}
 
         // ─── Manual Sync button: pull first, then push ───
-        async function manualSync() {
+        // ─── PULL: Download from cloud → local ───
+        async function pullFromCloud() {
             if (!SYNC_ENABLED) return;
 
-            const btn = document.getElementById('sync-btn');
+            const btn = document.getElementById('pull-btn');
             btn.disabled = true;
-            btn.textContent = '⇄ Syncing…';
-
-            // 1. save current local state AND stamp it with NOW
-            saveCurrentMonthData();
-            allMonthsData._lastSyncedAt = Date.now();
-            localStorage.setItem('allMonthsPortfolioData', JSON.stringify(allMonthsData));
-
-            // 2. pull remote
+            btn.textContent = '↓ Pulling…';
             setSyncBadge('syncing', 'Pulling…');
+
             try {
                 const res = await fetchWithRetry(JSONBIN_URL, {
                     method: 'GET',
@@ -1101,35 +1125,52 @@
                     || Object.keys(remoteData).length === 0
                     || (remoteData._placeholder === true && Object.keys(remoteData).length === 1);
 
-                if (!isPlaceholderOrEmpty) {
-                    const remoteTs = remoteData._lastSyncedAt || 0;
-                    const localTs  = allMonthsData._lastSyncedAt || 0;
+                if (isPlaceholderOrEmpty) {
+                    alert('Cloud bin is empty - nothing to pull.');
+                    setSyncBadge('synced', 'Synced');
+                } else {
+                    // Overwrite local with remote data
+                    localStorage.setItem('allMonthsPortfolioData', JSON.stringify(remoteData));
+                    allMonthsData = {};
+                    Object.keys(remoteData).forEach(k => {
+                        if (k !== '_lastSyncedAt') allMonthsData[k] = remoteData[k];
+                    });
+                    allMonthsData._lastSyncedAt = remoteData._lastSyncedAt || Date.now();
 
-                    if (remoteTs > localTs) {
-                        // remote is newer — overwrite local and reload
-                        localStorage.setItem('allMonthsPortfolioData', JSON.stringify(remoteData));
-                        allMonthsData = {};
-                        Object.keys(remoteData).forEach(k => {
-                            if (k !== '_lastSyncedAt') allMonthsData[k] = remoteData[k];
-                        });
-                        allMonthsData._lastSyncedAt = remoteTs;
-                        // re-render current month
-                        loadMonthData(currentMonth, currentYear);
-                        renderTable();
-                        loadNotes();
-                    }
+                    // Re-render current month with pulled data
+                    loadMonthData(currentMonth, currentYear);
+                    renderTable();
+                    loadNotes();
+
+                    setSyncBadge('synced', 'Pulled');
+                    alert('Data pulled from cloud successfully!');
                 }
             } catch (err) {
                 console.warn('Pull failed:', err);
                 setSyncBadge('offline', 'Offline');
-                btn.disabled = false;
-                btn.textContent = '⇄ Sync';
-                return;
+                alert('Pull failed: ' + err.message);
             }
 
-            // 3. push local → remote (local now has the latest timestamp from step 1)
+            btn.disabled = false;
+            btn.textContent = '↓ Pull';
+        }
+
+        // ─── PUSH: Upload from local → cloud ───
+        async function pushToCloud() {
+            if (!SYNC_ENABLED) return;
+
+            const btn = document.getElementById('push-btn');
+            btn.disabled = true;
+            btn.textContent = '↑ Pushing…';
             setSyncBadge('syncing', 'Pushing…');
+
             try {
+                // Save current work and stamp with timestamp
+                saveCurrentMonthData();
+                allMonthsData._lastSyncedAt = Date.now();
+                localStorage.setItem('allMonthsPortfolioData', JSON.stringify(allMonthsData));
+
+                // Push to cloud
                 const payload = { ...allMonthsData };
                 await fetchWithRetry(JSONBIN_URL, {
                     method: 'PUT',
@@ -1140,14 +1181,16 @@
                     body: JSON.stringify(payload)
                 });
 
-                setSyncBadge('synced', 'Synced');
+                setSyncBadge('synced', 'Pushed');
+                alert('Data pushed to cloud successfully!');
             } catch (err) {
                 console.warn('Push failed:', err);
                 setSyncBadge('offline', 'Offline');
+                alert('Push failed: ' + err.message);
             }
 
             btn.disabled = false;
-            btn.textContent = '⇄ Sync';
+            btn.textContent = '↑ Push';
         }
 
         // ─── Force-push on tab close (best-effort) ───
@@ -1304,6 +1347,7 @@
         function renderTable() {
             renderTableHead();
             renderTableBody();
+            renderChart();
         }
 
         function renderTableHead() {
@@ -1443,6 +1487,179 @@
 
             // Add Standing AT row
             addStandingRow();
+        }
+
+        // ─── Chart Rendering ───
+        let pnlChart = null;
+
+        function renderChart() {
+            const canvas = document.getElementById('pnl-chart');
+            const ctx = canvas.getContext('2d');
+
+            // Destroy existing chart if it exists
+            if (pnlChart) {
+                pnlChart.destroy();
+            }
+
+            // Collect Standing AT data for each date that has data
+            const labels = [];
+            const data = [];
+
+            portfolioData.dates.forEach((date, colIndex) => {
+                if (portfolioData.hiddenCols.has(colIndex)) return;
+
+                // Calculate Standing AT for this column (same logic as the table row)
+                let total = 0;
+                portfolioData.contracts.forEach((contract, rowIndex) => {
+                    if (portfolioData.hiddenRows.has(rowIndex)) return;
+                    
+                    const cellKey = `${rowIndex}-${colIndex}`;
+                    const cellData = portfolioData.cells[cellKey];
+                    if (cellData && cellData.value) {
+                        const value = parseFloat(cellData.value) || 0;
+                        total += value;
+                    }
+                });
+
+                // Also add unrealized and realized P&L
+                const unrealizedKey = `unrealized-${colIndex}`;
+                const unrealizedData = portfolioData.cells[unrealizedKey];
+                if (unrealizedData && unrealizedData.value) {
+                    total += parseFloat(unrealizedData.value) || 0;
+                }
+
+                const realizedKey = `realized-${colIndex}`;
+                const realizedData = portfolioData.cells[realizedKey];
+                if (realizedData && realizedData.value) {
+                    total += parseFloat(realizedData.value) || 0;
+                }
+
+                // Only add to chart if there's any data for this date
+                const hasData = portfolioData.contracts.some((contract, rowIndex) => {
+                    if (portfolioData.hiddenRows.has(rowIndex)) return false;
+                    const cellKey = `${rowIndex}-${colIndex}`;
+                    const cellData = portfolioData.cells[cellKey];
+                    return cellData && cellData.value;
+                }) || unrealizedData?.value || realizedData?.value;
+
+                if (hasData) {
+                    labels.push(date);
+                    data.push(total);
+                }
+            });
+
+            // Only render if we have data
+            if (labels.length === 0) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#8b96b0';
+                ctx.font = '14px JetBrains Mono';
+                ctx.textAlign = 'center';
+                ctx.fillText('No Standing AT data to display', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
+            // Create gradient for line
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, 'rgba(0, 245, 255, 0.4)');
+            gradient.addColorStop(1, 'rgba(0, 245, 255, 0.05)');
+
+            pnlChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Standing AT',
+                        data: data,
+                        borderColor: '#00f5ff',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#00f5ff',
+                        pointBorderColor: '#0a0e1a',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: '#00ff88',
+                        pointHoverBorderColor: '#00f5ff',
+                        pointHoverBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e2840',
+                            titleColor: '#00f5ff',
+                            bodyColor: '#e0e6f0',
+                            borderColor: '#00f5ff',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false,
+                            titleFont: {
+                                family: 'JetBrains Mono',
+                                size: 13,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                family: 'JetBrains Mono',
+                                size: 12
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed.y;
+                                    const sign = value >= 0 ? '+' : '';
+                                    return 'Standing AT: ' + sign + value.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: '#2a3752',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#8b96b0',
+                                font: {
+                                    family: 'JetBrains Mono',
+                                    size: 11
+                                },
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: '#2a3752',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#8b96b0',
+                                font: {
+                                    family: 'JetBrains Mono',
+                                    size: 11
+                                },
+                                callback: function(value) {
+                                    return (value >= 0 ? '+' : '') + value;
+                                }
+                            },
+                            border: {
+                                dash: [5, 5]
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         function addCalculatedRow(label, rowType) {
