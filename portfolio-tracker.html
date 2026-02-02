@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portfolio Tracker</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="icon" href="/favicon.ico">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-
     <style>
         * {
             margin: 0;
@@ -419,6 +414,151 @@
             color: var(--text-secondary);
         }
 
+        .notes-toolbar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px 6px 0 0;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            transition: all 0.2s;
+            min-width: 36px;
+        }
+
+        .toolbar-btn:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .toolbar-btn:active {
+            transform: scale(0.95);
+        }
+
+        .toolbar-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border);
+            margin: 0 4px;
+        }
+
+        .color-picker {
+            width: 36px;
+            height: 32px;
+            padding: 2px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--bg-secondary);
+            cursor: pointer;
+        }
+
+        .color-picker::-webkit-color-swatch-wrapper {
+            padding: 2px;
+        }
+
+        .color-picker::-webkit-color-swatch {
+            border: none;
+            border-radius: 2px;
+        }
+
+        .font-size-select {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 6px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            transition: all 0.2s;
+            min-width: 70px;
+        }
+
+        .font-size-select:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent-cyan);
+        }
+
+        .font-size-select:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 2px rgba(0, 245, 255, 0.1);
+        }
+
+        .rich-notes {
+            width: 100%;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            color: var(--text-primary);
+            padding: 15px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            min-height: 150px;
+            max-height: 400px;
+            overflow-y: auto;
+            transition: all 0.2s;
+            line-height: 1.6;
+        }
+
+        .rich-notes:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 2px rgba(0, 245, 255, 0.1);
+        }
+
+        .rich-notes[contenteditable]:empty:before {
+            content: attr(data-placeholder);
+            color: var(--text-secondary);
+            opacity: 0.5;
+        }
+
+        .rich-notes h3 {
+            color: var(--accent-cyan);
+            font-size: 16px;
+            margin: 15px 0 10px 0;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .rich-notes ul, .rich-notes ol {
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+
+        .rich-notes li {
+            margin: 5px 0;
+        }
+
+        .rich-notes strong {
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        .rich-notes em {
+            font-style: italic;
+            color: var(--accent-cyan);
+        }
+
+        .rich-notes u {
+            text-decoration: underline;
+        }
+
         textarea {
             width: 100%;
             background: var(--bg-tertiary);
@@ -821,7 +961,32 @@
 
         <div class="notes-section">
             <h3>◢ Trading Notes</h3>
-            <textarea id="notes" placeholder="Enter your trading notes, strategies, and observations..."></textarea>
+            <div class="notes-toolbar">
+                <button class="toolbar-btn" onclick="formatNote('bold')" title="Bold"><strong>B</strong></button>
+                <button class="toolbar-btn" onclick="formatNote('italic')" title="Italic"><em>I</em></button>
+                <button class="toolbar-btn" onclick="formatNote('underline')" title="Underline"><u>U</u></button>
+                <div class="toolbar-divider"></div>
+                <select id="font-size" class="font-size-select" onchange="changeFontSize()" title="Font Size">
+                    <option value="">Size</option>
+                    <option value="1">8pt</option>
+                    <option value="2">10pt</option>
+                    <option value="3">12pt</option>
+                    <option value="4">14pt</option>
+                    <option value="5">18pt</option>
+                    <option value="6">24pt</option>
+                    <option value="7">36pt</option>
+                </select>
+                <div class="toolbar-divider"></div>
+                <button class="toolbar-btn" onclick="formatNote('insertUnorderedList')" title="Bullet List">• List</button>
+                <button class="toolbar-btn" onclick="formatNote('insertOrderedList')" title="Numbered List">1. List</button>
+                <div class="toolbar-divider"></div>
+                <button class="toolbar-btn" onclick="formatNote('formatBlock', 'h3')" title="Heading">H</button>
+                <div class="toolbar-divider"></div>
+                <input type="color" id="text-color" class="color-picker" value="#00f5ff" title="Text Color">
+                <button class="toolbar-btn" onclick="applyTextColor()" title="Apply Color">A</button>
+                <button class="toolbar-btn" onclick="clearFormatting()" title="Clear Formatting">✕</button>
+            </div>
+            <div id="notes" class="rich-notes" contenteditable="true" data-placeholder="Enter your trading notes, strategies, and observations..."></div>
         </div>
     </div>
 
@@ -1838,12 +2003,49 @@
             }
         }
 
+        let notesListenerAttached = false;
+
         function loadNotes() {
-            document.getElementById('notes').value = portfolioData.notes || '';
-            document.getElementById('notes').addEventListener('input', (e) => {
-                portfolioData.notes = e.target.value;
-                saveCurrentMonthData();
-            });
+            const notesEl = document.getElementById('notes');
+            notesEl.innerHTML = portfolioData.notes || '';
+            
+            if (!notesListenerAttached) {
+                notesEl.addEventListener('input', (e) => {
+                    portfolioData.notes = e.target.innerHTML;
+                    saveCurrentMonthData();
+                });
+                notesEl.addEventListener('blur', () => {
+                    portfolioData.notes = notesEl.innerHTML;
+                    saveCurrentMonthData();
+                });
+                notesListenerAttached = true;
+            }
+        }
+
+        function formatNote(command, value = null) {
+            document.execCommand(command, false, value);
+            document.getElementById('notes').focus();
+        }
+
+        function changeFontSize() {
+            const size = document.getElementById('font-size').value;
+            if (size) {
+                document.execCommand('fontSize', false, size);
+                document.getElementById('notes').focus();
+                // Reset dropdown
+                document.getElementById('font-size').value = '';
+            }
+        }
+
+        function applyTextColor() {
+            const color = document.getElementById('text-color').value;
+            document.execCommand('foreColor', false, color);
+            document.getElementById('notes').focus();
+        }
+
+        function clearFormatting() {
+            document.execCommand('removeFormat', false, null);
+            document.getElementById('notes').focus();
         }
 
         function loadData() {
