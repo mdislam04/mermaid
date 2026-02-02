@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #151b2e;
+            --bg-tertiary: #1e2840;
+            --accent-cyan: #00f5ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff3366;
+            --text-primary: #e0e6f0;
+            --text-secondary: #8b96b0;
+            --border: #2a3752;
+            --shadow: rgba(0, 245, 255, 0.1);
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(0, 245, 255, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 255, 136, 0.03) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+            animation: slideDown 0.5s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: clamp(24px, 4vw, 36px);
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-green) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .month-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-secondary);
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .month-selector label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        select, input {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 2px rgba(0, 245, 255, 0.1);
+        }
+
+        .btn {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--accent-cyan);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .btn-primary {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+            border-color: var(--accent-cyan);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+        }
+
+        .btn-danger {
+            background: var(--accent-red);
+            border-color: var(--accent-red);
+            color: white;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            animation: fadeIn 0.6s ease-out 0.1s both;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: 800px;
+        }
+
+        th, td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+
+        th {
+            background: var(--bg-tertiary);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(0, 245, 255, 0.03);
+        }
+
+        .positive {
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        .negative {
+            color: var(--accent-red);
+            font-weight: 600;
+        }
+
+        .cell-editable {
+            cursor: text;
+            position: relative;
+            min-height: 20px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .cell-editable:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .cell-input {
+            background: var(--bg-primary);
+            border: 2px solid var(--accent-cyan);
+            padding: 4px 8px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            width: 100%;
+            border-radius: 4px;
+        }
+
+        .row-actions {
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        tr:hover .row-actions {
+            opacity: 1;
+        }
+
+        .row-actions button {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+
+        .row-actions button:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .drag-handle {
+            cursor: move;
+            padding: 4px 8px;
+            color: var(--text-secondary);
+            display: inline-block;
+            user-select: none;
+            margin-right: 8px;
+        }
+
+        .drag-handle:hover {
+            color: var(--accent-cyan);
+        }
+
+        tr.dragging {
+            opacity: 0.5;
+            background: var(--bg-tertiary);
+        }
+
+        tr.drag-over {
+            border-top: 3px solid var(--accent-cyan);
+        }
+
+        .col-actions {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+        }
+
+        .col-actions button {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.2s;
+        }
+
+        .col-actions button:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .hidden-row {
+            display: none;
+        }
+
+        .hidden-col {
+            display: none;
+        }
+
+        .notes-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            animation: fadeIn 0.6s ease-out 0.2s both;
+        }
+
+        .notes-section h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        textarea {
+            width: 100%;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            min-height: 150px;
+            resize: vertical;
+            transition: all 0.2s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 2px rgba(0, 245, 255, 0.1);
+        }
+
+        .standing-row {
+            background: var(--bg-primary);
+            font-weight: 700;
+        }
+
+        .standing-row td {
+            border-top: 2px solid var(--accent-cyan);
+            padding-top: 20px;
+            font-size: 14px;
+        }
+
+        .contract-cell {
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+
+        .formatting-toolbar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            display: none;
+            gap: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+        }
+
+        .formatting-toolbar.active {
+            display: flex;
+        }
+
+        .formatting-toolbar button {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .formatting-toolbar button:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+
+            .controls {
+                width: 100%;
+            }
+
+            .month-selector {
+                width: 100%;
+            }
+
+            th, td {
+                padding: 12px 8px;
+                font-size: 11px;
+            }
+
+            .formatting-toolbar {
+                left: 10px;
+                right: 10px;
+                bottom: 10px;
+                flex-wrap: wrap;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 14, 26, 0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-content h3 {
+            margin-bottom: 20px;
+            color: var(--accent-cyan);
+            font-size: 18px;
+        }
+
+        .modal-content input {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>◢ PORTFOLIO TRACKER</h1>
+            <div class="controls">
+                <div class="month-selector">
+                    <label for="month-select">Period</label>
+                    <select id="month-select"></select>
+                </div>
+                <button class="btn btn-primary" onclick="addContract()">+ Add Contract</button>
+                <button class="btn" onclick="addColumn()">+ Add Date</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="portfolio-table">
+                <thead id="table-head"></thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+
+        <div class="notes-section">
+            <h3>◢ Trading Notes</h3>
+            <textarea id="notes" placeholder="Enter your trading notes, strategies, and observations..."></textarea>
+        </div>
+    </div>
+
+    <div class="formatting-toolbar" id="formatting-toolbar">
+        <button onclick="formatCell('bold')"><strong>B</strong></button>
+        <button onclick="formatCell('larger')">A+</button>
+    </div>
+
+    <div class="modal" id="add-contract-modal">
+        <div class="modal-content">
+            <h3>Add New Contract</h3>
+            <input type="text" id="contract-name-input" placeholder="Enter contract name...">
+            <div class="modal-actions">
+                <button class="btn" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmAddContract()">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data structure - now organized by month
+        let allMonthsData = {}; // Format: { "2026-0": { contracts: [], cells: {}, ... } }
+        let portfolioData = {
+            contracts: [],
+            dates: [],
+            cells: {},
+            hiddenRows: new Set(),
+            hiddenCols: new Set(),
+            notes: ''
+        };
+
+        let currentEditingCell = null;
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        let draggedRow = null;
+
+        // Initialize
+        function init() {
+            loadAllData();
+            populateMonthSelector();
+            loadMonthData(currentMonth, currentYear);
+            generateDatesForMonth(currentMonth, currentYear);
+            renderTable();
+            loadNotes();
+            
+            // Auto-save
+            setInterval(saveCurrentMonthData, 5000);
+        }
+
+        function populateMonthSelector() {
+            const select = document.getElementById('month-select');
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                          'July', 'August', 'September', 'October', 'November', 'December'];
+            
+            for (let year = currentYear - 1; year <= currentYear + 1; year++) {
+                months.forEach((month, index) => {
+                    const option = document.createElement('option');
+                    option.value = `${year}-${index}`;
+                    option.textContent = `${month} ${year}`;
+                    if (year === currentYear && index === currentMonth) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            }
+
+            select.addEventListener('change', (e) => {
+                // Save current month data before switching
+                saveCurrentMonthData();
+                
+                const [year, month] = e.target.value.split('-');
+                currentYear = parseInt(year);
+                currentMonth = parseInt(month);
+                
+                // Load data for new month
+                loadMonthData(currentMonth, currentYear);
+                generateDatesForMonth(currentMonth, currentYear);
+                renderTable();
+                loadNotes();
+            });
+        }
+
+        function generateDatesForMonth(month, year) {
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            portfolioData.dates = [];
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const dayStr = String(day).padStart(2, '0');
+                const monthStr = date.toLocaleDateString('en-US', { month: 'short' });
+                portfolioData.dates.push(`${dayStr}-${monthStr}`);
+            }
+        }
+
+        function renderTable() {
+            renderTableHead();
+            renderTableBody();
+        }
+
+        function renderTableHead() {
+            const thead = document.getElementById('table-head');
+            const tr = document.createElement('tr');
+            
+            // Contract column
+            const th = document.createElement('th');
+            th.textContent = 'Contract';
+            th.style.minWidth = '200px';
+            tr.appendChild(th);
+
+            // Date columns
+            portfolioData.dates.forEach((date, index) => {
+                if (portfolioData.hiddenCols.has(index)) return;
+                
+                const th = document.createElement('th');
+                const dateDiv = document.createElement('div');
+                dateDiv.textContent = date;
+                th.appendChild(dateDiv);
+
+                const actions = document.createElement('div');
+                actions.className = 'col-actions';
+                actions.innerHTML = `
+                    <button onclick="hideColumn(${index})">Hide</button>
+                    <button onclick="deleteColumn(${index})">Delete</button>
+                `;
+                th.appendChild(actions);
+                tr.appendChild(th);
+            });
+
+            thead.innerHTML = '';
+            thead.appendChild(tr);
+        }
+
+        function renderTableBody() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            // Contract rows
+            portfolioData.contracts.forEach((contract, rowIndex) => {
+                if (portfolioData.hiddenRows.has(rowIndex)) return;
+
+                const tr = document.createElement('tr');
+                tr.dataset.rowIndex = rowIndex;
+                tr.draggable = true;
+                tr.ondragover = (e) => handleDragOver(e);
+                tr.ondrop = (e) => handleDrop(e, rowIndex);
+                tr.ondragend = () => handleDragEnd();
+
+                // Contract name cell
+                const tdContract = document.createElement('td');
+                tdContract.className = 'contract-cell';
+                
+                // Add drag handle
+                const dragHandle = document.createElement('span');
+                dragHandle.className = 'drag-handle';
+                dragHandle.textContent = '⋮⋮';
+                dragHandle.draggable = true;
+                dragHandle.ondragstart = (e) => handleDragStart(e, rowIndex);
+                
+                const contractDiv = document.createElement('div');
+                contractDiv.className = 'cell-editable';
+                contractDiv.style.display = 'inline';
+                contractDiv.textContent = contract;
+                contractDiv.onclick = () => editCell(contractDiv, `contract-${rowIndex}`, contract);
+                
+                tdContract.appendChild(dragHandle);
+                tdContract.appendChild(contractDiv);
+
+                const rowActions = document.createElement('div');
+                rowActions.className = 'row-actions';
+                rowActions.innerHTML = `
+                    <button onclick="hideRow(${rowIndex})">Hide</button>
+                    <button onclick="editRowName(${rowIndex})">Edit</button>
+                    <button onclick="deleteRow(${rowIndex})">Delete</button>
+                `;
+                tdContract.appendChild(rowActions);
+                tr.appendChild(tdContract);
+
+                // Date cells
+                portfolioData.dates.forEach((date, colIndex) => {
+                    if (portfolioData.hiddenCols.has(colIndex)) return;
+
+                    const td = document.createElement('td');
+                    const cellKey = `${rowIndex}-${colIndex}`;
+                    const cellData = portfolioData.cells[cellKey] || { value: '', bold: false, larger: false };
+                    
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'cell-editable';
+                    cellDiv.textContent = cellData.value;
+                    
+                    if (cellData.bold) cellDiv.style.fontWeight = '700';
+                    if (cellData.larger) cellDiv.style.fontSize = '16px';
+                    
+                    // Apply color based on value
+                    const numValue = parseFloat(cellData.value?.toString().replace(/,/g, ''));
+                    if (!isNaN(numValue)) {
+                        cellDiv.className += numValue >= 0 ? ' positive' : ' negative';
+                    }
+                    
+                    cellDiv.onclick = () => editCell(cellDiv, cellKey, cellData.value);
+                    td.appendChild(cellDiv);
+                    tr.appendChild(td);
+                });
+
+                tbody.appendChild(tr);
+            });
+
+            // Add UnRealized P&L row
+            addCalculatedRow('UnRealized P & L', 'unrealized');
+            
+            // Add Net Realized P&L row
+            addCalculatedRow('Net realised P&L (as of today)', 'realized');
+
+            // Add Standing AT row
+            addStandingRow();
+        }
+
+        function addCalculatedRow(label, rowType) {
+            const tbody = document.getElementById('table-body');
+            const tr = document.createElement('tr');
+            tr.className = rowType === 'unrealized' ? 'unrealized-row' : 'realized-row';
+
+            const tdLabel = document.createElement('td');
+            tdLabel.className = 'contract-cell';
+            tdLabel.style.background = 'rgba(255, 51, 102, 0.1)';
+            tdLabel.textContent = label;
+            tr.appendChild(tdLabel);
+
+            portfolioData.dates.forEach((date, colIndex) => {
+                if (portfolioData.hiddenCols.has(colIndex)) return;
+
+                const td = document.createElement('td');
+                const cellKey = `${rowType}-${colIndex}`;
+                const cellData = portfolioData.cells[cellKey] || { value: '', bold: false, larger: false };
+                
+                const cellDiv = document.createElement('div');
+                cellDiv.className = 'cell-editable';
+                cellDiv.textContent = cellData.value;
+                
+                if (cellData.bold) cellDiv.style.fontWeight = '700';
+                if (cellData.larger) cellDiv.style.fontSize = '16px';
+                
+                const numValue = parseFloat(cellData.value?.toString().replace(/,/g, ''));
+                if (!isNaN(numValue)) {
+                    cellDiv.className += numValue >= 0 ? ' positive' : ' negative';
+                }
+                
+                cellDiv.onclick = () => editCell(cellDiv, cellKey, cellData.value);
+                td.appendChild(cellDiv);
+                tr.appendChild(td);
+            });
+
+            tbody.appendChild(tr);
+        }
+
+        function addStandingRow() {
+            const tbody = document.getElementById('table-body');
+            const tr = document.createElement('tr');
+            tr.className = 'standing-row';
+
+            const tdLabel = document.createElement('td');
+            tdLabel.textContent = 'Standing AT';
+            tdLabel.style.color = 'var(--accent-cyan)';
+            tr.appendChild(tdLabel);
+
+            portfolioData.dates.forEach((date, colIndex) => {
+                if (portfolioData.hiddenCols.has(colIndex)) return;
+
+                const td = document.createElement('td');
+                
+                // Calculate sum of unrealized and realized
+                const unrealizedKey = `unrealized-${colIndex}`;
+                const realizedKey = `realized-${colIndex}`;
+                
+                const unrealizedValue = parseFloat(portfolioData.cells[unrealizedKey]?.value?.toString().replace(/,/g, '') || 0);
+                const realizedValue = parseFloat(portfolioData.cells[realizedKey]?.value?.toString().replace(/,/g, '') || 0);
+                
+                const total = unrealizedValue + realizedValue;
+                
+                const cellDiv = document.createElement('div');
+                cellDiv.textContent = total !== 0 ? total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+                cellDiv.style.fontWeight = '700';
+                cellDiv.style.fontSize = '15px';
+                
+                if (total !== 0) {
+                    cellDiv.className = total >= 0 ? 'positive' : 'negative';
+                }
+                
+                td.appendChild(cellDiv);
+                tr.appendChild(td);
+            });
+
+            tbody.appendChild(tr);
+        }
+
+        function editCell(element, cellKey, currentValue) {
+            if (currentEditingCell) return;
+            
+            currentEditingCell = { element, cellKey };
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'cell-input';
+            input.value = currentValue || '';
+            
+            input.onblur = () => saveCellEdit(input, cellKey);
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    saveCellEdit(input, cellKey);
+                } else if (e.key === 'Escape') {
+                    cancelCellEdit();
+                }
+            };
+            
+            element.innerHTML = '';
+            element.appendChild(input);
+            input.focus();
+
+            // Show formatting toolbar
+            document.getElementById('formatting-toolbar').classList.add('active');
+        }
+
+        function saveCellEdit(input, cellKey) {
+            const value = input.value.trim();
+            
+            if (cellKey.startsWith('contract-')) {
+                const rowIndex = parseInt(cellKey.split('-')[1]);
+                portfolioData.contracts[rowIndex] = value;
+            } else {
+                if (!portfolioData.cells[cellKey]) {
+                    portfolioData.cells[cellKey] = { value: '', bold: false, larger: false };
+                }
+                portfolioData.cells[cellKey].value = value;
+            }
+            
+            currentEditingCell = null;
+            document.getElementById('formatting-toolbar').classList.remove('active');
+            saveCurrentMonthData();
+            renderTable();
+        }
+
+        function cancelCellEdit() {
+            currentEditingCell = null;
+            document.getElementById('formatting-toolbar').classList.remove('active');
+            renderTable();
+        }
+
+        function formatCell(type) {
+            if (!currentEditingCell) return;
+            
+            const cellKey = currentEditingCell.cellKey;
+            
+            if (!cellKey.startsWith('contract-')) {
+                if (!portfolioData.cells[cellKey]) {
+                    portfolioData.cells[cellKey] = { value: '', bold: false, larger: false };
+                }
+                
+                if (type === 'bold') {
+                    portfolioData.cells[cellKey].bold = !portfolioData.cells[cellKey].bold;
+                } else if (type === 'larger') {
+                    portfolioData.cells[cellKey].larger = !portfolioData.cells[cellKey].larger;
+                }
+                
+                saveCurrentMonthData();
+            }
+        }
+
+        function addContract() {
+            document.getElementById('add-contract-modal').classList.add('active');
+            document.getElementById('contract-name-input').value = '';
+            document.getElementById('contract-name-input').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('add-contract-modal').classList.remove('active');
+        }
+
+        function confirmAddContract() {
+            const name = document.getElementById('contract-name-input').value.trim();
+            if (name) {
+                portfolioData.contracts.push(name);
+                saveCurrentMonthData();
+                renderTable();
+                closeModal();
+            }
+        }
+
+        function addColumn() {
+            const dateStr = prompt('Enter date (DD-MMM format, e.g., 31-Jan):');
+            if (dateStr) {
+                portfolioData.dates.push(dateStr);
+                saveCurrentMonthData();
+                renderTable();
+            }
+        }
+
+        function hideRow(index) {
+            portfolioData.hiddenRows.add(index);
+            saveCurrentMonthData();
+            renderTable();
+        }
+
+        function hideColumn(index) {
+            portfolioData.hiddenCols.add(index);
+            saveCurrentMonthData();
+            renderTable();
+        }
+
+        function editRowName(index) {
+            const newName = prompt('Enter new contract name:', portfolioData.contracts[index]);
+            if (newName !== null && newName.trim()) {
+                portfolioData.contracts[index] = newName.trim();
+                saveCurrentMonthData();
+                renderTable();
+            }
+        }
+
+        function deleteRow(index) {
+            if (confirm('Delete this contract?')) {
+                portfolioData.contracts.splice(index, 1);
+                portfolioData.hiddenRows.delete(index);
+                
+                // Clean up cell data
+                Object.keys(portfolioData.cells).forEach(key => {
+                    const [row] = key.split('-');
+                    if (parseInt(row) === index) {
+                        delete portfolioData.cells[key];
+                    }
+                });
+                
+                saveCurrentMonthData();
+                renderTable();
+            }
+        }
+
+        function deleteColumn(index) {
+            if (confirm('Delete this date column?')) {
+                portfolioData.dates.splice(index, 1);
+                portfolioData.hiddenCols.delete(index);
+                
+                // Clean up cell data
+                Object.keys(portfolioData.cells).forEach(key => {
+                    const parts = key.split('-');
+                    const col = parseInt(parts[parts.length - 1]);
+                    if (col === index) {
+                        delete portfolioData.cells[key];
+                    }
+                });
+                
+                saveCurrentMonthData();
+                renderTable();
+            }
+        }
+
+        // Drag and Drop Functions
+        function handleDragStart(e, rowIndex) {
+            draggedRow = rowIndex;
+            e.target.closest('tr').classList.add('dragging');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            const target = e.target.closest('tr');
+            if (target && target.dataset.rowIndex !== undefined) {
+                target.classList.add('drag-over');
+            }
+        }
+
+        function handleDrop(e, targetIndex) {
+            e.preventDefault();
+            const target = e.target.closest('tr');
+            if (target) {
+                target.classList.remove('drag-over');
+            }
+
+            if (draggedRow !== null && draggedRow !== targetIndex) {
+                // Reorder contracts array
+                const draggedContract = portfolioData.contracts[draggedRow];
+                portfolioData.contracts.splice(draggedRow, 1);
+                portfolioData.contracts.splice(targetIndex, 0, draggedContract);
+
+                // Reorder cell data
+                const newCells = {};
+                Object.keys(portfolioData.cells).forEach(key => {
+                    const parts = key.split('-');
+                    if (parts[0] === 'unrealized' || parts[0] === 'realized') {
+                        // Keep special rows as-is
+                        newCells[key] = portfolioData.cells[key];
+                    } else {
+                        let rowIdx = parseInt(parts[0]);
+                        const colIdx = parts.slice(1).join('-');
+                        
+                        // Adjust row index based on reordering
+                        if (rowIdx === draggedRow) {
+                            rowIdx = targetIndex;
+                        } else if (draggedRow < targetIndex && rowIdx > draggedRow && rowIdx <= targetIndex) {
+                            rowIdx--;
+                        } else if (draggedRow > targetIndex && rowIdx >= targetIndex && rowIdx < draggedRow) {
+                            rowIdx++;
+                        }
+                        
+                        newCells[`${rowIdx}-${colIdx}`] = portfolioData.cells[key];
+                    }
+                });
+                portfolioData.cells = newCells;
+
+                // Reorder hidden rows
+                const newHiddenRows = new Set();
+                portfolioData.hiddenRows.forEach(hiddenIdx => {
+                    let newIdx = hiddenIdx;
+                    if (hiddenIdx === draggedRow) {
+                        newIdx = targetIndex;
+                    } else if (draggedRow < targetIndex && hiddenIdx > draggedRow && hiddenIdx <= targetIndex) {
+                        newIdx--;
+                    } else if (draggedRow > targetIndex && hiddenIdx >= targetIndex && hiddenIdx < draggedRow) {
+                        newIdx++;
+                    }
+                    newHiddenRows.add(newIdx);
+                });
+                portfolioData.hiddenRows = newHiddenRows;
+
+                saveCurrentMonthData();
+                renderTable();
+            }
+        }
+
+        function handleDragEnd() {
+            document.querySelectorAll('tr').forEach(tr => {
+                tr.classList.remove('dragging', 'drag-over');
+            });
+            draggedRow = null;
+        }
+
+        // Month-specific data management
+        function getMonthKey(month, year) {
+            return `${year}-${month}`;
+        }
+
+        function loadMonthData(month, year) {
+            const monthKey = getMonthKey(month, year);
+            
+            if (allMonthsData[monthKey]) {
+                // Load existing data for this month
+                portfolioData = {
+                    ...allMonthsData[monthKey],
+                    hiddenRows: new Set(allMonthsData[monthKey].hiddenRows || []),
+                    hiddenCols: new Set(allMonthsData[monthKey].hiddenCols || [])
+                };
+            } else {
+                // Create blank data for new month with only default rows
+                portfolioData = {
+                    contracts: [],
+                    dates: [],
+                    cells: {},
+                    hiddenRows: new Set(),
+                    hiddenCols: new Set(),
+                    notes: ''
+                };
+            }
+        }
+
+        function saveCurrentMonthData() {
+            const monthKey = getMonthKey(currentMonth, currentYear);
+            allMonthsData[monthKey] = {
+                ...portfolioData,
+                hiddenRows: Array.from(portfolioData.hiddenRows),
+                hiddenCols: Array.from(portfolioData.hiddenCols)
+            };
+            
+            // Save all months data to localStorage
+            localStorage.setItem('allMonthsPortfolioData', JSON.stringify(allMonthsData));
+        }
+
+        function loadAllData() {
+            const saved = localStorage.getItem('allMonthsPortfolioData');
+            if (saved) {
+                allMonthsData = JSON.parse(saved);
+            }
+        }
+
+        function loadNotes() {
+            document.getElementById('notes').value = portfolioData.notes || '';
+            document.getElementById('notes').addEventListener('input', (e) => {
+                portfolioData.notes = e.target.value;
+                saveCurrentMonthData();
+            });
+        }
+
+        function loadData() {
+            // Legacy function - keeping for backwards compatibility
+            const saved = localStorage.getItem('portfolioData');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                const monthKey = getMonthKey(currentMonth, currentYear);
+                allMonthsData[monthKey] = {
+                    ...parsed,
+                    hiddenRows: parsed.hiddenRows || [],
+                    hiddenCols: parsed.hiddenCols || []
+                };
+                // Migrate to new structure
+                localStorage.removeItem('portfolioData');
+                saveCurrentMonthData();
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                saveCurrentMonthData();
+                alert('Data saved!');
+            }
+        });
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
