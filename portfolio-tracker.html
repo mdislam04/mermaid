@@ -1,0 +1,1970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #151b2e;
+            --bg-tertiary: #1e2840;
+            --accent-cyan: #00f5ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff3366;
+            --text-primary: #e0e6f0;
+            --text-secondary: #8b96b0;
+            --border: #2a3752;
+            --shadow: rgba(0, 245, 255, 0.1);
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(0, 245, 255, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 255, 136, 0.03) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+            animation: slideDown 0.5s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: clamp(24px, 4vw, 36px);
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-green) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .month-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-secondary);
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .month-selector label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        select, input {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 2px rgba(0, 245, 255, 0.1);
+        }
+
+        .btn {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--accent-cyan);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-primary {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+            border-color: var(--accent-cyan);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+        }
+
+        .btn-danger {
+            background: var(--accent-red);
+            border-color: var(--accent-red);
+            color: white;
+        }
+
+        .table-container {
+            overflow: auto;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            animation: fadeIn 0.6s ease-out 0.1s both;
+            /* cap height so sticky top on thead actually engages */
+            max-height: calc(100vh - 180px);
+            /* smooth native scroll */
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            /* pan cursor when grabbing */
+            cursor: grab;
+            user-select: none;
+        }
+
+        .table-container.panning {
+            cursor: grabbing;
+            scroll-behavior: auto; /* disable smooth while dragging for instant response */
+        }
+
+        /* ─── Custom Scrollbars ─── */
+        .table-container::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+            border-radius: 6px;
+            margin: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
+            border-radius: 6px;
+            border: 2px solid var(--bg-primary);
+            min-height: 40px;
+            min-width: 40px;
+            transition: filter 0.2s;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            filter: brightness(1.3) saturate(1.3);
+        }
+
+        .table-container::-webkit-scrollbar-corner {
+            background: var(--bg-primary);
+        }
+
+        /* Firefox */
+        .table-container {
+            scrollbar-width: thick;
+            scrollbar-color: var(--accent-cyan) var(--bg-primary);
+        }
+
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            /* let width grow with content; sticky left column needs this */
+            width: max-content;
+            min-width: 100%;
+        }
+
+        th, td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 17px;
+        }
+
+        /* ---- sticky header row ---- */
+        th {
+            background: var(--bg-tertiary);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        /* ---- sticky first column (Contract) ---- */
+        th:first-child,
+        td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            background: var(--bg-secondary);
+        }
+
+        /* corner cell sits on top of everything */
+        th:first-child {
+            z-index: 20;
+            background: var(--bg-tertiary);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(0, 245, 255, 0.03);
+        }
+
+        .positive {
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        .negative {
+            color: var(--accent-red);
+            font-weight: 600;
+        }
+
+        .cell-editable {
+            cursor: text;
+            position: relative;
+            min-height: 20px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .cell-editable:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .cell-formatted {
+            border: 1px solid #ffd700;
+            padding: 3px 7px;
+            border-radius: 4px;
+            background: rgba(255, 215, 0, 0.03);
+        }
+
+        .cell-input {
+            background: var(--bg-primary);
+            border: 2px solid #ffd700;
+            padding: 4px 8px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 17px;
+            width: 100%;
+            border-radius: 4px;
+            box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+        }
+
+        .row-actions {
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        tr:hover .row-actions {
+            opacity: 1;
+        }
+
+        .row-actions button {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .row-actions button:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .drag-handle {
+            cursor: move;
+            padding: 4px 8px;
+            color: var(--text-secondary);
+            display: inline-block;
+            user-select: none;
+            margin-right: 8px;
+        }
+
+        .drag-handle:hover {
+            color: var(--accent-cyan);
+        }
+
+        tr.dragging {
+            opacity: 0.5;
+            background: var(--bg-tertiary);
+        }
+
+        tr.drag-over {
+            border-top: 3px solid var(--accent-cyan);
+        }
+
+        .col-actions {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+        }
+
+        .col-actions button {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .col-actions button:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .hidden-row {
+            display: none;
+        }
+
+        .hidden-col {
+            display: none;
+        }
+
+        .notes-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            animation: fadeIn 0.6s ease-out 0.2s both;
+        }
+
+        .notes-section h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        textarea {
+            width: 100%;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            min-height: 150px;
+            resize: vertical;
+            transition: all 0.2s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 2px rgba(0, 245, 255, 0.1);
+        }
+
+        .standing-row {
+            background: var(--bg-primary);
+            font-weight: 700;
+        }
+
+        .standing-row td {
+            border-top: 2px solid var(--accent-cyan);
+            padding-top: 20px;
+            font-size: 18px;
+            background: var(--bg-primary);
+        }
+
+        .standing-row td:first-child {
+            background: var(--bg-primary);
+        }
+
+        .contract-cell {
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+
+        .formatting-toolbar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            display: none;
+            gap: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+        }
+
+        .formatting-toolbar.active {
+            display: flex;
+        }
+
+        .formatting-toolbar button {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .formatting-toolbar button:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .formatting-toolbar button.active {
+            background: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+
+            .controls {
+                width: 100%;
+            }
+
+            .month-selector {
+                width: 100%;
+            }
+
+            th, td {
+                padding: 12px 8px;
+                font-size: 11px;
+            }
+
+            .formatting-toolbar {
+                left: 10px;
+                right: 10px;
+                bottom: 10px;
+                flex-wrap: wrap;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 14, 26, 0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-content h3 {
+            margin-bottom: 20px;
+            color: var(--accent-cyan);
+            font-size: 18px;
+        }
+
+        .modal-content input {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .hidden-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .hidden-item-name {
+            color: var(--text-primary);
+            font-size: 13px;
+        }
+
+        .unhide-btn {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+            border: none;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .unhide-btn:hover {
+            background: var(--accent-green);
+            transform: translateY(-1px);
+        }
+
+        .empty-state {
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+        }
+
+        /* ─── Custom Month Picker ─── */
+        .month-picker-btn {
+            min-width: 180px;
+            text-align: left;
+            position: relative;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .month-picker-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 8px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 8px;
+            padding: 20px;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0, 245, 255, 0.2);
+            min-width: 320px;
+        }
+
+        .month-picker-dropdown.active {
+            display: block;
+            animation: modalSlideIn 0.2s ease-out;
+        }
+
+        .month-picker-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .month-picker-year {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            letter-spacing: 1px;
+        }
+
+        .month-picker-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .month-picker-nav button {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--accent-cyan);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+
+        .month-picker-nav button:hover {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+            transform: scale(1.1);
+        }
+
+        .month-picker-months {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .month-picker-month {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+        }
+
+        .month-picker-month:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            transform: translateY(-2px);
+        }
+
+        .month-picker-month.selected {
+            background: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+            color: var(--bg-primary);
+            font-weight: 700;
+        }
+
+        /* ─── Sync Status Badge ─── */
+        .sync-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-secondary);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 5px 12px;
+            margin-left: 16px;
+            transition: border-color 0.3s, color 0.3s;
+        }
+
+        .sync-badge .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        /* Synced — green */
+        .sync-badge.synced { border-color: var(--accent-green); color: var(--accent-green); }
+        .sync-badge.synced .dot { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+
+        /* Pending — yellow */
+        .sync-badge.pending { border-color: #ffd700; color: #ffd700; }
+        .sync-badge.pending .dot { background: #ffd700; box-shadow: 0 0 6px #ffd700; }
+
+        /* Syncing — cyan, pulsing */
+        .sync-badge.syncing { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+        .sync-badge.syncing .dot {
+            background: var(--accent-cyan);
+            box-shadow: 0 0 6px var(--accent-cyan);
+            animation: syncPulse 1s ease-in-out infinite;
+        }
+        @keyframes syncPulse {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.3; }
+        }
+
+        /* Offline — red */
+        .sync-badge.offline { border-color: var(--accent-red); color: var(--accent-red); }
+        .sync-badge.offline .dot { background: var(--accent-red); box-shadow: 0 0 6px var(--accent-red); }
+
+        /* Not configured — muted, no glow */
+        .sync-badge.unconfigured { border-color: var(--border); color: var(--text-secondary); }
+        .sync-badge.unconfigured .dot { background: var(--text-secondary); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
+                <h1>◢ PORTFOLIO TRACKER</h1>
+                <span class="sync-badge unconfigured" id="sync-badge">
+                    <span class="dot"></span>
+                    <span id="sync-label">No Sync</span>
+                </span>
+            </div>
+            <div class="controls">
+                <div class="month-selector">
+                    <label for="month-select">Period</label>
+                    <button class="btn month-picker-btn" id="month-picker-btn" onclick="toggleMonthPicker()">
+                        <span id="current-month-display"></span>
+                        <span style="margin-left: 8px;">▼</span>
+                    </button>
+                </div>
+                <button class="btn btn-primary" onclick="addContract()">+ Add Contract</button>
+                <button class="btn" onclick="addColumn()">+ Add Date</button>
+                <button class="btn" onclick="showHiddenItemsModal()">👁 Show Hidden</button>
+                <button class="btn" id="sync-btn" onclick="manualSync()">⇄ Sync</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="portfolio-table">
+                <thead id="table-head"></thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+
+        <div class="notes-section">
+            <h3>◢ Trading Notes</h3>
+            <textarea id="notes" placeholder="Enter your trading notes, strategies, and observations..."></textarea>
+        </div>
+    </div>
+
+    <div class="formatting-toolbar" id="formatting-toolbar">
+        <button id="bold-btn" onmousedown="formatCell('bold'); return false;"><strong>B</strong></button>
+        <button id="larger-btn" onmousedown="formatCell('larger'); return false;">A+</button>
+    </div>
+
+    <div class="modal" id="add-contract-modal">
+        <div class="modal-content">
+            <h3>Add New Contract</h3>
+            <input type="text" id="contract-name-input" placeholder="Enter contract name...">
+            <div class="modal-actions">
+                <button class="btn" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmAddContract()">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="hidden-items-modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h3>Hidden Rows & Columns</h3>
+            
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: var(--text-secondary); font-size: 12px; margin-bottom: 10px; text-transform: uppercase;">Hidden Contracts</h4>
+                <div id="hidden-rows-list" style="max-height: 150px; overflow-y: auto;"></div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: var(--text-secondary); font-size: 12px; margin-bottom: 10px; text-transform: uppercase;">Hidden Dates</h4>
+                <div id="hidden-cols-list" style="max-height: 150px; overflow-y: auto;"></div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="btn" onclick="closeHiddenItemsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="month-picker-dropdown" id="month-picker-dropdown">
+        <div class="month-picker-header">
+            <span class="month-picker-year" id="picker-year"></span>
+            <div class="month-picker-nav">
+                <button onclick="changePickerYear(-1)">◀</button>
+                <button onclick="changePickerYear(1)">▶</button>
+            </div>
+        </div>
+        <div class="month-picker-months" id="picker-months"></div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════
+        //  CLOUD SYNC CONFIG  ──  JSONBin.io credentials
+        // ═══════════════════════════════════════════════════════
+        const SYNC_BIN_ID     = '697f867dd0ea881f4099056b';
+        const SYNC_MASTER_KEY = '$2a$10$i9qb7SFjoLVMhKb9XM//Wu5O.HGR9VUILjNYxabJlZAdlAfGq.1Wa';
+        // ═══════════════════════════════════════════════════════
+
+        const SYNC_ENABLED = SYNC_BIN_ID.length > 0 && SYNC_MASTER_KEY.length > 0;
+        const JSONBIN_URL  = `https://api.jsonbin.io/v3/b/${SYNC_BIN_ID}`;
+
+        // ─── Badge helper ───
+        function setSyncBadge(state, label) {
+            const badge = document.getElementById('sync-badge');
+            const lbl   = document.getElementById('sync-label');
+            badge.className = 'sync-badge ' + state;
+            lbl.textContent = label;
+        }
+
+        // ─── Retry wrapper: 3 attempts, exponential back-off ───
+        async function fetchWithRetry(url, options, attempts = 3) {
+            for (let i = 0; i < attempts; i++) {
+                try {
+                    const res = await fetch(url, options);
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res;
+                } catch (err) {
+                    if (i === attempts - 1) throw err;
+                    await new Promise(r => setTimeout(r, 5000 * Math.pow(3, i)));
+                }
+            }
+        }
+
+        // no-op — push is manual only
+        function schedulePush() {}
+
+        // ─── Manual Sync button: pull first, then push ───
+        async function manualSync() {
+            if (!SYNC_ENABLED) return;
+
+            const btn = document.getElementById('sync-btn');
+            btn.disabled = true;
+            btn.textContent = '⇄ Syncing…';
+
+            // 1. save current local state before pulling
+            saveCurrentMonthData();
+
+            // 2. pull remote
+            setSyncBadge('syncing', 'Pulling…');
+            try {
+                const res = await fetchWithRetry(JSONBIN_URL, {
+                    method: 'GET',
+                    headers: { 'X-Master-Key': SYNC_MASTER_KEY }
+                });
+                const remote = await res.json();
+                const remoteData = remote.record || remote;
+
+                const isPlaceholderOrEmpty = !remoteData
+                    || typeof remoteData !== 'object'
+                    || Object.keys(remoteData).length === 0
+                    || (remoteData._placeholder === true && Object.keys(remoteData).length === 1);
+
+                if (!isPlaceholderOrEmpty) {
+                    const remoteTs = remoteData._lastSyncedAt || 0;
+                    const localRaw  = localStorage.getItem('allMonthsPortfolioData');
+                    const localData = localRaw ? JSON.parse(localRaw) : {};
+                    const localTs   = localData._lastSyncedAt || 0;
+
+                    if (remoteTs > localTs) {
+                        // remote is newer — overwrite local and reload
+                        localStorage.setItem('allMonthsPortfolioData', JSON.stringify(remoteData));
+                        allMonthsData = {};
+                        Object.keys(remoteData).forEach(k => {
+                            if (k !== '_lastSyncedAt') allMonthsData[k] = remoteData[k];
+                        });
+                        // re-render current month
+                        loadMonthData(currentMonth, currentYear);
+                        renderTable();
+                        loadNotes();
+                    }
+                }
+            } catch (err) {
+                console.warn('Pull failed:', err);
+                setSyncBadge('offline', 'Offline');
+                btn.disabled = false;
+                btn.textContent = '⇄ Sync';
+                return;
+            }
+
+            // 3. push local → remote
+            setSyncBadge('syncing', 'Pushing…');
+            try {
+                const payload = { ...allMonthsData, _lastSyncedAt: Date.now() };
+                await fetchWithRetry(JSONBIN_URL, {
+                    method: 'PUT',
+                    headers: {
+                        'X-Master-Key': SYNC_MASTER_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                // stamp local so a future pull won't overwrite
+                const localRaw  = localStorage.getItem('allMonthsPortfolioData');
+                const localData = localRaw ? JSON.parse(localRaw) : {};
+                localData._lastSyncedAt = payload._lastSyncedAt;
+                localStorage.setItem('allMonthsPortfolioData', JSON.stringify(localData));
+
+                setSyncBadge('synced', 'Synced');
+            } catch (err) {
+                console.warn('Push failed:', err);
+                setSyncBadge('offline', 'Offline');
+            }
+
+            btn.disabled = false;
+            btn.textContent = '⇄ Sync';
+        }
+
+        // ─── Force-push on tab close (best-effort) ───
+        window.addEventListener('beforeunload', () => {
+            if (!SYNC_ENABLED) return;
+            const payload = JSON.stringify({ ...allMonthsData, _lastSyncedAt: Date.now() });
+            try {
+                const xhr = new XMLHttpRequest();
+                xhr.open('PUT', JSONBIN_URL, false); // false = synchronous
+                xhr.setRequestHeader('X-Master-Key', SYNC_MASTER_KEY);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.send(payload);
+            } catch(e) { /* best-effort */ }
+        });
+
+        // Data structure - now organized by month
+        let allMonthsData = {}; // Format: { "2026-0": { contracts: [], cells: {}, ... } }
+        let portfolioData = {
+            contracts: [],
+            dates: [],
+            cells: {},
+            hiddenRows: new Set(),
+            hiddenCols: new Set(),
+            notes: ''
+        };
+
+        let currentEditingCell = null;
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        let draggedRow = null;
+
+        // Initialize
+        function init() {
+            loadAllData();
+
+            // Set badge to idle state on load
+            if (SYNC_ENABLED) {
+                setSyncBadge('synced', 'Synced');
+            } else {
+                setSyncBadge('unconfigured', 'No Sync');
+            }
+
+            populateMonthSelector();
+            loadMonthData(currentMonth, currentYear);
+            generateDatesForMonth(currentMonth, currentYear);
+            renderTable();
+            loadNotes();
+
+            // Auto-save to localStorage every 5 s (unchanged)
+            setInterval(saveCurrentMonthData, 5000);
+        }
+
+        let pickerYear = currentYear;
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const monthNamesFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+        function populateMonthSelector() {
+            updateMonthDisplay();
+            renderMonthPicker();
+        }
+
+        function updateMonthDisplay() {
+            const display = document.getElementById('current-month-display');
+            display.textContent = `${monthNamesFull[currentMonth]} ${currentYear}`;
+        }
+
+        function toggleMonthPicker() {
+            const dropdown = document.getElementById('month-picker-dropdown');
+            const btn = document.getElementById('month-picker-btn');
+            
+            if (dropdown.classList.contains('active')) {
+                dropdown.classList.remove('active');
+            } else {
+                pickerYear = currentYear;
+                renderMonthPicker();
+                dropdown.classList.add('active');
+                
+                // Position dropdown below button
+                const rect = btn.getBoundingClientRect();
+                dropdown.style.left = rect.left + 'px';
+                dropdown.style.top = rect.bottom + 'px';
+            }
+        }
+
+        function changePickerYear(delta) {
+            pickerYear += delta;
+            renderMonthPicker();
+        }
+
+        function renderMonthPicker() {
+            document.getElementById('picker-year').textContent = pickerYear;
+            const container = document.getElementById('picker-months');
+            container.innerHTML = '';
+
+            monthNames.forEach((name, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'month-picker-month';
+                btn.textContent = name;
+                
+                if (index === currentMonth && pickerYear === currentYear) {
+                    btn.classList.add('selected');
+                }
+                
+                btn.onclick = () => selectMonth(index, pickerYear);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectMonth(month, year) {
+            // Save current month data before switching
+            saveCurrentMonthData();
+            
+            currentMonth = month;
+            currentYear = year;
+            
+            // Load data for new month
+            loadMonthData(currentMonth, currentYear);
+            generateDatesForMonth(currentMonth, currentYear);
+            renderTable();
+            loadNotes();
+            updateMonthDisplay();
+            
+            // Close picker
+            document.getElementById('month-picker-dropdown').classList.remove('active');
+        }
+
+        // Close picker when clicking outside
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('month-picker-dropdown');
+            const btn = document.getElementById('month-picker-btn');
+            if (dropdown && btn && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+
+        function generateDatesForMonth(month, year) {
+            // Only auto-generate dates if the month doesn't have dates yet
+            // This preserves custom dates added by the user
+            if (portfolioData.dates && portfolioData.dates.length > 0) {
+                return; // Keep existing dates (including custom ones)
+            }
+            
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            portfolioData.dates = [];
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const dayStr = String(day).padStart(2, '0');
+                const monthStr = date.toLocaleDateString('en-US', { month: 'short' });
+                portfolioData.dates.push(`${dayStr}-${monthStr}`);
+            }
+        }
+
+        function renderTable() {
+            renderTableHead();
+            renderTableBody();
+        }
+
+        function renderTableHead() {
+            const thead = document.getElementById('table-head');
+            const tr = document.createElement('tr');
+            
+            // Contract column
+            const th = document.createElement('th');
+            th.textContent = 'Contract';
+            th.style.minWidth = '200px';
+            tr.appendChild(th);
+
+            // Calculate the number of days in current month for identifying custom columns
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+            // Date columns
+            portfolioData.dates.forEach((date, index) => {
+                if (portfolioData.hiddenCols.has(index)) return;
+                
+                const th = document.createElement('th');
+                
+                // Mark custom columns (beyond the month's natural days)
+                if (index >= daysInMonth) {
+                    th.style.background = 'rgba(255, 215, 0, 0.1)';
+                    th.style.borderLeft = '2px solid #ffd700';
+                }
+                
+                const dateDiv = document.createElement('div');
+                dateDiv.textContent = date;
+                th.appendChild(dateDiv);
+
+                const actions = document.createElement('div');
+                actions.className = 'col-actions';
+                actions.innerHTML = `
+                    <button onclick="hideColumn(${index})">Hide</button>
+                `;
+                th.appendChild(actions);
+                tr.appendChild(th);
+            });
+
+            thead.innerHTML = '';
+            thead.appendChild(tr);
+        }
+
+        function renderTableBody() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            // Contract rows
+            portfolioData.contracts.forEach((contract, rowIndex) => {
+                if (portfolioData.hiddenRows.has(rowIndex)) return;
+
+                const tr = document.createElement('tr');
+                tr.dataset.rowIndex = rowIndex;
+                tr.draggable = true;
+                tr.ondragover = (e) => handleDragOver(e);
+                tr.ondrop = (e) => handleDrop(e, rowIndex);
+                tr.ondragend = () => handleDragEnd();
+
+                // Contract name cell
+                const tdContract = document.createElement('td');
+                tdContract.className = 'contract-cell';
+                
+                // Add drag handle
+                const dragHandle = document.createElement('span');
+                dragHandle.className = 'drag-handle';
+                dragHandle.textContent = '⋮⋮';
+                dragHandle.draggable = true;
+                dragHandle.ondragstart = (e) => handleDragStart(e, rowIndex);
+                
+                const contractDiv = document.createElement('div');
+                contractDiv.className = 'cell-editable';
+                contractDiv.style.display = 'inline';
+                contractDiv.textContent = contract;
+                contractDiv.onclick = () => editCell(contractDiv, `contract-${rowIndex}`, contract);
+                
+                tdContract.appendChild(dragHandle);
+                tdContract.appendChild(contractDiv);
+
+                const rowActions = document.createElement('div');
+                rowActions.className = 'row-actions';
+                rowActions.innerHTML = `
+                    <button onclick="hideRow(${rowIndex})">Hide</button>
+                    <button onclick="editRowName(${rowIndex})">Edit</button>
+                `;
+                tdContract.appendChild(rowActions);
+                tr.appendChild(tdContract);
+
+                // Date cells
+                const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+                
+                portfolioData.dates.forEach((date, colIndex) => {
+                    if (portfolioData.hiddenCols.has(colIndex)) return;
+
+                    const td = document.createElement('td');
+                    
+                    // Mark custom columns (beyond the month's natural days)
+                    if (colIndex >= daysInMonth) {
+                        td.style.background = 'rgba(255, 215, 0, 0.05)';
+                        td.style.borderLeft = '2px solid #ffd700';
+                    }
+                    
+                    const cellKey = `${rowIndex}-${colIndex}`;
+                    const cellData = portfolioData.cells[cellKey] || { value: '', bold: false, larger: false };
+                    
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'cell-editable';
+                    cellDiv.textContent = cellData.value;
+                    
+                    if (cellData.bold) cellDiv.style.fontWeight = '700';
+                    if (cellData.larger) cellDiv.style.fontSize = '21px';
+                    
+                    // Add yellow border if cell has formatting
+                    if (cellData.bold || cellData.larger) {
+                        cellDiv.classList.add('cell-formatted');
+                    }
+                    
+                    // Apply color based on value
+                    const numValue = parseFloat(cellData.value?.toString().replace(/,/g, ''));
+                    if (!isNaN(numValue)) {
+                        cellDiv.className += numValue >= 0 ? ' positive' : ' negative';
+                    }
+                    
+                    cellDiv.onclick = () => editCell(cellDiv, cellKey, cellData.value);
+                    td.appendChild(cellDiv);
+                    tr.appendChild(td);
+                });
+
+                tbody.appendChild(tr);
+            });
+
+            // Add UnRealized P&L row
+            addCalculatedRow('UnRealized P & L', 'unrealized');
+            
+            // Add Net Realized P&L row
+            addCalculatedRow('Net realised P&L (as of today)', 'realized');
+
+            // Add Standing AT row
+            addStandingRow();
+        }
+
+        function addCalculatedRow(label, rowType) {
+            const tbody = document.getElementById('table-body');
+            const tr = document.createElement('tr');
+            tr.className = rowType === 'unrealized' ? 'unrealized-row' : 'realized-row';
+
+            const tdLabel = document.createElement('td');
+            tdLabel.className = 'contract-cell';
+            tdLabel.style.background = 'rgba(255, 51, 102, 0.1)';
+            tdLabel.textContent = label;
+            tr.appendChild(tdLabel);
+
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+            portfolioData.dates.forEach((date, colIndex) => {
+                if (portfolioData.hiddenCols.has(colIndex)) return;
+
+                const td = document.createElement('td');
+                
+                // Mark custom columns (beyond the month's natural days)
+                if (colIndex >= daysInMonth) {
+                    td.style.background = 'rgba(255, 215, 0, 0.05)';
+                    td.style.borderLeft = '2px solid #ffd700';
+                }
+                
+                const cellKey = `${rowType}-${colIndex}`;
+                const cellData = portfolioData.cells[cellKey] || { value: '', bold: false, larger: false };
+                
+                const cellDiv = document.createElement('div');
+                cellDiv.className = 'cell-editable';
+                cellDiv.textContent = cellData.value;
+                
+                if (cellData.bold) cellDiv.style.fontWeight = '700';
+                if (cellData.larger) cellDiv.style.fontSize = '21px';
+                
+                // Add yellow border if cell has formatting
+                if (cellData.bold || cellData.larger) {
+                    cellDiv.classList.add('cell-formatted');
+                }
+                
+                const numValue = parseFloat(cellData.value?.toString().replace(/,/g, ''));
+                if (!isNaN(numValue)) {
+                    cellDiv.className += numValue >= 0 ? ' positive' : ' negative';
+                }
+                
+                cellDiv.onclick = () => editCell(cellDiv, cellKey, cellData.value);
+                td.appendChild(cellDiv);
+                tr.appendChild(td);
+            });
+
+            tbody.appendChild(tr);
+        }
+
+        function addStandingRow() {
+            const tbody = document.getElementById('table-body');
+            const tr = document.createElement('tr');
+            tr.className = 'standing-row';
+
+            const tdLabel = document.createElement('td');
+            tdLabel.textContent = 'Standing AT';
+            tdLabel.style.color = 'var(--accent-cyan)';
+            tr.appendChild(tdLabel);
+
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+            portfolioData.dates.forEach((date, colIndex) => {
+                if (portfolioData.hiddenCols.has(colIndex)) return;
+
+                const td = document.createElement('td');
+                
+                // Mark custom columns (beyond the month's natural days)
+                if (colIndex >= daysInMonth) {
+                    td.style.background = 'rgba(255, 215, 0, 0.05)';
+                    td.style.borderLeft = '2px solid #ffd700';
+                }
+                
+                // Calculate sum of unrealized and realized
+                const unrealizedKey = `unrealized-${colIndex}`;
+                const realizedKey = `realized-${colIndex}`;
+                
+                const unrealizedValue = parseFloat(portfolioData.cells[unrealizedKey]?.value?.toString().replace(/,/g, '') || 0);
+                const realizedValue = parseFloat(portfolioData.cells[realizedKey]?.value?.toString().replace(/,/g, '') || 0);
+                
+                const total = unrealizedValue + realizedValue;
+                
+                const cellDiv = document.createElement('div');
+                cellDiv.textContent = total !== 0 ? total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+                cellDiv.style.fontWeight = '700';
+                cellDiv.style.fontSize = '20px';
+                
+                if (total !== 0) {
+                    cellDiv.className = total >= 0 ? 'positive' : 'negative';
+                }
+                
+                td.appendChild(cellDiv);
+                tr.appendChild(td);
+            });
+
+            tbody.appendChild(tr);
+        }
+
+        function editCell(element, cellKey, currentValue) {
+            if (currentEditingCell) return;
+            
+            currentEditingCell = { element, cellKey };
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'cell-input';
+            input.value = currentValue || '';
+            
+            // Apply existing formatting to the input field
+            if (!cellKey.startsWith('contract-') && portfolioData.cells[cellKey]) {
+                if (portfolioData.cells[cellKey].bold) {
+                    input.style.fontWeight = '700';
+                }
+                if (portfolioData.cells[cellKey].larger) {
+                    input.style.fontSize = '21px';
+                }
+            }
+            
+            input.onblur = () => saveCellEdit(input, cellKey);
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    saveCellEdit(input, cellKey);
+                } else if (e.key === 'Escape') {
+                    cancelCellEdit();
+                }
+            };
+            
+            element.innerHTML = '';
+            element.appendChild(input);
+            input.focus();
+
+            // Show formatting toolbar and update button states
+            document.getElementById('formatting-toolbar').classList.add('active');
+            
+            // Update button states based on current formatting
+            if (!cellKey.startsWith('contract-') && portfolioData.cells[cellKey]) {
+                const boldBtn = document.getElementById('bold-btn');
+                const largerBtn = document.getElementById('larger-btn');
+                
+                if (portfolioData.cells[cellKey].bold) {
+                    boldBtn.classList.add('active');
+                } else {
+                    boldBtn.classList.remove('active');
+                }
+                
+                if (portfolioData.cells[cellKey].larger) {
+                    largerBtn.classList.add('active');
+                } else {
+                    largerBtn.classList.remove('active');
+                }
+            } else {
+                // Reset button states for contract cells or new cells
+                document.getElementById('bold-btn').classList.remove('active');
+                document.getElementById('larger-btn').classList.remove('active');
+            }
+        }
+
+        function saveCellEdit(input, cellKey) {
+            const value = input.value.trim();
+            
+            if (cellKey.startsWith('contract-')) {
+                const rowIndex = parseInt(cellKey.split('-')[1]);
+                portfolioData.contracts[rowIndex] = value;
+            } else {
+                if (!portfolioData.cells[cellKey]) {
+                    portfolioData.cells[cellKey] = { value: '', bold: false, larger: false };
+                }
+                portfolioData.cells[cellKey].value = value;
+            }
+            
+            currentEditingCell = null;
+            document.getElementById('formatting-toolbar').classList.remove('active');
+            saveCurrentMonthData();
+            renderTable();
+        }
+
+        function cancelCellEdit() {
+            currentEditingCell = null;
+            document.getElementById('formatting-toolbar').classList.remove('active');
+            renderTable();
+        }
+
+        function formatCell(type) {
+            if (!currentEditingCell) return;
+            
+            const cellKey = currentEditingCell.cellKey;
+            const element = currentEditingCell.element;
+            
+            if (!cellKey.startsWith('contract-')) {
+                if (!portfolioData.cells[cellKey]) {
+                    portfolioData.cells[cellKey] = { value: '', bold: false, larger: false };
+                }
+                
+                if (type === 'bold') {
+                    portfolioData.cells[cellKey].bold = !portfolioData.cells[cellKey].bold;
+                    const boldBtn = document.getElementById('bold-btn');
+                    if (portfolioData.cells[cellKey].bold) {
+                        boldBtn.classList.add('active');
+                    } else {
+                        boldBtn.classList.remove('active');
+                    }
+                } else if (type === 'larger') {
+                    portfolioData.cells[cellKey].larger = !portfolioData.cells[cellKey].larger;
+                    const largerBtn = document.getElementById('larger-btn');
+                    if (portfolioData.cells[cellKey].larger) {
+                        largerBtn.classList.add('active');
+                    } else {
+                        largerBtn.classList.remove('active');
+                    }
+                }
+                
+                // Apply formatting to the current input element immediately
+                const input = element.querySelector('input');
+                if (input) {
+                    if (portfolioData.cells[cellKey].bold) {
+                        input.style.fontWeight = '700';
+                    } else {
+                        input.style.fontWeight = '400';
+                    }
+                    
+                    if (portfolioData.cells[cellKey].larger) {
+                        input.style.fontSize = '21px';
+                    } else {
+                        input.style.fontSize = '17px';
+                    }
+                    
+                    // Refocus the input to prevent losing focus
+                    input.focus();
+                }
+                
+                saveCurrentMonthData();
+            }
+        }
+
+        function addContract() {
+            document.getElementById('add-contract-modal').classList.add('active');
+            document.getElementById('contract-name-input').value = '';
+            document.getElementById('contract-name-input').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('add-contract-modal').classList.remove('active');
+        }
+
+        function confirmAddContract() {
+            const name = document.getElementById('contract-name-input').value.trim();
+            if (name) {
+                portfolioData.contracts.push(name);
+                saveCurrentMonthData();
+                renderTable();
+                closeModal();
+            }
+        }
+
+        function showHiddenItemsModal() {
+            const modal = document.getElementById('hidden-items-modal');
+            const rowsList = document.getElementById('hidden-rows-list');
+            const colsList = document.getElementById('hidden-cols-list');
+            
+            // Populate hidden rows
+            rowsList.innerHTML = '';
+            if (portfolioData.hiddenRows.size === 0) {
+                rowsList.innerHTML = '<div class="empty-state">No hidden contracts</div>';
+            } else {
+                portfolioData.hiddenRows.forEach(index => {
+                    const item = document.createElement('div');
+                    item.className = 'hidden-item';
+                    item.innerHTML = `
+                        <span class="hidden-item-name">${portfolioData.contracts[index] || 'Unknown'}</span>
+                        <button class="unhide-btn" onclick="unhideRow(${index})">Unhide</button>
+                    `;
+                    rowsList.appendChild(item);
+                });
+            }
+            
+            // Populate hidden columns
+            colsList.innerHTML = '';
+            if (portfolioData.hiddenCols.size === 0) {
+                colsList.innerHTML = '<div class="empty-state">No hidden dates</div>';
+            } else {
+                portfolioData.hiddenCols.forEach(index => {
+                    const item = document.createElement('div');
+                    item.className = 'hidden-item';
+                    item.innerHTML = `
+                        <span class="hidden-item-name">${portfolioData.dates[index] || 'Unknown'}</span>
+                        <button class="unhide-btn" onclick="unhideColumn(${index})">Unhide</button>
+                    `;
+                    colsList.appendChild(item);
+                });
+            }
+            
+            modal.classList.add('active');
+        }
+
+        function closeHiddenItemsModal() {
+            document.getElementById('hidden-items-modal').classList.remove('active');
+        }
+
+        function unhideRow(index) {
+            portfolioData.hiddenRows.delete(index);
+            saveCurrentMonthData();
+            renderTable();
+            // Refresh the modal content
+            showHiddenItemsModal();
+        }
+
+        function unhideColumn(index) {
+            portfolioData.hiddenCols.delete(index);
+            saveCurrentMonthData();
+            renderTable();
+            // Refresh the modal content
+            showHiddenItemsModal();
+        }
+
+        function addColumn() {
+            const dateStr = prompt('Enter date (DD-MMM format, e.g., 31-Jan):');
+            if (dateStr && dateStr.trim()) {
+                // Add custom date to the end of the dates array
+                portfolioData.dates.push(dateStr.trim());
+                saveCurrentMonthData();
+                renderTable();
+            }
+        }
+
+        function hideRow(index) {
+            portfolioData.hiddenRows.add(index);
+            saveCurrentMonthData();
+            renderTable();
+        }
+
+        function hideColumn(index) {
+            portfolioData.hiddenCols.add(index);
+            saveCurrentMonthData();
+            renderTable();
+        }
+
+        function editRowName(index) {
+            const newName = prompt('Enter new contract name:', portfolioData.contracts[index]);
+            if (newName !== null && newName.trim()) {
+                portfolioData.contracts[index] = newName.trim();
+                saveCurrentMonthData();
+                renderTable();
+            }
+        }
+
+        function deleteRow(index) {
+            if (confirm('Delete this contract?')) {
+                portfolioData.contracts.splice(index, 1);
+                portfolioData.hiddenRows.delete(index);
+                
+                // Clean up cell data
+                Object.keys(portfolioData.cells).forEach(key => {
+                    const [row] = key.split('-');
+                    if (parseInt(row) === index) {
+                        delete portfolioData.cells[key];
+                    }
+                });
+                
+                saveCurrentMonthData();
+                renderTable();
+            }
+        }
+
+        function deleteColumn(index) {
+            if (confirm('Delete this date column?')) {
+                portfolioData.dates.splice(index, 1);
+                
+                // Reindex cell data - shift all columns after the deleted one
+                const newCells = {};
+                Object.keys(portfolioData.cells).forEach(key => {
+                    const parts = key.split('-');
+                    
+                    // Handle special rows (unrealized, realized)
+                    if (parts[0] === 'unrealized' || parts[0] === 'realized') {
+                        const col = parseInt(parts[1]);
+                        if (col === index) {
+                            // Delete this column's data
+                            return;
+                        } else if (col > index) {
+                            // Shift column index down
+                            newCells[`${parts[0]}-${col - 1}`] = portfolioData.cells[key];
+                        } else {
+                            // Keep as-is
+                            newCells[key] = portfolioData.cells[key];
+                        }
+                    } else {
+                        // Handle regular row-column cells
+                        const rowIdx = parseInt(parts[0]);
+                        const colIdx = parseInt(parts[1]);
+                        
+                        if (colIdx === index) {
+                            // Delete this column's data
+                            return;
+                        } else if (colIdx > index) {
+                            // Shift column index down
+                            newCells[`${rowIdx}-${colIdx - 1}`] = portfolioData.cells[key];
+                        } else {
+                            // Keep as-is
+                            newCells[key] = portfolioData.cells[key];
+                        }
+                    }
+                });
+                portfolioData.cells = newCells;
+                
+                // Reindex hidden columns
+                const newHiddenCols = new Set();
+                portfolioData.hiddenCols.forEach(hiddenIdx => {
+                    if (hiddenIdx === index) {
+                        // Skip - this column is being deleted
+                        return;
+                    } else if (hiddenIdx > index) {
+                        newHiddenCols.add(hiddenIdx - 1);
+                    } else {
+                        newHiddenCols.add(hiddenIdx);
+                    }
+                });
+                portfolioData.hiddenCols = newHiddenCols;
+                
+                saveCurrentMonthData();
+                renderTable();
+            }
+        }
+
+        // Drag and Drop Functions
+        function handleDragStart(e, rowIndex) {
+            draggedRow = rowIndex;
+            e.target.closest('tr').classList.add('dragging');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            const target = e.target.closest('tr');
+            if (target && target.dataset.rowIndex !== undefined) {
+                target.classList.add('drag-over');
+            }
+        }
+
+        function handleDrop(e, targetIndex) {
+            e.preventDefault();
+            const target = e.target.closest('tr');
+            if (target) {
+                target.classList.remove('drag-over');
+            }
+
+            if (draggedRow !== null && draggedRow !== targetIndex) {
+                // Reorder contracts array
+                const draggedContract = portfolioData.contracts[draggedRow];
+                portfolioData.contracts.splice(draggedRow, 1);
+                portfolioData.contracts.splice(targetIndex, 0, draggedContract);
+
+                // Reorder cell data
+                const newCells = {};
+                Object.keys(portfolioData.cells).forEach(key => {
+                    const parts = key.split('-');
+                    if (parts[0] === 'unrealized' || parts[0] === 'realized') {
+                        // Keep special rows as-is
+                        newCells[key] = portfolioData.cells[key];
+                    } else {
+                        let rowIdx = parseInt(parts[0]);
+                        const colIdx = parts.slice(1).join('-');
+                        
+                        // Adjust row index based on reordering
+                        if (rowIdx === draggedRow) {
+                            rowIdx = targetIndex;
+                        } else if (draggedRow < targetIndex && rowIdx > draggedRow && rowIdx <= targetIndex) {
+                            rowIdx--;
+                        } else if (draggedRow > targetIndex && rowIdx >= targetIndex && rowIdx < draggedRow) {
+                            rowIdx++;
+                        }
+                        
+                        newCells[`${rowIdx}-${colIdx}`] = portfolioData.cells[key];
+                    }
+                });
+                portfolioData.cells = newCells;
+
+                // Reorder hidden rows
+                const newHiddenRows = new Set();
+                portfolioData.hiddenRows.forEach(hiddenIdx => {
+                    let newIdx = hiddenIdx;
+                    if (hiddenIdx === draggedRow) {
+                        newIdx = targetIndex;
+                    } else if (draggedRow < targetIndex && hiddenIdx > draggedRow && hiddenIdx <= targetIndex) {
+                        newIdx--;
+                    } else if (draggedRow > targetIndex && hiddenIdx >= targetIndex && hiddenIdx < draggedRow) {
+                        newIdx++;
+                    }
+                    newHiddenRows.add(newIdx);
+                });
+                portfolioData.hiddenRows = newHiddenRows;
+
+                saveCurrentMonthData();
+                renderTable();
+            }
+        }
+
+        function handleDragEnd() {
+            document.querySelectorAll('tr').forEach(tr => {
+                tr.classList.remove('dragging', 'drag-over');
+            });
+            draggedRow = null;
+        }
+
+        // Month-specific data management
+        function getMonthKey(month, year) {
+            return `${year}-${month}`;
+        }
+
+        function loadMonthData(month, year) {
+            const monthKey = getMonthKey(month, year);
+            
+            if (allMonthsData[monthKey]) {
+                // Load existing data for this month
+                portfolioData = {
+                    ...allMonthsData[monthKey],
+                    hiddenRows: new Set(allMonthsData[monthKey].hiddenRows || []),
+                    hiddenCols: new Set(allMonthsData[monthKey].hiddenCols || [])
+                };
+            } else {
+                // Create blank data for new month with only default rows
+                portfolioData = {
+                    contracts: [],
+                    dates: [],
+                    cells: {},
+                    hiddenRows: new Set(),
+                    hiddenCols: new Set(),
+                    notes: ''
+                };
+            }
+        }
+
+        function saveCurrentMonthData() {
+            const monthKey = getMonthKey(currentMonth, currentYear);
+            allMonthsData[monthKey] = {
+                ...portfolioData,
+                hiddenRows: Array.from(portfolioData.hiddenRows),
+                hiddenCols: Array.from(portfolioData.hiddenCols)
+            };
+            
+            // Save all months data to localStorage
+            localStorage.setItem('allMonthsPortfolioData', JSON.stringify(allMonthsData));
+
+            // Arm the debounced cloud push
+            schedulePush();
+        }
+
+        function loadAllData() {
+            const saved = localStorage.getItem('allMonthsPortfolioData');
+            if (saved) {
+                allMonthsData = JSON.parse(saved);
+            }
+        }
+
+        function loadNotes() {
+            document.getElementById('notes').value = portfolioData.notes || '';
+            document.getElementById('notes').addEventListener('input', (e) => {
+                portfolioData.notes = e.target.value;
+                saveCurrentMonthData();
+            });
+        }
+
+        function loadData() {
+            // Legacy function - keeping for backwards compatibility
+            const saved = localStorage.getItem('portfolioData');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                const monthKey = getMonthKey(currentMonth, currentYear);
+                allMonthsData[monthKey] = {
+                    ...parsed,
+                    hiddenRows: parsed.hiddenRows || [],
+                    hiddenCols: parsed.hiddenCols || []
+                };
+                // Migrate to new structure
+                localStorage.removeItem('portfolioData');
+                saveCurrentMonthData();
+            }
+        }
+
+        // ─── Pan-to-scroll (PDF-viewer style drag) with momentum ───
+        (function initPan() {
+            const container = document.getElementById('table-container-wrap');
+            // We attach after DOM is ready; use a small delay so the element exists
+            requestAnimationFrame(() => {
+                const el = document.querySelector('.table-container');
+                if (!el) return;
+
+                let startX, startY, scrollLeft, scrollTop;
+                let isDragging = false;
+
+                // velocity tracking for momentum
+                let lastX, lastY, lastTime;
+                let velX = 0, velY = 0;
+                let rafId = null;
+
+                function onPointerDown(e) {
+                    // ignore if the user clicked an interactive element
+                    if (e.target.closest('input, button, select, textarea, .cell-editable')) return;
+
+                    isDragging = true;
+                    el.classList.add('panning');
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    scrollLeft = el.scrollLeft;
+                    scrollTop = el.scrollTop;
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+                    lastTime = Date.now();
+                    velX = 0;
+                    velY = 0;
+                    // kill any running momentum
+                    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+                    e.preventDefault();
+                }
+
+                function onPointerMove(e) {
+                    if (!isDragging) return;
+                    e.preventDefault();
+
+                    const now = Date.now();
+                    const dt = now - lastTime || 1;
+
+                    // track velocity (pixels per ms)
+                    velX = (e.clientX - lastX) / dt;
+                    velY = (e.clientY - lastY) / dt;
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+                    lastTime = now;
+
+                    // scroll = start position – distance dragged
+                    el.scrollLeft = scrollLeft - (e.clientX - startX);
+                    el.scrollTop  = scrollTop  - (e.clientY - startY);
+                }
+
+                function onPointerUp(e) {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    el.classList.remove('panning');
+
+                    // launch momentum if there's velocity
+                    const speed = Math.sqrt(velX * velX + velY * velY);
+                    if (speed > 0.05) {
+                        startMomentum();
+                    }
+                }
+
+                function startMomentum() {
+                    // convert velocity to pixels-per-frame (assume ~16 ms frame)
+                    let mx = velX * 16;
+                    let my = velY * 16;
+                    const friction = 0.92; // higher = slides longer
+
+                    function tick() {
+                        mx *= friction;
+                        my *= friction;
+
+                        el.scrollLeft -= mx;
+                        el.scrollTop  -= my;
+
+                        // stop when negligible
+                        if (Math.abs(mx) < 0.5 && Math.abs(my) < 0.5) return;
+                        rafId = requestAnimationFrame(tick);
+                    }
+                    rafId = requestAnimationFrame(tick);
+                }
+
+                el.addEventListener('pointerdown',  onPointerDown,  { passive: false });
+                el.addEventListener('pointermove',   onPointerMove,  { passive: false });
+                el.addEventListener('pointerup',     onPointerUp);
+                el.addEventListener('pointercancel', onPointerUp);
+                // also end drag if pointer leaves the container
+                el.addEventListener('pointerleave',  onPointerUp);
+            });
+        })();
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                saveCurrentMonthData();
+                alert('Data saved!');
+            }
+        });
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
