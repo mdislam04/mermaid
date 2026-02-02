@@ -1276,8 +1276,14 @@
                 const unrealizedKey = `unrealized-${colIndex}`;
                 const realizedKey = `realized-${colIndex}`;
                 
-                const unrealizedValue = portfolioData.cells[unrealizedKey]?.value || 0;
-                const realizedValue = portfolioData.cells[realizedKey]?.value || 0;
+                const unrealizedValue = portfolioData.cells[unrealizedKey]?.value || '';
+                const realizedValue = portfolioData.cells[realizedKey]?.value || '';
+                
+                // Only include this date if there's actual data (not empty)
+                // Check if at least one of unrealized or realized has a value
+                if (unrealizedValue === '' && realizedValue === '') {
+                    return; // Skip this date - no data entered yet
+                }
                 
                 const unrealized = parseFloat(unrealizedValue.toString().replace(/,/g, '')) || 0;
                 const realized = parseFloat(realizedValue.toString().replace(/,/g, '')) || 0;
