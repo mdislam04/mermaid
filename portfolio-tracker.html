@@ -1081,8 +1081,10 @@
             btn.disabled = true;
             btn.textContent = '⇄ Syncing…';
 
-            // 1. save current local state before pulling
+            // 1. save current local state AND stamp it with NOW
             saveCurrentMonthData();
+            allMonthsData._lastSyncedAt = Date.now();
+            localStorage.setItem('allMonthsPortfolioData', JSON.stringify(allMonthsData));
 
             // 2. pull remote
             setSyncBadge('syncing', 'Pulling…');
@@ -1101,9 +1103,7 @@
 
                 if (!isPlaceholderOrEmpty) {
                     const remoteTs = remoteData._lastSyncedAt || 0;
-                    const localRaw  = localStorage.getItem('allMonthsPortfolioData');
-                    const localData = localRaw ? JSON.parse(localRaw) : {};
-                    const localTs   = localData._lastSyncedAt || 0;
+                    const localTs  = allMonthsData._lastSyncedAt || 0;
 
                     if (remoteTs > localTs) {
                         // remote is newer — overwrite local and reload
@@ -1112,6 +1112,7 @@
                         Object.keys(remoteData).forEach(k => {
                             if (k !== '_lastSyncedAt') allMonthsData[k] = remoteData[k];
                         });
+                        allMonthsData._lastSyncedAt = remoteTs;
                         // re-render current month
                         loadMonthData(currentMonth, currentYear);
                         renderTable();
@@ -1126,10 +1127,10 @@
                 return;
             }
 
-            // 3. push local → remote
+            // 3. push local → remote (local now has the latest timestamp from step 1)
             setSyncBadge('syncing', 'Pushing…');
             try {
-                const payload = { ...allMonthsData, _lastSyncedAt: Date.now() };
+                const payload = { ...allMonthsData };
                 await fetchWithRetry(JSONBIN_URL, {
                     method: 'PUT',
                     headers: {
@@ -1138,11 +1139,6 @@
                     },
                     body: JSON.stringify(payload)
                 });
-                // stamp local so a future pull won't overwrite
-                const localRaw  = localStorage.getItem('allMonthsPortfolioData');
-                const localData = localRaw ? JSON.parse(localRaw) : {};
-                localData._lastSyncedAt = payload._lastSyncedAt;
-                localStorage.setItem('allMonthsPortfolioData', JSON.stringify(localData));
 
                 setSyncBadge('synced', 'Synced');
             } catch (err) {
