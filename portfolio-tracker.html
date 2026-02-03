@@ -117,10 +117,10 @@
             background: var(--bg-secondary);
             color: var(--text-primary);
             border: 1px solid var(--border);
-            padding: 10px 20px;
+            padding: 8px 14px;
             border-radius: 6px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
@@ -948,6 +948,106 @@
         /* Not configured — muted, no glow */
         .sync-badge.unconfigured { border-color: var(--border); color: var(--text-secondary); }
         .sync-badge.unconfigured .dot { background: var(--text-secondary); }
+
+        /* ─── Notification Toast Card ─── */
+        .notification-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 8px;
+            padding: 16px 20px;
+            min-width: 300px;
+            max-width: 400px;
+            box-shadow: 0 8px 32px rgba(0, 245, 255, 0.3);
+            z-index: 10000;
+            opacity: 0;
+            transform: translateX(400px);
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            pointer-events: none;
+        }
+
+        .notification-toast.show {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: auto;
+        }
+
+        .notification-toast.success {
+            border-color: var(--accent-green);
+            box-shadow: 0 8px 32px rgba(0, 255, 136, 0.3);
+        }
+
+        .notification-toast.error {
+            border-color: var(--accent-red);
+            box-shadow: 0 8px 32px rgba(255, 51, 102, 0.3);
+        }
+
+        .notification-toast.info {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 8px 32px rgba(0, 245, 255, 0.3);
+        }
+
+        .notification-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .notification-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .notification-icon.success { color: var(--accent-green); }
+        .notification-icon.error { color: var(--accent-red); }
+        .notification-icon.info { color: var(--accent-cyan); }
+
+        .notification-message {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .notification-title.success { color: var(--accent-green); }
+        .notification-title.error { color: var(--accent-red); }
+        .notification-title.info { color: var(--accent-cyan); }
+
+        .notification-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .notification-close {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .notification-close:hover {
+            color: var(--accent-cyan);
+            transform: rotate(90deg);
+        }
     </style>
 </head>
 <body>
@@ -969,7 +1069,6 @@
                     </button>
                 </div>
                 <button class="btn btn-primary" onclick="addContract()">+ Add Contract</button>
-                <button class="btn" onclick="addColumn()">+ Add Date</button>
                 <button class="btn" onclick="showHiddenItemsModal()">👁 Show Hidden</button>
                 <button class="btn" id="push-btn" onclick="pushToCloud()">↑ Push</button>
                 <button class="btn" id="pull-btn" onclick="pullFromCloud()">↓ Pull</button>
@@ -1066,6 +1165,18 @@
         <div class="month-picker-months" id="picker-months"></div>
     </div>
 
+    <!-- Notification Toast -->
+    <div class="notification-toast" id="notification-toast">
+        <div class="notification-content">
+            <div class="notification-icon" id="notification-icon"></div>
+            <div class="notification-message">
+                <div class="notification-title" id="notification-title"></div>
+                <div class="notification-text" id="notification-text"></div>
+            </div>
+            <button class="notification-close" onclick="hideNotification()">✕</button>
+        </div>
+    </div>
+
     <script>
         // ═══════════════════════════════════════════════════════
         //  CLOUD SYNC CONFIG  ──  JSONBin.io credentials
@@ -1083,6 +1194,57 @@
             const lbl   = document.getElementById('sync-label');
             badge.className = 'sync-badge ' + state;
             lbl.textContent = label;
+        }
+
+        // ─── Notification Toast System ───
+        let notificationTimeout = null;
+
+        function showNotification(title, message, type = 'info') {
+            const toast = document.getElementById('notification-toast');
+            const icon = document.getElementById('notification-icon');
+            const titleEl = document.getElementById('notification-title');
+            const textEl = document.getElementById('notification-text');
+
+            // Set icon based on type
+            const icons = {
+                success: '✓',
+                error: '✕',
+                info: 'ℹ'
+            };
+            icon.textContent = icons[type] || icons.info;
+            icon.className = `notification-icon ${type}`;
+
+            // Set content
+            titleEl.textContent = title;
+            titleEl.className = `notification-title ${type}`;
+            textEl.textContent = message;
+
+            // Set toast type
+            toast.className = `notification-toast ${type}`;
+
+            // Show toast
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+
+            // Clear existing timeout
+            if (notificationTimeout) {
+                clearTimeout(notificationTimeout);
+            }
+
+            // Auto-hide after 4 seconds
+            notificationTimeout = setTimeout(() => {
+                hideNotification();
+            }, 4000);
+        }
+
+        function hideNotification() {
+            const toast = document.getElementById('notification-toast');
+            toast.classList.remove('show');
+            if (notificationTimeout) {
+                clearTimeout(notificationTimeout);
+                notificationTimeout = null;
+            }
         }
 
         // ─── Retry wrapper: 3 attempts, exponential back-off ───
@@ -1126,7 +1288,7 @@
                     || (remoteData._placeholder === true && Object.keys(remoteData).length === 1);
 
                 if (isPlaceholderOrEmpty) {
-                    alert('Cloud bin is empty - nothing to pull.');
+                    showNotification('No Data', 'Cloud bin is empty - nothing to pull.', 'info');
                     setSyncBadge('synced', 'Synced');
                 } else {
                     // Overwrite local with remote data
@@ -1143,12 +1305,12 @@
                     loadNotes();
 
                     setSyncBadge('synced', 'Pulled');
-                    alert('Data pulled from cloud successfully!');
+                    showNotification('Pull Successful', 'Data pulled from cloud successfully!', 'success');
                 }
             } catch (err) {
                 console.warn('Pull failed:', err);
                 setSyncBadge('offline', 'Offline');
-                alert('Pull failed: ' + err.message);
+                showNotification('Pull Failed', err.message, 'error');
             }
 
             btn.disabled = false;
@@ -1182,11 +1344,11 @@
                 });
 
                 setSyncBadge('synced', 'Pushed');
-                alert('Data pushed to cloud successfully!');
+                showNotification('Push Successful', 'Data pushed to cloud successfully!', 'success');
             } catch (err) {
                 console.warn('Push failed:', err);
                 setSyncBadge('offline', 'Offline');
-                alert('Push failed: ' + err.message);
+                showNotification('Push Failed', err.message, 'error');
             }
 
             btn.disabled = false;
@@ -1366,25 +1528,33 @@
             // Date columns
             portfolioData.dates.forEach((date, index) => {
                 if (portfolioData.hiddenCols.has(index)) return;
-                
+
                 const th = document.createElement('th');
-                
+
                 // Mark custom columns (beyond the month's natural days)
                 if (index >= daysInMonth) {
                     th.style.background = 'rgba(255, 215, 0, 0.1)';
                     th.style.borderLeft = '2px solid #ffd700';
                 }
-                
+
                 const dateDiv = document.createElement('div');
                 dateDiv.textContent = date;
-                th.appendChild(dateDiv);
+                dateDiv.style.cursor = 'pointer';
+                dateDiv.style.userSelect = 'none';
+                dateDiv.title = 'Click to hide this column';
+                dateDiv.onclick = () => hideColumn(index);
 
-                const actions = document.createElement('div');
-                actions.className = 'col-actions';
-                actions.innerHTML = `
-                    <button onclick="hideColumn(${index})">Hide</button>
-                `;
-                th.appendChild(actions);
+                // Add hover effect
+                dateDiv.onmouseenter = (e) => {
+                    e.target.style.color = 'var(--accent-cyan)';
+                    e.target.style.textDecoration = 'line-through';
+                };
+                dateDiv.onmouseleave = (e) => {
+                    e.target.style.color = '';
+                    e.target.style.textDecoration = '';
+                };
+
+                th.appendChild(dateDiv);
                 tr.appendChild(th);
             });
 
@@ -1572,7 +1742,23 @@
                     },
                     plugins: {
                         legend: {
-                            display: false
+                            display: true,
+                            position: 'top',
+                            align: 'end',
+                            labels: {
+                                color: '#e0e6f0',
+                                font: {
+                                    family: 'JetBrains Mono',
+                                    size: 13,
+                                    weight: '600'
+                                },
+                                padding: 15,
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                boxWidth: 8,
+                                boxHeight: 8,
+                                textAlign: 'left'
+                            }
                         },
                         tooltip: {
                             backgroundColor: '#1e2840',
@@ -2356,7 +2542,7 @@
             if (e.ctrlKey && e.key === 's') {
                 e.preventDefault();
                 saveCurrentMonthData();
-                alert('Data saved!');
+                showNotification('Saved', 'Data saved successfully!', 'success');
             }
         });
 
