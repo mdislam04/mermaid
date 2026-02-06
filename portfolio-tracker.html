@@ -2085,8 +2085,6 @@
             const colors = ['#00f5ff', '#00ff88', '#ff3366', '#ffd700', '#9d4edd', '#ff6b35', '#4cc9f0', '#f72585'];
             
             portfolioData.contracts.forEach((contract, rowIndex) => {
-                if (portfolioData.hiddenRows.has(rowIndex)) return;
-                
                 let total = 0;
                 portfolioData.dates.forEach((date, colIndex) => {
                     if (portfolioData.hiddenCols.has(colIndex)) return;
@@ -2226,8 +2224,6 @@
                 let hasData = false;
                 
                 portfolioData.contracts.forEach((contract, rowIndex) => {
-                    if (portfolioData.hiddenRows.has(rowIndex)) return;
-                    
                     const cellKey = `${rowIndex}-${colIndex}`;
                     const cellData = portfolioData.cells[cellKey];
                     
@@ -2349,10 +2345,8 @@
             let totalProfit = 0;
             let totalLoss = 0;
             
-            // Calculate from all bold cells
+            // Calculate from all bold cells (including hidden rows)
             portfolioData.contracts.forEach((contract, rowIndex) => {
-                if (portfolioData.hiddenRows.has(rowIndex)) return;
-                
                 portfolioData.dates.forEach((date, colIndex) => {
                     if (portfolioData.hiddenCols.has(colIndex)) return;
                     
