@@ -399,6 +399,16 @@
             display: none;
         }
 
+        .today-column {
+            background: rgba(0, 255, 136, 0.06) !important;
+            border-left: 2px solid rgba(0, 255, 136, 0.3) !important;
+            border-right: 2px solid rgba(0, 255, 136, 0.3) !important;
+        }
+
+        td.today-column {
+            background: rgba(0, 255, 136, 0.04) !important;
+        }
+
         .notes-section {
             background: var(--bg-secondary);
             border: 1px solid var(--border);
@@ -424,12 +434,94 @@
             animation: fadeIn 0.6s ease-out 0.3s both;
         }
 
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-tile {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 15px;
+            transition: all 0.2s;
+        }
+
+        .stat-tile:hover {
+            border-color: var(--accent-cyan);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .stat-tile-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .stat-tile-value {
+            font-size: 24px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-tile-value.profit {
+            color: var(--accent-green);
+        }
+
+        .stat-tile-value.loss {
+            color: var(--accent-red);
+        }
+
+        .stat-tile-value.gross {
+            color: var(--accent-cyan);
+        }
+
         .chart-section h3 {
             margin-bottom: 20px;
             font-size: 14px;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: var(--text-secondary);
+        }
+
+        .chart-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .chart-tab {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .chart-tab:hover {
+            color: var(--accent-cyan);
+            background: rgba(0, 245, 255, 0.05);
+        }
+
+        .chart-tab.active {
+            color: var(--accent-cyan);
+            border-bottom-color: var(--accent-cyan);
+            background: rgba(0, 245, 255, 0.08);
         }
 
         #pnl-chart {
@@ -662,6 +754,32 @@
             background: var(--accent-cyan);
             border-color: var(--accent-cyan);
             color: var(--bg-primary);
+        }
+
+        /* ─── Loading Spinner ─── */
+        .btn-loading {
+            position: relative;
+            color: transparent !important;
+            pointer-events: none;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            top: 50%;
+            left: 50%;
+            margin-left: -7px;
+            margin-top: -7px;
+            border: 2px solid var(--bg-primary);
+            border-radius: 50%;
+            border-top-color: var(--accent-cyan);
+            animation: spinner 0.6s linear infinite;
+        }
+
+        @keyframes spinner {
+            to { transform: rotate(360deg); }
         }
 
         @media (max-width: 768px) {
@@ -949,6 +1067,14 @@
         .sync-badge.unconfigured { border-color: var(--border); color: var(--text-secondary); }
         .sync-badge.unconfigured .dot { background: var(--text-secondary); }
 
+        /* ─── Sync Timestamp ─── */
+        .sync-timestamp {
+            font-size: 9px;
+            color: var(--text-secondary);
+            margin-left: 8px;
+            opacity: 0.7;
+        }
+
         /* ─── Notification Toast Card ─── */
         .notification-toast {
             position: fixed;
@@ -1059,19 +1185,22 @@
                     <span class="dot"></span>
                     <span id="sync-label">No Sync</span>
                 </span>
+                <span class="sync-timestamp" id="sync-timestamp"></span>
             </div>
             <div class="controls">
                 <div class="month-selector">
                     <label for="month-select">Period</label>
-                    <button class="btn month-picker-btn" id="month-picker-btn" onclick="toggleMonthPicker()">
+                    <button class="btn" style="padding: 6px 10px;" onclick="navigateMonth(-1)" title="Previous Month">◀</button>
+                    <button class="btn month-picker-btn" id="month-picker-btn" onclick="toggleMonthPicker()" title="Select a specific month and year">
                         <span id="current-month-display"></span>
                         <span style="margin-left: 8px;">▼</span>
                     </button>
+                    <button class="btn" style="padding: 6px 10px;" onclick="navigateMonth(1)" title="Next Month">▶</button>
                 </div>
-                <button class="btn btn-primary" onclick="addContract()">+ Add Contract</button>
-                <button class="btn" onclick="showHiddenItemsModal()">👁 Show Hidden</button>
-                <button class="btn" id="push-btn" onclick="pushToCloud()">↑ Push</button>
-                <button class="btn" id="pull-btn" onclick="pullFromCloud()">↓ Pull</button>
+                <button class="btn btn-primary" onclick="addContract()" title="Add a new contract to track">+ Add Contract</button>
+                <button class="btn" onclick="showHiddenItemsModal()" title="Show and manage hidden contracts and dates">👁 Show Hidden</button>
+                <button class="btn" id="push-btn" onclick="pushToCloud()" title="Upload your local data to the cloud">↑ Push</button>
+                <button class="btn" id="pull-btn" onclick="pullFromCloud()" title="Download data from the cloud to local storage">↓ Pull</button>
             </div>
         </div>
 
@@ -1113,7 +1242,13 @@
         </div>
 
         <div class="chart-section">
-            <h3>◢ Standing AT Chart</h3>
+            <h3>◢ Portfolio Analytics</h3>
+            <div class="summary-stats" id="summary-stats"></div>
+            <div class="chart-tabs">
+                <button class="chart-tab active" onclick="switchChart('standing')" title="View cumulative P&L over time">Standing AT</button>
+                <button class="chart-tab" onclick="switchChart('contracts')" title="View P&L breakdown by contract">By Contract</button>
+                <button class="chart-tab" onclick="switchChart('daily')" title="View day-wise realized P&L">Daily P&L</button>
+            </div>
             <canvas id="pnl-chart"></canvas>
         </div>
     </div>
@@ -1139,12 +1274,18 @@
             <h3>Hidden Rows & Columns</h3>
             
             <div style="margin-bottom: 20px;">
-                <h4 style="color: var(--text-secondary); font-size: 12px; margin-bottom: 10px; text-transform: uppercase;">Hidden Contracts</h4>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="color: var(--text-secondary); font-size: 12px; text-transform: uppercase; margin: 0;">Hidden Contracts</h4>
+                    <button class="btn" style="padding: 4px 8px; font-size: 11px;" onclick="unhideAllRows()" id="unhide-all-rows-btn">Unhide All</button>
+                </div>
                 <div id="hidden-rows-list" style="max-height: 150px; overflow-y: auto;"></div>
             </div>
-            
+
             <div style="margin-bottom: 20px;">
-                <h4 style="color: var(--text-secondary); font-size: 12px; margin-bottom: 10px; text-transform: uppercase;">Hidden Dates</h4>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="color: var(--text-secondary); font-size: 12px; text-transform: uppercase; margin: 0;">Hidden Dates</h4>
+                    <button class="btn" style="padding: 4px 8px; font-size: 11px;" onclick="unhideAllColumns()" id="unhide-all-cols-btn">Unhide All</button>
+                </div>
                 <div id="hidden-cols-list" style="max-height: 150px; overflow-y: auto;"></div>
             </div>
             
@@ -1194,6 +1335,32 @@
             const lbl   = document.getElementById('sync-label');
             badge.className = 'sync-badge ' + state;
             lbl.textContent = label;
+        }
+
+        // ─── Sync Timestamp ───
+        function updateSyncTimestamp() {
+            const timestampEl = document.getElementById('sync-timestamp');
+            if (!timestampEl) return;
+            
+            const lastSync = allMonthsData._lastSyncedAt;
+            if (!lastSync) {
+                timestampEl.textContent = '';
+                return;
+            }
+            
+            const now = Date.now();
+            const diff = now - lastSync;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            
+            let timeStr;
+            if (minutes < 1) timeStr = 'just now';
+            else if (minutes < 60) timeStr = `${minutes}m ago`;
+            else if (hours < 24) timeStr = `${hours}h ago`;
+            else timeStr = `${days}d ago`;
+            
+            timestampEl.textContent = `Last sync: ${timeStr}`;
         }
 
         // ─── Notification Toast System ───
@@ -1271,6 +1438,8 @@
 
             const btn = document.getElementById('pull-btn');
             btn.disabled = true;
+            btn.classList.add('btn-loading');
+            const originalText = btn.textContent;
             btn.textContent = '↓ Pulling…';
             setSyncBadge('syncing', 'Pulling…');
 
@@ -1305,6 +1474,7 @@
                     loadNotes();
 
                     setSyncBadge('synced', 'Pulled');
+                    updateSyncTimestamp();
                     showNotification('Pull Successful', 'Data pulled from cloud successfully!', 'success');
                 }
             } catch (err) {
@@ -1314,7 +1484,8 @@
             }
 
             btn.disabled = false;
-            btn.textContent = '↓ Pull';
+            btn.classList.remove('btn-loading');
+            btn.textContent = originalText;
         }
 
         // ─── PUSH: Upload from local → cloud ───
@@ -1323,6 +1494,8 @@
 
             const btn = document.getElementById('push-btn');
             btn.disabled = true;
+            btn.classList.add('btn-loading');
+            const originalText = btn.textContent;
             btn.textContent = '↑ Pushing…';
             setSyncBadge('syncing', 'Pushing…');
 
@@ -1344,6 +1517,7 @@
                 });
 
                 setSyncBadge('synced', 'Pushed');
+                updateSyncTimestamp();
                 showNotification('Push Successful', 'Data pushed to cloud successfully!', 'success');
             } catch (err) {
                 console.warn('Push failed:', err);
@@ -1352,7 +1526,8 @@
             }
 
             btn.disabled = false;
-            btn.textContent = '↑ Push';
+            btn.classList.remove('btn-loading');
+            btn.textContent = originalText;
         }
 
         // ─── Force-push on tab close (best-effort) ───
@@ -1383,6 +1558,7 @@
         let currentMonth = new Date().getMonth();
         let currentYear = new Date().getFullYear();
         let draggedRow = null;
+        let currentChartType = 'standing';
 
         // Initialize
         function init() {
@@ -1391,6 +1567,9 @@
             // Set badge to idle state on load
             if (SYNC_ENABLED) {
                 setSyncBadge('synced', 'Synced');
+                updateSyncTimestamp();
+                // Update timestamp every minute
+                setInterval(updateSyncTimestamp, 60000);
             } else {
                 setSyncBadge('unconfigured', 'No Sync');
             }
@@ -1479,6 +1658,29 @@
             document.getElementById('month-picker-dropdown').classList.remove('active');
         }
 
+        function navigateMonth(delta) {
+            // Save current month data before switching
+            saveCurrentMonthData();
+            
+            currentMonth += delta;
+            
+            // Handle year transitions
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            } else if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            
+            // Load data for new month
+            loadMonthData(currentMonth, currentYear);
+            generateDatesForMonth(currentMonth, currentYear);
+            renderTable();
+            loadNotes();
+            updateMonthDisplay();
+        }
+
         // Close picker when clicking outside
         document.addEventListener('click', (e) => {
             const dropdown = document.getElementById('month-picker-dropdown');
@@ -1524,6 +1726,11 @@
 
             // Calculate the number of days in current month for identifying custom columns
             const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            
+            // Get today's date for highlighting
+            const today = new Date();
+            const todayStr = String(today.getDate()).padStart(2, '0') + '-' + today.toLocaleDateString('en-US', { month: 'short' });
+            const isCurrentMonth = today.getMonth() === currentMonth && today.getFullYear() === currentYear;
 
             // Date columns
             portfolioData.dates.forEach((date, index) => {
@@ -1535,6 +1742,11 @@
                 if (index >= daysInMonth) {
                     th.style.background = 'rgba(255, 215, 0, 0.1)';
                     th.style.borderLeft = '2px solid #ffd700';
+                }
+                
+                // Highlight today's column
+                if (isCurrentMonth && date === todayStr) {
+                    th.classList.add('today-column');
                 }
 
                 const dateDiv = document.createElement('div');
@@ -1609,10 +1821,20 @@
                 // Date cells
                 const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
                 
+                // Get today's date for highlighting
+                const today = new Date();
+                const todayStr = String(today.getDate()).padStart(2, '0') + '-' + today.toLocaleDateString('en-US', { month: 'short' });
+                const isCurrentMonth = today.getMonth() === currentMonth && today.getFullYear() === currentYear;
+                
                 portfolioData.dates.forEach((date, colIndex) => {
                     if (portfolioData.hiddenCols.has(colIndex)) return;
 
                     const td = document.createElement('td');
+                    
+                    // Highlight today's column
+                    if (isCurrentMonth && date === todayStr) {
+                        td.classList.add('today-column');
+                    }
                     
                     // Mark custom columns (beyond the month's natural days)
                     if (colIndex >= daysInMonth) {
@@ -1662,7 +1884,32 @@
         // ─── Chart Rendering ───
         let pnlChart = null;
 
+        function switchChart(chartType) {
+            currentChartType = chartType;
+            
+            // Update active tab
+            document.querySelectorAll('.chart-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Render the selected chart
+            renderChart();
+        }
+
         function renderChart() {
+            if (currentChartType === 'standing') {
+                renderStandingChart();
+            } else if (currentChartType === 'contracts') {
+                renderContractBreakdownChart();
+            } else if (currentChartType === 'daily') {
+                renderDailyPnLChart();
+            }
+            // Update summary stats whenever chart is rendered
+            updateSummaryStats();
+        }
+
+        function renderStandingChart() {
             const canvas = document.getElementById('pnl-chart');
             const ctx = canvas.getContext('2d');
 
@@ -1825,6 +2072,323 @@
             });
         }
 
+        function renderContractBreakdownChart() {
+            const canvas = document.getElementById('pnl-chart');
+            const ctx = canvas.getContext('2d');
+
+            if (pnlChart) {
+                pnlChart.destroy();
+            }
+
+            // Calculate total realized P&L per contract (only bold cells)
+            const contractData = {};
+            const colors = ['#00f5ff', '#00ff88', '#ff3366', '#ffd700', '#9d4edd', '#ff6b35', '#4cc9f0', '#f72585'];
+            
+            portfolioData.contracts.forEach((contract, rowIndex) => {
+                if (portfolioData.hiddenRows.has(rowIndex)) return;
+                
+                let total = 0;
+                portfolioData.dates.forEach((date, colIndex) => {
+                    if (portfolioData.hiddenCols.has(colIndex)) return;
+                    const cellKey = `${rowIndex}-${colIndex}`;
+                    const cellData = portfolioData.cells[cellKey];
+                    
+                    // Only count bold/realized cells
+                    if (cellData?.value && cellData.bold) {
+                        const value = parseFloat(cellData.value.toString().replace(/,/g, '') || 0);
+                        total += value;
+                    }
+                });
+                
+                if (total !== 0) {
+                    contractData[contract] = total;
+                }
+            });
+
+            const labels = Object.keys(contractData);
+            const data = Object.values(contractData);
+            
+            if (labels.length === 0) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#8b96b0';
+                ctx.font = '14px JetBrains Mono';
+                ctx.textAlign = 'center';
+                ctx.fillText('No contract data to display', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
+            const backgroundColors = data.map((val, idx) => {
+                const baseColor = colors[idx % colors.length];
+                return val >= 0 ? baseColor : '#ff3366';
+            });
+
+            pnlChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Realized P&L',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: backgroundColors.map(c => c),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e2840',
+                            titleColor: '#00f5ff',
+                            bodyColor: '#e0e6f0',
+                            borderColor: '#00f5ff',
+                            borderWidth: 1,
+                            padding: 12,
+                            titleFont: {
+                                family: 'JetBrains Mono',
+                                size: 13,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                family: 'JetBrains Mono',
+                                size: 12
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed.y;
+                                    return 'Realized P&L: ' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: '#2a3752',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#8b96b0',
+                                font: {
+                                    family: 'JetBrains Mono',
+                                    size: 11
+                                },
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: '#2a3752',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#8b96b0',
+                                font: {
+                                    family: 'JetBrains Mono',
+                                    size: 11
+                                },
+                                callback: function(value) {
+                                    return value.toLocaleString('en-US');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderDailyPnLChart() {
+            const canvas = document.getElementById('pnl-chart');
+            const ctx = canvas.getContext('2d');
+
+            if (pnlChart) {
+                pnlChart.destroy();
+            }
+
+            // Collect daily realized P&L (sum of bold cells per day)
+            const labels = [];
+            const data = [];
+            
+            portfolioData.dates.forEach((date, colIndex) => {
+                if (portfolioData.hiddenCols.has(colIndex)) return;
+
+                let dayTotal = 0;
+                let hasData = false;
+                
+                portfolioData.contracts.forEach((contract, rowIndex) => {
+                    if (portfolioData.hiddenRows.has(rowIndex)) return;
+                    
+                    const cellKey = `${rowIndex}-${colIndex}`;
+                    const cellData = portfolioData.cells[cellKey];
+                    
+                    // Only count bold/realized cells
+                    if (cellData?.value && cellData.bold) {
+                        const value = parseFloat(cellData.value.toString().replace(/,/g, '') || 0);
+                        dayTotal += value;
+                        hasData = true;
+                    }
+                });
+                
+                if (hasData) {
+                    labels.push(date);
+                    data.push(dayTotal);
+                }
+            });
+
+            if (labels.length === 0) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#8b96b0';
+                ctx.font = '14px JetBrains Mono';
+                ctx.textAlign = 'center';
+                ctx.fillText('No daily P&L data to display', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
+            // Color bars based on positive/negative
+            const backgroundColors = data.map(val => val >= 0 ? 'rgba(0, 255, 136, 0.6)' : 'rgba(255, 51, 102, 0.6)');
+            const borderColors = data.map(val => val >= 0 ? '#00ff88' : '#ff3366');
+
+            pnlChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Daily Realized P&L',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e2840',
+                            titleColor: '#00f5ff',
+                            bodyColor: '#e0e6f0',
+                            borderColor: '#00f5ff',
+                            borderWidth: 1,
+                            padding: 12,
+                            titleFont: {
+                                family: 'JetBrains Mono',
+                                size: 13,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                family: 'JetBrains Mono',
+                                size: 12
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed.y;
+                                    return 'P&L: ' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: '#2a3752',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#8b96b0',
+                                font: {
+                                    family: 'JetBrains Mono',
+                                    size: 11
+                                },
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: '#2a3752',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#8b96b0',
+                                font: {
+                                    family: 'JetBrains Mono',
+                                    size: 11
+                                },
+                                callback: function(value) {
+                                    return value.toLocaleString('en-US');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateSummaryStats() {
+            const container = document.getElementById('summary-stats');
+            
+            let totalProfit = 0;
+            let totalLoss = 0;
+            
+            // Calculate from all bold cells
+            portfolioData.contracts.forEach((contract, rowIndex) => {
+                if (portfolioData.hiddenRows.has(rowIndex)) return;
+                
+                portfolioData.dates.forEach((date, colIndex) => {
+                    if (portfolioData.hiddenCols.has(colIndex)) return;
+                    
+                    const cellKey = `${rowIndex}-${colIndex}`;
+                    const cellData = portfolioData.cells[cellKey];
+                    
+                    // Only count bold/realized cells
+                    if (cellData?.value && cellData.bold) {
+                        const value = parseFloat(cellData.value.toString().replace(/,/g, '') || 0);
+                        if (value > 0) {
+                            totalProfit += value;
+                        } else if (value < 0) {
+                            totalLoss += value;
+                        }
+                    }
+                });
+            });
+            
+            const grossPnL = totalProfit + totalLoss;
+            
+            container.innerHTML = `
+                <div class="stat-tile">
+                    <div class="stat-tile-label">Total Profit</div>
+                    <div class="stat-tile-value profit">${totalProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-tile-label">Total Loss</div>
+                    <div class="stat-tile-value loss">${totalLoss.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-tile-label">Gross P&L</div>
+                    <div class="stat-tile-value gross">${grossPnL.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                </div>
+            `;
+        }
+
         function addCalculatedRow(label, rowType) {
             const tbody = document.getElementById('table-body');
             const tr = document.createElement('tr');
@@ -1837,11 +2401,21 @@
             tr.appendChild(tdLabel);
 
             const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            
+            // Get today's date for highlighting
+            const today = new Date();
+            const todayStr = String(today.getDate()).padStart(2, '0') + '-' + today.toLocaleDateString('en-US', { month: 'short' });
+            const isCurrentMonth = today.getMonth() === currentMonth && today.getFullYear() === currentYear;
 
             portfolioData.dates.forEach((date, colIndex) => {
                 if (portfolioData.hiddenCols.has(colIndex)) return;
 
                 const td = document.createElement('td');
+                
+                // Highlight today's column
+                if (isCurrentMonth && date === todayStr) {
+                    td.classList.add('today-column');
+                }
                 
                 // Mark custom columns (beyond the month's natural days)
                 if (colIndex >= daysInMonth) {
@@ -1888,11 +2462,21 @@
             tr.appendChild(tdLabel);
 
             const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            
+            // Get today's date for highlighting
+            const today = new Date();
+            const todayStr = String(today.getDate()).padStart(2, '0') + '-' + today.toLocaleDateString('en-US', { month: 'short' });
+            const isCurrentMonth = today.getMonth() === currentMonth && today.getFullYear() === currentYear;
 
             portfolioData.dates.forEach((date, colIndex) => {
                 if (portfolioData.hiddenCols.has(colIndex)) return;
 
                 const td = document.createElement('td');
+                
+                // Highlight today's column
+                if (isCurrentMonth && date === todayStr) {
+                    td.classList.add('today-column');
+                }
                 
                 // Mark custom columns (beyond the month's natural days)
                 if (colIndex >= daysInMonth) {
@@ -1951,6 +2535,11 @@
                     saveCellEdit(input, cellKey);
                 } else if (e.key === 'Escape') {
                     cancelCellEdit();
+                } else if (e.key === 'Tab') {
+                    e.preventDefault();
+                    saveCellEdit(input, cellKey);
+                    // Move to next cell in same column
+                    navigateToNextCell(cellKey, e.shiftKey);
                 }
             };
             
@@ -2007,6 +2596,105 @@
             currentEditingCell = null;
             document.getElementById('formatting-toolbar').classList.remove('active');
             renderTable();
+        }
+
+        function navigateToNextCell(cellKey, shiftKey) {
+            // Parse the current cell key
+            const parts = cellKey.split('-');
+            
+            // Handle special rows (unrealized, realized) and contract rows differently
+            if (parts[0] === 'unrealized' || parts[0] === 'realized') {
+                // For calculated rows, don't navigate - these are not in the contracts array
+                return;
+            }
+            
+            if (cellKey.startsWith('contract-')) {
+                // Contract name cells - navigate to next/previous contract
+                const rowIndex = parseInt(parts[1]);
+                const direction = shiftKey ? -1 : 1;
+                const nextRowIndex = rowIndex + direction;
+                
+                if (nextRowIndex >= 0 && nextRowIndex < portfolioData.contracts.length) {
+                    // Wait for table to re-render
+                    setTimeout(() => {
+                        const nextCellKey = `contract-${nextRowIndex}`;
+                        const cells = document.querySelectorAll('.cell-editable');
+                        for (let cell of cells) {
+                            if (cell.parentElement.querySelector('.drag-handle')) {
+                                const tr = cell.closest('tr');
+                                if (tr && parseInt(tr.dataset.rowIndex) === nextRowIndex) {
+                                    cell.click();
+                                    break;
+                                }
+                            }
+                        }
+                    }, 50);
+                }
+                return;
+            }
+            
+            // Regular data cells - navigate down/up in same column
+            const rowIndex = parseInt(parts[0]);
+            const colIndex = parseInt(parts[1]);
+            const direction = shiftKey ? -1 : 1;
+            
+            // Find next visible row
+            let nextRowIndex = rowIndex + direction;
+            while (nextRowIndex >= 0 && nextRowIndex < portfolioData.contracts.length) {
+                if (!portfolioData.hiddenRows.has(nextRowIndex)) {
+                    break;
+                }
+                nextRowIndex += direction;
+            }
+            
+            // Check if we can navigate to calculated rows
+            if (nextRowIndex >= portfolioData.contracts.length && !shiftKey) {
+                // Move to unrealized row
+                const nextCellKey = `unrealized-${colIndex}`;
+                setTimeout(() => {
+                    const cells = document.querySelectorAll('.cell-editable');
+                    for (let cell of cells) {
+                        if (cell.parentElement.parentElement.classList.contains('unrealized-row')) {
+                            const cellDivs = cell.parentElement.parentElement.querySelectorAll('.cell-editable');
+                            let currentCol = 0;
+                            for (let i = 0; i < portfolioData.dates.length; i++) {
+                                if (!portfolioData.hiddenCols.has(i)) {
+                                    if (i === colIndex) {
+                                        cellDivs[currentCol]?.click();
+                                        return;
+                                    }
+                                    currentCol++;
+                                }
+                            }
+                        }
+                    }
+                }, 50);
+                return;
+            }
+            
+            if (nextRowIndex >= 0 && nextRowIndex < portfolioData.contracts.length) {
+                const nextCellKey = `${nextRowIndex}-${colIndex}`;
+                setTimeout(() => {
+                    const cells = document.querySelectorAll('.cell-editable');
+                    for (let cell of cells) {
+                        const tr = cell.closest('tr');
+                        if (tr && parseInt(tr.dataset.rowIndex) === nextRowIndex) {
+                            const cellDivs = tr.querySelectorAll('.cell-editable');
+                            // Skip the first cell (contract name)
+                            let currentCol = 0;
+                            for (let i = 0; i < portfolioData.dates.length; i++) {
+                                if (!portfolioData.hiddenCols.has(i)) {
+                                    if (i === colIndex) {
+                                        cellDivs[currentCol + 1]?.click(); // +1 to skip contract cell
+                                        return;
+                                    }
+                                    currentCol++;
+                                }
+                            }
+                        }
+                    }
+                }, 50);
+            }
         }
 
         function formatCell(type) {
@@ -2085,12 +2773,16 @@
             const modal = document.getElementById('hidden-items-modal');
             const rowsList = document.getElementById('hidden-rows-list');
             const colsList = document.getElementById('hidden-cols-list');
-            
+            const unhideAllRowsBtn = document.getElementById('unhide-all-rows-btn');
+            const unhideAllColsBtn = document.getElementById('unhide-all-cols-btn');
+
             // Populate hidden rows
             rowsList.innerHTML = '';
             if (portfolioData.hiddenRows.size === 0) {
                 rowsList.innerHTML = '<div class="empty-state">No hidden contracts</div>';
+                unhideAllRowsBtn.style.display = 'none';
             } else {
+                unhideAllRowsBtn.style.display = 'inline-block';
                 portfolioData.hiddenRows.forEach(index => {
                     const item = document.createElement('div');
                     item.className = 'hidden-item';
@@ -2101,12 +2793,14 @@
                     rowsList.appendChild(item);
                 });
             }
-            
+
             // Populate hidden columns
             colsList.innerHTML = '';
             if (portfolioData.hiddenCols.size === 0) {
                 colsList.innerHTML = '<div class="empty-state">No hidden dates</div>';
+                unhideAllColsBtn.style.display = 'none';
             } else {
+                unhideAllColsBtn.style.display = 'inline-block';
                 portfolioData.hiddenCols.forEach(index => {
                     const item = document.createElement('div');
                     item.className = 'hidden-item';
@@ -2117,7 +2811,7 @@
                     colsList.appendChild(item);
                 });
             }
-            
+
             modal.classList.add('active');
         }
 
@@ -2135,6 +2829,22 @@
 
         function unhideColumn(index) {
             portfolioData.hiddenCols.delete(index);
+            saveCurrentMonthData();
+            renderTable();
+            // Refresh the modal content
+            showHiddenItemsModal();
+        }
+
+        function unhideAllRows() {
+            portfolioData.hiddenRows.clear();
+            saveCurrentMonthData();
+            renderTable();
+            // Refresh the modal content
+            showHiddenItemsModal();
+        }
+
+        function unhideAllColumns() {
+            portfolioData.hiddenCols.clear();
             saveCurrentMonthData();
             renderTable();
             // Refresh the modal content
