@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>StickyBoard — Kanban Todo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+/* ─── RESET & VARS ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --board-bg:     #ede8df;
+  --col-bg:       rgba(255,255,255,0.52);
+  --col-border:   rgba(0,0,0,0.07);
+  --accent:       #e05a2b;
+  --accent-light: #fff0eb;
+  --shadow-note:  2px 4px 14px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.07);
+  --shadow-hover: 5px 10px 28px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.09);
+  --shadow-drag:  8px 18px 40px rgba(0,0,0,0.28);
+  --font-hand:    'Caveat', cursive;
+  --font-ui:      'DM Sans', sans-serif;
+}
+
+body {
+  font-family: var(--font-ui);
+  background-color: var(--board-bg);
+  min-height: 100vh;
+  overflow-x: auto;
+}
+
+/* subtle paper grain */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0;
+}
+
+/* ─── SCROLLBAR ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.16); border-radius: 3px; }
+
+/* ─── LAYOUT ─────────────────────────────────────────────────────────────── */
+#app { position: relative; z-index: 1; }
+
+.header {
+  padding: 18px 28px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.header-title {
+  display: flex; align-items: baseline; gap: 10px;
+}
+.header-title h1 {
+  font-family: var(--font-hand);
+  font-size: 28px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.5px;
+}
+.header-title .count {
+  font-size: 12px; color: #aaa; font-weight: 400;
+}
+
+.header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.quick-add-btn {
+  background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 8px; cursor: pointer;
+  font-size: 12px; font-weight: 600; padding: 6px 12px;
+  color: #444; display: flex; align-items: center; gap: 5px;
+  font-family: var(--font-ui);
+  transition: all 0.15s ease;
+}
+.quick-add-btn:hover { background: #fff; color: var(--accent); border-color: rgba(224,90,43,0.3); }
+
+.board {
+  display: flex; gap: 18px;
+  padding: 20px 28px 40px;
+  align-items: flex-start;
+  min-height: calc(100vh - 80px);
+  overflow-x: auto;
+}
+
+/* ─── COLUMN ─────────────────────────────────────────────────────────────── */
+.column {
+  min-width: 256px; width: 270px; flex-shrink: 0;
+  background: var(--col-bg);
+  border-radius: 14px;
+  border: 1px solid var(--col-border);
+  backdrop-filter: blur(10px);
+  padding: 14px 14px 14px;
+  display: flex; flex-direction: column;
+  max-height: calc(100vh - 100px);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+.column.drag-over {
+  background: rgba(255,255,255,0.8);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.col-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.col-title { display: flex; align-items: center; gap: 7px; }
+.col-title .emoji { font-size: 16px; }
+.col-title .label { font-size: 13px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.2px; }
+.col-count {
+  background: rgba(0,0,0,0.07); border-radius: 20px;
+  font-size: 11px; font-weight: 700; padding: 1px 7px; color: #666;
+}
+
+.notes-area {
+  flex: 1; overflow-y: auto; overflow-x: visible;
+  padding: 0 2px; min-height: 60px;
+}
+
+.add-btn {
+  border: 2px dashed rgba(0,0,0,0.13);
+  background: rgba(255,255,255,0.25);
+  border-radius: 8px; cursor: pointer;
+  font-size: 12px; font-weight: 500;
+  padding: 10px; width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  color: #999; font-family: var(--font-ui);
+  margin-top: 8px;
+  transition: all 0.2s ease;
+}
+.add-btn:hover { background: rgba(255,255,255,0.65); border-color: var(--accent); color: var(--accent); }
+
+/* ─── NOTE CARD ──────────────────────────────────────────────────────────── */
+.note {
+  background: #fff9c4; /* overridden per card */
+  border-radius: 4px;
+  padding: 20px 14px 12px;
+  box-shadow: var(--shadow-note);
+  position: relative;
+  margin-bottom: 16px; margin-top: 14px;
+  cursor: grab;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.15s ease;
+  will-change: transform;
+}
+.note:active { cursor: grabbing; }
+.note.dragging { opacity: 0.35; pointer-events: none; }
+
+/* Tape strip on top */
+.note::before {
+  content: '';
+  position: absolute; top: -8px; left: 50%; transform: translateX(-50%) rotate(-1deg);
+  width: 46px; height: 17px;
+  background: rgba(255,235,130,0.72);
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.note:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+.note-priority {
+  position: absolute; top: 12px; right: 10px;
+  display: flex; align-items: center; gap: 4px;
+  border-radius: 20px; padding: 2px 7px;
+  font-size: 10px; font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  text-transform: uppercase; letter-spacing: 0.3px;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+}
+.priority-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  display: inline-block; flex-shrink: 0;
+}
+
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.45); }
+  50%      { box-shadow: 0 0 0 5px rgba(239,68,68,0); }
+}
+.pulse { animation: pulse 2s ease infinite; }
+
+.note-title {
+  font-family: var(--font-hand);
+  font-size: 23px; font-weight: 700; color: #1a1a1a;
+  line-height: 1.3; word-break: break-word;
+  margin-right: 72px; margin-bottom: 6px; margin-top: 2px;
+  cursor: text;
+}
+.note-desc {
+  font-family: var(--font-hand);
+  font-size: 13px; color: #666; line-height: 1.5;
+  word-break: break-word; min-height: 18px; cursor: text;
+}
+.note-desc.empty { color: #bbb; }
+
+.note-reminder {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; color: #777;
+  background: rgba(0,0,0,0.055); border-radius: 20px; padding: 2px 8px;
+  margin-top: 8px; font-weight: 500;
+}
+
+.note-footer {
+  border-top: 1px solid rgba(0,0,0,0.08);
+  padding-top: 8px; margin-top: 8px;
+}
+.delete-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 11px; color: #ccc; font-family: var(--font-ui);
+  padding: 0; transition: color 0.15s;
+}
+.delete-btn:hover { color: #ef4444; }
+
+.delete-confirm {
+  display: flex; align-items: center; gap: 6px;
+  animation: slide-confirm 0.2s ease forwards;
+}
+@keyframes slide-confirm {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.delete-confirm span { font-size: 11px; color: #888; flex: 1; }
+.btn-yes { font-size: 11px; font-weight: 700; color: #fff; background: #ef4444; border: none; border-radius: 5px; padding: 3px 9px; cursor: pointer; }
+.btn-no  { font-size: 11px; font-weight: 700; color: #666; background: #f0f0f0; border: none; border-radius: 5px; padding: 3px 9px; cursor: pointer; }
+
+/* inline edit inputs */
+.edit-input {
+  width: 100%; background: rgba(0,0,0,0.03);
+  border: 1.5px solid var(--accent); border-radius: 4px;
+  outline: none; resize: none;
+  font-family: var(--font-hand); padding: 2px 5px;
+  font-size: 17px; font-weight: 700; color: #1a1a1a;
+}
+
+/* ─── RICH DESCRIPTION EDITOR ───────────────────────────────────────────── */
+.desc-editor-wrap {
+  border: 1.5px solid var(--accent);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.6);
+  overflow: hidden;
+}
+
+/* Toolbar */
+.editor-toolbar {
+  display: flex; align-items: center; gap: 2px;
+  padding: 4px 6px;
+  background: rgba(0,0,0,0.04);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+.tb-btn {
+  background: none; border: none; border-radius: 4px;
+  width: 24px; height: 24px; cursor: pointer;
+  font-size: 12px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  color: #555; transition: background 0.1s, color 0.1s;
+  font-family: var(--font-ui);
+}
+.tb-btn:hover  { background: rgba(0,0,0,0.08); color: #111; }
+.tb-btn.active { background: var(--accent); color: #fff; }
+.tb-sep { width: 1px; height: 16px; background: rgba(0,0,0,0.12); margin: 0 3px; }
+.tb-hint { font-size: 9px; color: #bbb; margin-left: auto; font-family: var(--font-ui); white-space: nowrap; }
+
+/* ContentEditable area */
+.desc-editable {
+  outline: none;
+  padding: 6px 8px;
+  font-family: var(--font-hand);
+  font-size: 13px; color: #444; line-height: 1.6;
+  min-height: 60px; max-height: 160px;
+  overflow-y: auto;
+  word-break: break-word;
+}
+.desc-editable:empty::before {
+  content: attr(data-placeholder);
+  color: #bbb; pointer-events: none;
+}
+
+/* Rendered rich content on the card */
+.note-desc-rendered { font-family: var(--font-hand); font-size: 19px; color: #555; line-height: 1.6; }
+.note-desc-rendered b, .note-desc-rendered strong { font-weight: 800; color: #222; }
+.note-desc-rendered ul { padding-left: 16px; margin: 2px 0; list-style: none; }
+.note-desc-rendered ul li { position: relative; padding-left: 12px; }
+.note-desc-rendered ul li::before {
+  content: '•'; position: absolute; left: 0;
+  color: var(--accent); font-weight: 700;
+}
+.note-desc-rendered p { margin: 0; }
+.note-desc.empty { color: #bbb; font-family: var(--font-hand); font-size: 13px; }
+
+/* ─── MODAL ──────────────────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.38);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  animation: backdrop-in 0.2s ease forwards;
+}
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.modal-box {
+  background: #fffdf7;
+  border-radius: 16px;
+  padding: 30px 28px;
+  width: min(460px, 93vw);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.22);
+  position: relative;
+  animation: modal-in 0.28s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.91) translateY(14px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+/* tape on modal */
+.modal-tape {
+  position: absolute; top: -9px; left: 50%; transform: translateX(-50%) rotate(-1.5deg);
+  width: 50px; height: 18px;
+  background: rgba(255,235,100,0.72);
+  border-radius: 3px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.modal-title {
+  font-family: var(--font-hand); font-size: 24px; font-weight: 700; color: #1a1a1a;
+  margin-bottom: 22px;
+}
+
+.form-label {
+  display: block; font-size: 11px; font-weight: 600; color: #999;
+  text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px;
+}
+
+.form-input, .form-textarea {
+  width: 100%; padding: 10px 12px; border-radius: 8px;
+  border: 1.5px solid #e5e5e5; font-size: 14px;
+  font-family: var(--font-ui); background: #fff;
+  margin-bottom: 16px; outline: none; color: #1a1a1a;
+  transition: border-color 0.15s;
+}
+.form-input:focus, .form-textarea:focus { border-color: var(--accent); }
+.form-textarea { resize: vertical; min-height: 80px; }
+
+.priority-row { display: flex; gap: 8px; margin-bottom: 16px; }
+.prio-btn {
+  flex: 1; padding: 7px 0; border-radius: 8px; font-size: 11px; font-weight: 700;
+  border: 2px solid #e5e5e5; background: #fff; color: #999;
+  cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 5px;
+  font-family: var(--font-ui);
+}
+.prio-btn.active {}
+
+.modal-actions { display: flex; gap: 10px; margin-top: 4px; }
+.btn-cancel {
+  flex: 1; padding: 11px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  border: 1.5px solid #e5e5e5; background: #fff; cursor: pointer; color: #666;
+  font-family: var(--font-ui); transition: all 0.15s;
+}
+.btn-cancel:hover { background: #f5f5f5; }
+.btn-submit {
+  flex: 2; padding: 11px; border-radius: 8px; font-size: 13px; font-weight: 700;
+  border: none; background: var(--accent); cursor: pointer; color: #fff;
+  font-family: var(--font-ui);
+  box-shadow: 0 3px 10px rgba(224,90,43,0.3);
+  transition: all 0.15s;
+}
+.btn-submit:hover { background: #c94f22; box-shadow: 0 4px 14px rgba(224,90,43,0.4); }
+
+/* ─── TOAST ──────────────────────────────────────────────────────────────── */
+#toast-container {
+  position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+}
+.toast {
+  background: #fff; border-radius: 12px; padding: 14px 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  min-width: 280px; max-width: 340px;
+  font-family: var(--font-ui);
+  animation: toast-in 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+.toast.leaving { animation: toast-out 0.28s ease-in forwards; }
+
+@keyframes toast-in  { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes toast-out { from { transform: translateX(0); opacity: 1; } to { transform: translateX(110%); opacity: 0; } }
+
+.toast-header { display: flex; justify-content: space-between; align-items: flex-start; }
+.toast-label  { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+.toast-title  { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 5px; }
+.toast-prio   { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; border-radius: 20px; padding: 2px 8px; }
+.toast-close  { background: none; border: none; cursor: pointer; font-size: 18px; color: #bbb; line-height: 1; margin-left: 8px; }
+.toast-close:hover { color: #666; }
+.toast-actions { display: flex; gap: 6px; margin-top: 10px; }
+.toast-snooze {
+  flex: 1; font-size: 11px; font-weight: 600; padding: 5px;
+  background: #f5f5f5; border: none; border-radius: 6px; cursor: pointer; color: #555;
+  transition: background 0.15s;
+}
+.toast-snooze:hover { background: #ebebeb; }
+.toast-dismiss {
+  flex: 1; font-size: 11px; font-weight: 600; padding: 5px;
+  background: var(--accent-light); border: none; border-radius: 6px; cursor: pointer; color: var(--accent);
+  transition: background 0.15s;
+}
+.toast-dismiss:hover { background: #ffe0d6; }
+
+/* ─── HINT BAR ───────────────────────────────────────────────────────────── */
+.hint {
+  position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%);
+  font-size: 10px; color: rgba(0,0,0,0.2); pointer-events: none; user-select: none;
+  white-space: nowrap;
+}
+
+/* ─── RESPONSIVE ─────────────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .board { flex-direction: column; padding: 12px; gap: 14px; }
+  .column { min-width: unset; width: 100%; max-height: unset; }
+  .header { padding: 14px 14px 0; }
+  .header-actions { display: none; }
+}
+</style>
+</head>
+
+<body>
+<div id="app">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-title">
+      <h1>📌 StickyBoard</h1>
+      <span class="count" id="total-count">0 notes</span>
+    </div>
+    <div class="header-actions" id="quick-add-row"></div>
+  </header>
+
+  <!-- Board columns -->
+  <main class="board" id="board"></main>
+
+  <!-- Modal -->
+  <div id="modal-container"></div>
+
+  <!-- Toast container -->
+  <div id="toast-container"></div>
+
+  <div class="hint">double-click title or body to edit · Ctrl+B bold · — for bullet · drag to move</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+//  StickyBoard — Vanilla JS Kanban App
+// ═══════════════════════════════════════════════════════════════════════
+
+// ─── Constants ──────────────────────────────────────────────────────────────
+
+const COLUMNS = [
+  { id: 'backlog',    label: 'Backlog',     emoji: '📋' },
+  { id: 'inprogress', label: 'In Progress', emoji: '⚡' },
+  { id: 'review',     label: 'Review',      emoji: '🔍' },
+  { id: 'done',       label: 'Done',        emoji: '✅' },
+];
+
+const PRIORITY = {
+  low:    { label: 'Low',    color: '#6ee7b7', bg: '#d1fae5', text: '#065f46', dot: '#10b981' },
+  medium: { label: 'Medium', color: '#fcd34d', bg: '#fef3c7', text: '#92400e', dot: '#f59e0b' },
+  high:   { label: 'High',   color: '#fca5a5', bg: '#fee2e2', text: '#991b1b', dot: '#ef4444' },
+};
+
+const ROTATIONS = [-2.1, -1.4, -0.7, 0, 0.5, 1.2, 1.8, 2.3, -1.9, 0.9];
+
+const NOTE_COLORS = [
+  '#fff9c4', '#fce4ec', '#e8f5e9', '#e3f2fd',
+  '#fff3e0', '#f3e5f5', '#e0f7fa', '#fafafa',
+];
+
+// ─── State ──────────────────────────────────────────────────────────────────
+
+let state = {
+  todos: [],
+  dragId: null,
+};
+
+const remTimers = {}; // note.id → setTimeout handle
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function genId() {
+  return 'note_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+}
+
+function getRotation(id) {
+  const h = id.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  return ROTATIONS[h % ROTATIONS.length];
+}
+
+function getNoteColor(id) {
+  const h = id.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  return NOTE_COLORS[h % NOTE_COLORS.length];
+}
+
+function fmtDate(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// ─── Persistence ────────────────────────────────────────────────────────────
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem('stickyboard_v2');
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return null;
+}
+
+function saveState() {
+  try {
+    localStorage.setItem('stickyboard_v2', JSON.stringify(state.todos));
+  } catch {}
+}
+
+const SAMPLE = [
+  { id: genId(), column: 'backlog',    title: 'Design new landing page',   description: 'Revamp hero section with fresh copy and illustrations.', priority: 'high',   reminder: null, createdAt: Date.now() - 8e5 },
+  { id: genId(), column: 'backlog',    title: 'Set up CI/CD pipeline',     description: 'GitHub Actions for automated testing + deploy.',         priority: 'medium', reminder: null, createdAt: Date.now() - 7e5 },
+  { id: genId(), column: 'inprogress', title: 'Fix auth bug on mobile',    description: 'Token refresh fails on iOS Safari.',                     priority: 'high',   reminder: null, createdAt: Date.now() - 6e5 },
+  { id: genId(), column: 'inprogress', title: 'Write API documentation',   description: '',                                                       priority: 'low',    reminder: null, createdAt: Date.now() - 5e5 },
+  { id: genId(), column: 'review',     title: 'Code review: payments PR',  description: 'Check Stripe webhook handling edge cases.',              priority: 'high',   reminder: null, createdAt: Date.now() - 4e5 },
+  { id: genId(), column: 'done',       title: 'Set up project repo',       description: 'Monorepo with Turborepo.',                               priority: 'low',    reminder: null, createdAt: Date.now() - 3e5 },
+  { id: genId(), column: 'done',       title: 'Initial database schema',   description: 'Users, sessions, and audit log tables.',                 priority: 'medium', reminder: null, createdAt: Date.now() - 2e5 },
+];
+
+// ─── Notifications ───────────────────────────────────────────────────────────
+
+async function reqNotifPerm() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  return (await Notification.requestPermission()) === 'granted';
+}
+
+function scheduleReminder(todo) {
+  if (!todo.reminder) return;
+  const delay = new Date(todo.reminder).getTime() - Date.now();
+  if (delay < 0) return;
+
+  clearTimeout(remTimers[todo.id]);
+  remTimers[todo.id] = setTimeout(async () => {
+    const granted = await reqNotifPerm();
+    if (granted) {
+      const n = new Notification('⏰ ' + todo.title, {
+        body: 'Priority: ' + PRIORITY[todo.priority].label,
+        tag: todo.id,
+        requireInteraction: true,
+      });
+      n.onclick = () => { window.focus(); n.close(); };
+    } else {
+      // in-app fallback
+      showToast(todo);
+    }
+  }, delay);
+}
+
+function cancelReminder(id) {
+  clearTimeout(remTimers[id]);
+  delete remTimers[id];
+}
+
+// ─── Toast ───────────────────────────────────────────────────────────────────
+
+function showToast(todo) {
+  const p    = PRIORITY[todo.priority];
+  const id   = 'toast_' + genId();
+  const cont = document.getElementById('toast-container');
+
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.id        = id;
+  el.style.borderLeft = '4px solid ' + p.dot;
+  el.innerHTML = `
+    <div class="toast-header">
+      <div>
+        <div class="toast-label" style="color:${p.text}">⏰ Reminder</div>
+        <div class="toast-title">${escHtml(todo.title)}</div>
+        <span class="toast-prio" style="background:${p.bg};color:${p.text}">
+          <span style="width:6px;height:6px;border-radius:50%;background:${p.dot};display:inline-block"></span>
+          ${p.label} Priority
+        </span>
+      </div>
+      <button class="toast-close" onclick="dismissToast('${id}')">×</button>
+    </div>
+    <div class="toast-actions">
+      <button class="toast-snooze" onclick="snoozeToast('${id}','${todo.id}',5)">Snooze 5 min</button>
+      <button class="toast-snooze" onclick="snoozeToast('${id}','${todo.id}',15)">Snooze 15 min</button>
+      <button class="toast-dismiss" onclick="dismissToast('${id}')">Dismiss</button>
+    </div>
+  `;
+  cont.appendChild(el);
+
+  // auto-dismiss after 30s
+  setTimeout(() => dismissToast(id), 30000);
+}
+
+window.dismissToast = function(toastId) {
+  const el = document.getElementById(toastId);
+  if (!el) return;
+  el.classList.add('leaving');
+  setTimeout(() => el.remove(), 300);
+};
+
+window.snoozeToast = function(toastId, todoId, minutes) {
+  dismissToast(toastId);
+  const newReminder = new Date(Date.now() + minutes * 60 * 1000).toISOString();
+  updateTodo(todoId, { reminder: newReminder });
+};
+
+// ─── Utilities ───────────────────────────────────────────────────────────────
+
+function escHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── CRUD ────────────────────────────────────────────────────────────────────
+
+function addTodo(todo) {
+  state.todos.push(todo);
+  scheduleReminder(todo);
+  saveState();
+  render();
+}
+
+function updateTodo(id, patch) {
+  const idx = state.todos.findIndex(t => t.id === id);
+  if (idx === -1) return;
+  state.todos[idx] = { ...state.todos[idx], ...patch };
+  if ('reminder' in patch) {
+    cancelReminder(id);
+    scheduleReminder(state.todos[idx]);
+  }
+  saveState();
+  render();
+}
+
+function deleteTodo(id) {
+  cancelReminder(id);
+  state.todos = state.todos.filter(t => t.id !== id);
+  saveState();
+  render();
+}
+
+function moveTodo(id, targetCol) {
+  const t = state.todos.find(t => t.id === id);
+  if (t && t.column !== targetCol) {
+    updateTodo(id, { column: targetCol });
+  }
+}
+
+// ─── Rich Text Helpers ───────────────────────────────────────────────────────
+
+/**
+ * Storage format: a simple internal markup string.
+ *   **text**  → <b>text</b>  (bold)
+ *   - item\n  → <li> inside <ul> (bullet)
+ *   plain text lines → <p>
+ *
+ * We store the contentEditable innerHTML directly (with <b>, <ul>, <li>, <p>)
+ * and render it straight into the card. escHtml is only used for plain inputs.
+ */
+
+// Sanitise HTML from contentEditable — keep only safe tags
+function sanitiseRich(html) {
+  // Strip everything except <b>, <strong>, <ul>, <li>, <p>, <br>, <div>
+  // Then normalise structure
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+
+  function clean(node) {
+    if (node.nodeType === Node.TEXT_NODE) return node.cloneNode();
+    const ALLOWED = ['B','STRONG','UL','OL','LI','P','BR','DIV','SPAN'];
+    if (!ALLOWED.includes(node.tagName)) {
+      // Replace disallowed element with its text content
+      const span = document.createElement('span');
+      node.childNodes.forEach(c => span.appendChild(clean(c)));
+      return span;
+    }
+    const el = document.createElement(node.tagName === 'OL' ? 'UL' : node.tagName);
+    node.childNodes.forEach(c => el.appendChild(clean(c)));
+    return el;
+  }
+
+  const out = document.createElement('div');
+  tmp.childNodes.forEach(c => out.appendChild(clean(c)));
+  return out.innerHTML;
+}
+
+// Convert raw innerHTML to a display-safe version (used when rendering cards)
+function richToDisplay(html) {
+  if (!html) return '';
+  // Already stored as clean HTML — just return
+  return html;
+}
+
+// ─── Inline Editing ──────────────────────────────────────────────────────────
+
+window.startEditTitle = function(id) {
+  const todo = state.todos.find(t => t.id === id);
+  if (!todo) return;
+  const el   = document.getElementById('title_' + id);
+  const orig = todo.title;
+  el.innerHTML = `<input class="edit-input" id="editinput_${id}"
+    value="${escHtml(orig)}"
+    style="width:100%;margin-right:72px"
+    onblur="finishEditTitle('${id}',this.value)"
+    onkeydown="if(event.key==='Enter'){this.blur()}if(event.key==='Escape'){this.value='${escHtml(orig)}';this.blur()}"
+  />`;
+  setTimeout(() => {
+    const inp = document.getElementById('editinput_' + id);
+    if (inp) { inp.focus(); inp.select(); }
+  }, 10);
+};
+
+window.finishEditTitle = function(id, value) {
+  const v = value.trim();
+  if (v) updateTodo(id, { title: v });
+  else render();
+};
+
+// Open rich editor for description
+window.startEditDesc = function(id) {
+  const todo = state.todos.find(t => t.id === id);
+  if (!todo) return;
+  const wrap = document.getElementById('desc_' + id);
+
+  wrap.className = '';
+  wrap.innerHTML = `
+    <div class="desc-editor-wrap" id="ew_${id}">
+      <div class="editor-toolbar">
+        <button class="tb-btn" id="tb_bold_${id}" title="Bold (Ctrl+B)" onmousedown="event.preventDefault();tbBold('${id}')"><b>B</b></button>
+        <div class="tb-sep"></div>
+        <button class="tb-btn" id="tb_bullet_${id}" title="Add bullet item" onmousedown="event.preventDefault();tbAddBullet('${id}')">• List</button>
+        <div class="tb-sep"></div>
+        <span class="tb-hint">Ctrl+B bold · "- " for bullet · Esc to save</span>
+      </div>
+      <div
+        class="desc-editable"
+        id="editable_${id}"
+        contenteditable="true"
+        data-placeholder="Add a description…"
+        spellcheck="false"
+      ></div>
+    </div>
+  `;
+
+  const editable = document.getElementById('editable_' + id);
+  editable.innerHTML = todo.description || '';
+
+  // Place caret at end
+  setTimeout(() => {
+    editable.focus();
+    const range = document.createRange();
+    range.selectNodeContents(editable);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }, 10);
+
+  editable.addEventListener('keyup',   () => updateToolbarState(id));
+  editable.addEventListener('mouseup', () => updateToolbarState(id));
+
+  editable.addEventListener('keydown', function(e) {
+    // Ctrl+B → bold
+    if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+      e.preventDefault();
+      tbBold(id);
+      return;
+    }
+
+    // Escape → save
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      finishEditDesc(id);
+      return;
+    }
+
+    // Enter inside a <li>
+    if (e.key === 'Enter') {
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return;
+      const li = getAncestor(sel.getRangeAt(0).startContainer, 'LI', editable);
+      if (li) {
+        e.preventDefault();
+        if (li.textContent.trim() === '') {
+          // Empty bullet → exit list, insert plain line
+          exitList(li, editable, sel);
+        } else {
+          // Add new bullet below
+          const newLi = document.createElement('li');
+          li.after(newLi);
+          moveCaret(newLi, sel);
+        }
+      }
+      return;
+    }
+
+    // Backspace at start of <li> → remove bullet, keep text
+    if (e.key === 'Backspace') {
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return;
+      const range = sel.getRangeAt(0);
+      if (range.collapsed && range.startOffset === 0) {
+        const li = getAncestor(range.startContainer, 'LI', editable);
+        if (li) {
+          e.preventDefault();
+          exitList(li, editable, sel);
+        }
+      }
+      return;
+    }
+
+    // "- " shortcut → convert current line to bullet
+    if (e.key === ' ') {
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return;
+      const range = sel.getRangeAt(0);
+      const node  = range.startContainer;
+      // Only trigger if the entire text of the current block is "-"
+      const block = getEditableBlock(node, editable);
+      if (block && getBlockText(block) === '-') {
+        e.preventDefault();
+        convertBlockToBullet(block, editable, sel);
+      }
+    }
+  });
+
+  // Save on blur
+  editable.addEventListener('blur', function() {
+    setTimeout(() => {
+      const ew = document.getElementById('ew_' + id);
+      if (ew && !ew.contains(document.activeElement)) {
+        finishEditDesc(id);
+      }
+    }, 150);
+  });
+};
+
+// ── List helpers ──────────────────────────────────────────────────────────────
+
+function getAncestor(node, tag, stop) {
+  while (node && node !== stop) {
+    if (node.nodeName === tag) return node;
+    node = node.parentNode;
+  }
+  return null;
+}
+
+// Returns the immediate child of editable that contains node
+function getEditableBlock(node, editable) {
+  while (node && node.parentNode !== editable) node = node.parentNode;
+  return node || null;
+}
+
+function getBlockText(block) {
+  return block ? block.textContent : '';
+}
+
+function moveCaret(el, sel) {
+  const r = document.createRange();
+  r.setStart(el, 0); r.collapse(true);
+  sel.removeAllRanges(); sel.addRange(r);
+}
+
+// Convert a block element (div/p/text/br) to a <li> inside a <ul>
+function convertBlockToBullet(block, editable, sel) {
+  const li = document.createElement('li');
+  // If block is a text node or br, wrap in li directly
+  const ul = document.createElement('ul');
+  ul.appendChild(li);
+
+  // Check if previous sibling is already a <ul> — append to it
+  const prev = block.previousSibling;
+  if (prev && prev.nodeName === 'UL') {
+    // Remove empty block
+    editable.removeChild(block);
+    prev.appendChild(li);
+  } else {
+    editable.replaceChild(ul, block);
+  }
+  moveCaret(li, sel);
+}
+
+// Exit list: take li's content, insert as plain line after the <ul>
+function exitList(li, editable, sel) {
+  const ul    = li.parentNode;
+  const div   = document.createElement('div');
+  // Move li's content into the div
+  while (li.firstChild) div.appendChild(li.firstChild);
+  if (!div.firstChild) div.appendChild(document.createElement('br'));
+
+  ul.removeChild(li);
+  if (ul.children.length === 0) {
+    // No more items — replace ul with div
+    editable.replaceChild(div, ul);
+  } else {
+    // Insert div after ul
+    ul.after(div);
+  }
+  moveCaret(div, sel);
+}
+
+function updateToolbarState(id) {
+  const boldBtn = document.getElementById('tb_bold_' + id);
+  if (!boldBtn) return;
+  try {
+    boldBtn.classList.toggle('active', document.queryCommandState('bold'));
+  } catch(e) {}
+}
+
+window.tbBold = function(id) {
+  const editable = document.getElementById('editable_' + id);
+  if (!editable) return;
+  editable.focus();
+  document.execCommand('bold', false, null);
+  updateToolbarState(id);
+};
+
+// Add a new bullet item at current caret position (toolbar button)
+window.tbAddBullet = function(id) {
+  const editable = document.getElementById('editable_' + id);
+  if (!editable) return;
+  editable.focus();
+
+  const sel = window.getSelection();
+  if (!sel.rangeCount) {
+    // No selection — just append a bullet at the end
+    appendBulletAtEnd(editable, sel);
+    return;
+  }
+  const range = sel.getRangeAt(0);
+  const li    = getAncestor(range.startContainer, 'LI', editable);
+
+  if (li) {
+    // Already in a list — add new item
+    const newLi = document.createElement('li');
+    li.after(newLi);
+    moveCaret(newLi, sel);
+  } else {
+    // Find current block and convert it, or append
+    const block = getEditableBlock(range.startContainer, editable);
+    if (block && block !== editable) {
+      convertBlockToBullet(block, editable, sel);
+    } else {
+      appendBulletAtEnd(editable, sel);
+    }
+  }
+  updateToolbarState(id);
+};
+
+function appendBulletAtEnd(editable, sel) {
+  // Check if last child is a ul — append to it
+  const last = editable.lastChild;
+  const li   = document.createElement('li');
+  if (last && last.nodeName === 'UL') {
+    last.appendChild(li);
+  } else {
+    const ul = document.createElement('ul');
+    ul.appendChild(li);
+    editable.appendChild(ul);
+  }
+  moveCaret(li, sel);
+}
+
+window.finishEditDesc = function(id) {
+  const editable = document.getElementById('editable_' + id);
+  if (!editable) return;
+  const html = sanitiseRich(editable.innerHTML);
+  updateTodo(id, { description: html });
+};
+
+window.cyclePriority = function(id) {
+  const todo = state.todos.find(t => t.id === id);
+  if (!todo) return;
+  const keys = Object.keys(PRIORITY);
+  const next = keys[(keys.indexOf(todo.priority) + 1) % keys.length];
+  updateTodo(id, { priority: next });
+};
+
+window.showDeleteConfirm = function(id) {
+  const footer = document.getElementById('footer_' + id);
+  footer.innerHTML = `
+    <div class="delete-confirm">
+      <span>Delete this note?</span>
+      <button class="btn-yes" onclick="deleteTodo('${id}')">Yes</button>
+      <button class="btn-no"  onclick="render()">No</button>
+    </div>
+  `;
+};
+
+// ─── Drag & Drop ─────────────────────────────────────────────────────────────
+
+function setupDrag() {
+  document.querySelectorAll('.note').forEach(el => {
+    el.addEventListener('dragstart', e => {
+      state.dragId = e.currentTarget.dataset.id;
+      e.dataTransfer.setData('text/plain', state.dragId);
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => { if (el) el.classList.add('dragging'); }, 0);
+    });
+    el.addEventListener('dragend', () => {
+      el.classList.remove('dragging');
+      state.dragId = null;
+    });
+  });
+
+  document.querySelectorAll('.notes-area').forEach(area => {
+    const col = area.dataset.col;
+    area.addEventListener('dragover', e => {
+      e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+      area.closest('.column').classList.add('drag-over');
+    });
+    area.addEventListener('dragleave', e => {
+      if (!area.contains(e.relatedTarget))
+        area.closest('.column').classList.remove('drag-over');
+    });
+    area.addEventListener('drop', e => {
+      e.preventDefault();
+      const id = e.dataTransfer.getData('text/plain') || state.dragId;
+      if (id) moveTodo(id, col);
+      area.closest('.column').classList.remove('drag-over');
+    });
+  });
+}
+
+// ─── Modal ───────────────────────────────────────────────────────────────────
+
+let _modalCol     = null;
+let _modalPriority = 'medium';
+
+window.openModal = function(colId) {
+  _modalCol      = colId;
+  _modalPriority = 'medium';
+  const colLabel = COLUMNS.find(c => c.id === colId)?.label || colId;
+
+  document.getElementById('modal-container').innerHTML = `
+    <div class="modal-backdrop" id="modal-backdrop" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box">
+        <div class="modal-tape"></div>
+        <div class="modal-title">✏️ New sticky note</div>
+
+        <label class="form-label">Title *</label>
+        <input class="form-input" id="m-title" placeholder="What needs to be done?" autofocus />
+
+        <label class="form-label">Description</label>
+        <div class="desc-editor-wrap" style="margin-bottom:16px">
+          <div class="editor-toolbar">
+            <button class="tb-btn" id="modal_tb_bold"   title="Bold (Ctrl+B)" onmousedown="event.preventDefault();modalTbBold()"><b>B</b></button>
+            <div class="tb-sep"></div>
+            <button class="tb-btn" id="modal_tb_bullet" title="Add bullet item" onmousedown="event.preventDefault();modalTbBullet()">• List</button>
+            <div class="tb-sep"></div>
+            <span class="tb-hint">Ctrl+B bold · "- " for bullet</span>
+          </div>
+          <div
+            id="m-desc"
+            class="desc-editable"
+            contenteditable="true"
+            data-placeholder="Add more context…"
+            spellcheck="false"
+          ></div>
+        </div>
+
+        <label class="form-label">Priority</label>
+        <div class="priority-row" id="prio-row">
+          ${Object.entries(PRIORITY).map(([k, v]) => `
+            <button class="prio-btn ${k==='medium'?'active':''}" id="prio_${k}"
+              style="${k==='medium'?`border-color:${v.dot};background:${v.bg};color:${v.text}`:''}"
+              onclick="selectPrio('${k}')">
+              <span style="width:7px;height:7px;border-radius:50%;background:${v.dot};display:inline-block"></span>
+              ${v.label}
+            </button>
+          `).join('')}
+        </div>
+
+        <label class="form-label">Reminder (optional)</label>
+        <input class="form-input" type="datetime-local" id="m-reminder"
+          min="${new Date().toISOString().slice(0,16)}" />
+
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+          <button class="btn-submit" onclick="submitModal()">Add note ✦</button>
+        </div>
+      </div>
+    </div>
+  `;
+  setTimeout(() => { document.getElementById('m-title')?.focus(); setupModalEditor(); }, 50);
+};
+
+window.selectPrio = function(key) {
+  _modalPriority = key;
+  Object.entries(PRIORITY).forEach(([k, v]) => {
+    const btn = document.getElementById('prio_' + k);
+    if (!btn) return;
+    if (k === key) {
+      btn.style.borderColor = v.dot;
+      btn.style.background  = v.bg;
+      btn.style.color       = v.text;
+    } else {
+      btn.style.borderColor = '#e5e5e5';
+      btn.style.background  = '#fff';
+      btn.style.color       = '#999';
+    }
+  });
+};
+
+window.modalTbBold = function() {
+  const ed = document.getElementById('m-desc');
+  if (ed) { ed.focus(); document.execCommand('bold', false, null); }
+};
+
+window.modalTbBullet = function() {
+  const ed = document.getElementById('m-desc');
+  if (!ed) return;
+  ed.focus();
+  const sel = window.getSelection();
+  if (!sel.rangeCount) { appendBulletAtEnd(ed, sel); return; }
+  const range = sel.getRangeAt(0);
+  const li    = getAncestor(range.startContainer, 'LI', ed);
+  if (li) {
+    const newLi = document.createElement('li');
+    li.after(newLi);
+    moveCaret(newLi, sel);
+  } else {
+    const block = getEditableBlock(range.startContainer, ed);
+    if (block && block !== ed) convertBlockToBullet(block, ed, sel);
+    else appendBulletAtEnd(ed, sel);
+  }
+};
+
+// Set up keyboard shortcuts for the modal rich editor
+function setupModalEditor() {
+  const ed = document.getElementById('m-desc');
+  if (!ed) return;
+  ed.addEventListener('keydown', function(e) {
+    // Ctrl+B → bold
+    if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+      e.preventDefault();
+      document.execCommand('bold', false, null);
+      return;
+    }
+    // Enter inside <li>
+    if (e.key === 'Enter') {
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return;
+      const li = getAncestor(sel.getRangeAt(0).startContainer, 'LI', ed);
+      if (li) {
+        e.preventDefault();
+        if (li.textContent.trim() === '') {
+          exitList(li, ed, sel);
+        } else {
+          const newLi = document.createElement('li');
+          li.after(newLi);
+          moveCaret(newLi, sel);
+        }
+      }
+      return;
+    }
+    // Backspace at start of <li> → exit list
+    if (e.key === 'Backspace') {
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return;
+      const range = sel.getRangeAt(0);
+      if (range.collapsed && range.startOffset === 0) {
+        const li = getAncestor(range.startContainer, 'LI', ed);
+        if (li) { e.preventDefault(); exitList(li, ed, sel); }
+      }
+      return;
+    }
+    // "- " shortcut → bullet
+    if (e.key === ' ') {
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return;
+      const node  = sel.getRangeAt(0).startContainer;
+      const block = getEditableBlock(node, ed);
+      if (block && getBlockText(block) === '-') {
+        e.preventDefault();
+        convertBlockToBullet(block, ed, sel);
+      }
+    }
+  });
+}
+
+window.submitModal = function() {
+  const title = document.getElementById('m-title')?.value.trim();
+  if (!title) {
+    document.getElementById('m-title').style.borderColor = '#ef4444';
+    return;
+  }
+  const descEl  = document.getElementById('m-desc');
+  const descHtml = descEl ? sanitiseRich(descEl.innerHTML) : '';
+  const reminder = document.getElementById('m-reminder')?.value || null;
+  addTodo({
+    id:          genId(),
+    column:      _modalCol,
+    title,
+    description: descHtml,
+    priority:    _modalPriority,
+    reminder:    reminder ? new Date(reminder).toISOString() : null,
+    createdAt:   Date.now(),
+  });
+  closeModal();
+};
+
+window.closeModal = function() {
+  const cont = document.getElementById('modal-container');
+  const backdrop = document.getElementById('modal-backdrop');
+  if (backdrop) {
+    backdrop.style.animation = 'none';
+    backdrop.style.opacity   = '0';
+    setTimeout(() => { cont.innerHTML = ''; }, 200);
+  } else {
+    cont.innerHTML = '';
+  }
+};
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+
+function renderNoteCard(todo) {
+  const p   = PRIORITY[todo.priority];
+  const rot = getRotation(todo.id);
+  const bg  = getNoteColor(todo.id);
+  const rem = fmtDate(todo.reminder);
+
+  // Check if description has visible content
+  const hasDesc = todo.description && todo.description.replace(/<[^>]*>/g,'').trim().length > 0;
+
+  return `
+    <div class="note" id="note_${todo.id}" data-id="${todo.id}" draggable="true"
+      style="transform:rotate(${rot}deg);background:${bg}"
+      onmouseenter="this.style.transform='rotate(${rot*0.4}deg) translateY(-3px)';this.style.boxShadow='var(--shadow-hover)'"
+      onmouseleave="this.style.transform='rotate(${rot}deg) translateY(0)';this.style.boxShadow='var(--shadow-note)'"
+    >
+      <!-- Priority badge -->
+      <button class="note-priority" onclick="cyclePriority('${todo.id}')"
+        title="Priority: ${p.label} (click to cycle)"
+        style="background:${p.bg};color:${p.text};border-color:${p.color}">
+        <span class="priority-dot ${todo.priority==='high'?'pulse':''}" style="background:${p.dot}"></span>
+        ${p.label}
+      </button>
+
+      <!-- Title -->
+      <div id="title_${todo.id}" class="note-title"
+        ondblclick="startEditTitle('${todo.id}')"
+        title="Double-click to edit"
+      >${escHtml(todo.title)}</div>
+
+      <!-- Description (rich rendered) -->
+      <div id="desc_${todo.id}"
+        class="note-desc ${hasDesc ? 'note-desc-rendered' : 'empty'}"
+        ondblclick="startEditDesc('${todo.id}')"
+        title="Double-click to edit"
+      >${hasDesc ? richToDisplay(todo.description) : '<span style="color:#bbb;font-family:var(--font-hand);font-size:13px">Add a description…</span>'}</div>
+
+      <!-- Reminder -->
+      ${rem ? `<div class="note-reminder">⏰ ${rem}</div>` : ''}
+
+      <!-- Footer -->
+      <div class="note-footer" id="footer_${todo.id}">
+        <button class="delete-btn" onclick="showDeleteConfirm('${todo.id}')">🗑 Delete</button>
+      </div>
+    </div>
+  `;
+}
+
+function render() {
+  // Update header count
+  document.getElementById('total-count').textContent =
+    state.todos.length + ' note' + (state.todos.length !== 1 ? 's' : '');
+
+  // Quick-add buttons in header
+  document.getElementById('quick-add-row').innerHTML =
+    COLUMNS.map(col => `
+      <button class="quick-add-btn" onclick="openModal('${col.id}')">
+        ${col.emoji} ${col.label}
+      </button>
+    `).join('');
+
+  // Board columns
+  document.getElementById('board').innerHTML = COLUMNS.map(col => {
+    const notes = state.todos
+      .filter(t => t.column === col.id)
+      .sort((a, b) => a.createdAt - b.createdAt);
+    return `
+      <div class="column" id="col_${col.id}">
+        <div class="col-header">
+          <div class="col-title">
+            <span class="emoji">${col.emoji}</span>
+            <span class="label">${col.label}</span>
+            <span class="col-count">${notes.length}</span>
+          </div>
+        </div>
+        <div class="notes-area" data-col="${col.id}">
+          ${notes.map(renderNoteCard).join('')}
+        </div>
+        <button class="add-btn" onclick="openModal('${col.id}')">
+          <span style="font-size:15px">+</span> Add note
+        </button>
+      </div>
+    `;
+  }).join('');
+
+  // Re-attach drag listeners after re-render
+  setupDrag();
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+
+(function init() {
+  const saved = loadState();
+  state.todos = saved || SAMPLE;
+
+  // Schedule any existing reminders
+  state.todos.forEach(scheduleReminder);
+
+  // Request notification permission on first click
+  document.addEventListener('click', async function onFirstClick() {
+    await reqNotifPerm();
+    document.removeEventListener('click', onFirstClick);
+  }, { once: true });
+
+  render();
+})();
+</script>
+</body>
+</html>
