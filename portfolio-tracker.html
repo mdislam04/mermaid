@@ -1958,6 +1958,122 @@
             gradient.addColorStop(0, 'rgba(0, 245, 255, 0.4)');
             gradient.addColorStop(1, 'rgba(0, 245, 255, 0.05)');
 
+            // Find min and max indices
+            const maxVal = Math.max(...data);
+            const minVal = Math.min(...data);
+            const maxIdx = data.indexOf(maxVal);
+            const minIdx = data.lastIndexOf(minVal);
+
+            // Build per-point styles to highlight min/max
+            const pointRadii = data.map((_, i) => (i === maxIdx || i === minIdx) ? 8 : 4);
+            const pointBgColors = data.map((_, i) => i === maxIdx ? '#00ff88' : i === minIdx ? '#ff3366' : '#00f5ff');
+            const pointBorderColors = data.map((_, i) => i === maxIdx ? '#00ff88' : i === minIdx ? '#ff3366' : '#0a0e1a');
+            const pointBorderWidths = data.map((_, i) => (i === maxIdx || i === minIdx) ? 3 : 2);
+
+            // Custom plugin to draw bubble labels on min/max points
+            const minMaxLabelPlugin = {
+                id: 'minMaxLabels',
+                afterDatasetsDraw(chart) {
+                    const dataset = chart.data.datasets[0];
+                    const meta = chart.getDatasetMeta(0);
+                    if (!meta || !meta.data) return;
+                    const chartCtx = chart.ctx;
+
+                    [maxIdx, minIdx].forEach(idx => {
+                        const point = meta.data[idx];
+                        if (!point) return;
+                        const val = dataset.data[idx];
+                        const isMax = idx === maxIdx;
+                        const formattedVal = val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        const tagText = isMax ? 'HIGH' : 'LOW';
+                        const bgColor = isMax ? 'rgba(0, 255, 136, 0.15)' : 'rgba(255, 51, 102, 0.15)';
+                        const borderColor = isMax ? '#00ff88' : '#ff3366';
+                        const textColor = isMax ? '#00ff88' : '#ff3366';
+
+                        chartCtx.save();
+
+                        // Measure tag and value separately
+                        chartCtx.font = 'bold 10px JetBrains Mono';
+                        const tagWidth = chartCtx.measureText(tagText).width;
+                        chartCtx.font = 'bold 13px JetBrains Mono';
+                        const valWidth = chartCtx.measureText(formattedVal).width;
+                        const contentW = Math.max(tagWidth, valWidth);
+
+                        const padX = 10, padY = 6, bubbleRadius = 10;
+                        const boxW = contentW + padX * 2;
+                        const boxH = 40 + padY * 2;
+                        const arrowH = 7;
+
+                        // Position above for max, below for min
+                        let yOffset = isMax ? -(boxH + arrowH + 8) : (arrowH + 8);
+                        let x = point.x - boxW / 2;
+                        let y = point.y + yOffset;
+
+                        // Clamp within chart area
+                        const area = chart.chartArea;
+                        if (x < area.left + 4) x = area.left + 4;
+                        if (x + boxW > area.right - 4) x = area.right - boxW - 4;
+                        if (y < area.top + 2) y = area.top + 2;
+                        if (y + boxH > area.bottom - 2) y = area.bottom - boxH - 2;
+
+                        // Draw bubble shadow
+                        chartCtx.shadowColor = borderColor;
+                        chartCtx.shadowBlur = 12;
+                        chartCtx.shadowOffsetX = 0;
+                        chartCtx.shadowOffsetY = 0;
+                        chartCtx.fillStyle = bgColor;
+                        chartCtx.beginPath();
+                        chartCtx.roundRect(x, y, boxW, boxH, bubbleRadius);
+                        chartCtx.fill();
+                        chartCtx.shadowBlur = 0;
+
+                        // Draw bubble border
+                        chartCtx.strokeStyle = borderColor;
+                        chartCtx.lineWidth = 2;
+                        chartCtx.beginPath();
+                        chartCtx.roundRect(x, y, boxW, boxH, bubbleRadius);
+                        chartCtx.stroke();
+
+                        // Draw arrow pointing to the data point
+                        const arrowX = point.x;
+                        const arrowBaseY = isMax ? y + boxH : y;
+                        const arrowTipY = isMax ? arrowBaseY + arrowH : arrowBaseY - arrowH;
+                        chartCtx.fillStyle = bgColor;
+                        chartCtx.strokeStyle = borderColor;
+                        chartCtx.lineWidth = 2;
+                        chartCtx.beginPath();
+                        chartCtx.moveTo(arrowX - 6, arrowBaseY);
+                        chartCtx.lineTo(arrowX, arrowTipY);
+                        chartCtx.lineTo(arrowX + 6, arrowBaseY);
+                        chartCtx.closePath();
+                        chartCtx.fill();
+                        chartCtx.stroke();
+                        // Redraw the base edge to hide the border between arrow and bubble
+                        chartCtx.strokeStyle = bgColor;
+                        chartCtx.lineWidth = 3;
+                        chartCtx.beginPath();
+                        chartCtx.moveTo(arrowX - 7, arrowBaseY);
+                        chartCtx.lineTo(arrowX + 7, arrowBaseY);
+                        chartCtx.stroke();
+
+                        // Draw tag text (HIGH / LOW)
+                        chartCtx.fillStyle = textColor;
+                        chartCtx.textAlign = 'center';
+                        chartCtx.textBaseline = 'middle';
+                        chartCtx.font = 'bold 10px JetBrains Mono';
+                        chartCtx.globalAlpha = 0.7;
+                        chartCtx.fillText(tagText, x + boxW / 2, y + padY + 8);
+                        chartCtx.globalAlpha = 1.0;
+
+                        // Draw value text (bold, larger)
+                        chartCtx.font = 'bold 13px JetBrains Mono';
+                        chartCtx.fillText(formattedVal, x + boxW / 2, y + padY + 28);
+
+                        chartCtx.restore();
+                    });
+                }
+            };
+
             pnlChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -1970,16 +2086,17 @@
                         borderWidth: 2,
                         fill: true,
                         tension: 0.3,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#00f5ff',
-                        pointBorderColor: '#0a0e1a',
-                        pointBorderWidth: 2,
+                        pointRadius: pointRadii,
+                        pointBackgroundColor: pointBgColors,
+                        pointBorderColor: pointBorderColors,
+                        pointBorderWidth: pointBorderWidths,
                         pointHoverRadius: 6,
                         pointHoverBackgroundColor: '#00ff88',
                         pointHoverBorderColor: '#00f5ff',
                         pointHoverBorderWidth: 2
                     }]
                 },
+                plugins: [minMaxLabelPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
