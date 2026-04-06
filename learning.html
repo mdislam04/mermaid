@@ -1,0 +1,103 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap');
+  .ls-wrap { font-family: 'Sora', sans-serif; background: #0f0f1a; min-height: 100vh; padding: 2.5rem 2rem; }
+  .ls-hero { margin-bottom: 2.5rem; }
+  .ls-hero h1 { font-size: 2rem; font-weight: 700; color: #fff; letter-spacing: -0.5px; line-height: 1.2; }
+  .ls-hero p { font-size: 14px; color: #8b8baa; margin-top: 8px; }
+  .ls-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+  .ls-card {
+    background: #1a1a2e;
+    border: 1px solid #2a2a45;
+    border-radius: 14px;
+    padding: 1.4rem 1.25rem 1.2rem;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s, background 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    text-decoration: none;
+  }
+  .ls-card:hover { border-color: #6c63ff; background: #1f1f38; transform: translateY(-2px); }
+  .ls-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .ls-title { font-size: 15px; font-weight: 600; color: #e8e8f5; line-height: 1.35; }
+  .ls-arrow {
+    margin-top: auto;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: #2a2a45;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  .ls-card:hover .ls-arrow { background: #6c63ff; }
+  .ls-arrow svg { width: 12px; height: 12px; }
+  @media (max-width: 640px) { .ls-grid { grid-template-columns: 1fr; } }
+  @media (min-width: 641px) and (max-width: 900px) { .ls-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+</style>
+
+<div class="ls-wrap">
+  <div class="ls-hero">
+    <h1>What do you want<br>to learn today?</h1>
+    <p>Pick a topic and start building your skills.</p>
+  </div>
+  <div class="ls-grid">
+
+    <a href="ai-foundry.html" class="ls-card">
+      <div class="ls-icon" style="background:#fff3cd; color:#b45309;">AIF</div>
+      <div class="ls-title">Azure AI Foundry – 30 Day Learning Roadmap</div>
+      <div class="ls-arrow"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 9.5L9.5 2.5M9.5 2.5H4M9.5 2.5V8" stroke="#e8e8f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    </a>
+
+    <a href="css-layouts.html" class="ls-card">
+      <div class="ls-icon" style="background:#dbeafe; color:#1d4ed8;">CSS</div>
+      <div class="ls-title">CSS layouts</div>
+      <div class="ls-arrow"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 9.5L9.5 2.5M9.5 2.5H4M9.5 2.5V8" stroke="#e8e8f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    </a>
+
+    <a href="html-forms.html" class="ls-card">
+      <div class="ls-icon" style="background:#fce7f3; color:#9d174d;">HTM</div>
+      <div class="ls-title">HTML forms</div>
+      <div class="ls-arrow"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 9.5L9.5 2.5M9.5 2.5H4M9.5 2.5V8" stroke="#e8e8f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    </a>
+
+    <a href="react-fundamentals.html" class="ls-card">
+      <div class="ls-icon" style="background:#d1fae5; color:#065f46;">RCT</div>
+      <div class="ls-title">React fundamentals</div>
+      <div class="ls-arrow"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 9.5L9.5 2.5M9.5 2.5H4M9.5 2.5V8" stroke="#e8e8f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    </a>
+
+    <a href="api-integration.html" class="ls-card">
+      <div class="ls-icon" style="background:#ede9fe; color:#5b21b6;">API</div>
+      <div class="ls-title">API integration</div>
+      <div class="ls-arrow"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 9.5L9.5 2.5M9.5 2.5H4M9.5 2.5V8" stroke="#e8e8f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    </a>
+
+    <a href="git-version-control.html" class="ls-card">
+      <div class="ls-icon" style="background:#fee2e2; color:#991b1b;">GIT</div>
+      <div class="ls-title">Git & version control</div>
+      <div class="ls-arrow"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 9.5L9.5 2.5M9.5 2.5H4M9.5 2.5V8" stroke="#e8e8f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    </a>
+
+    <a href="responsive-design.html" class="ls-card">
+      <div class="ls-icon" style="background:#fef3c7; color:#92400e;">RWD</div>
+      <div class="ls-title">Responsive design</div>
+      <div class="ls-arrow"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 9.5L9.5 2.5M9.5 2.5H4M9.5 2.5V8" stroke="#e8e8f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    </a>
+
+    <a href="node-basics.html" class="ls-card">
+      <div class="ls-icon" style="background:#d1fae5; color:#064e3b;">NOD</div>
+      <div class="ls-title">Node.js basics</div>
+      <div class="ls-arrow"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 9.5L9.5 2.5M9.5 2.5H4M9.5 2.5V8" stroke="#e8e8f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    </a>
+
+    <a href="database-fundamentals.html" class="ls-card">
+      <div class="ls-icon" style="background:#e0e7ff; color:#3730a3;">DB</div>
+      <div class="ls-title">Database fundamentals</div>
+      <div class="ls-arrow"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 9.5L9.5 2.5M9.5 2.5H4M9.5 2.5V8" stroke="#e8e8f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    </a>
+
+  </div>
+</div>
