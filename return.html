@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stock Return Calculator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #f4f5f7;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+    color: #1a1a1a;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 680px;
+  }
+
+  .header {
+    margin-bottom: 1.5rem;
+  }
+
+  .header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    color: #111;
+    margin-bottom: 4px;
+  }
+
+  .header p {
+    font-size: 14px;
+    color: #6b7280;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 12px;
+  }
+
+  .input-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .input-group label {
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 500;
+  }
+
+  .input-group input {
+    font-size: 15px;
+    font-family: inherit;
+    padding: 9px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #f9fafb;
+    color: #111;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+  }
+
+  .input-group input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+    background: #fff;
+  }
+
+  .calc-btn {
+    width: 100%;
+    margin-top: 1rem;
+    padding: 11px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    border-radius: 9px;
+    border: none;
+    background: #111827;
+    color: #fff;
+    transition: background 0.15s, transform 0.1s;
+    letter-spacing: 0.01em;
+  }
+
+  .calc-btn:hover { background: #1f2937; }
+  .calc-btn:active { transform: scale(0.98); }
+
+  /* Result Panel */
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .result-title {
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 500;
+  }
+
+  .result-badge {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 999px;
+  }
+
+  .badge-gain { background: #d1fae5; color: #065f46; }
+  .badge-loss { background: #fee2e2; color: #991b1b; }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .metric-card {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+  }
+
+  .metric-label {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  .metric-value {
+    font-size: 19px;
+    font-weight: 600;
+    color: #111;
+  }
+
+  .metric-value.gain { color: #047857; }
+  .metric-value.loss { color: #b91c1c; }
+
+  /* Suggestions */
+  .suggestions-header {
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+
+  .suggestion-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 0;
+    border-bottom: 1px solid #f3f4f6;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .suggestion-row:last-child { border-bottom: none; }
+
+  .sug-label {
+    font-size: 14px;
+    color: #374151;
+  }
+
+  .sug-label strong {
+    font-weight: 600;
+    color: #111;
+  }
+
+  .sug-label span {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-left: 4px;
+  }
+
+  .sug-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sug-return {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .sug-return.gain { color: #047857; }
+  .sug-return.loss { color: #b91c1c; }
+
+  .sug-pill {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 2px 9px;
+    border-radius: 999px;
+  }
+
+  .sug-pill.gain { background: #d1fae5; color: #065f46; }
+  .sug-pill.loss { background: #fee2e2; color: #991b1b; }
+
+  .hidden { display: none; }
+
+  @media (max-width: 500px) {
+    .input-grid { grid-template-columns: 1fr; }
+    .metrics-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>Stock Return Calculator</h1>
+    <p>Calculate profit or loss on your equity investment</p>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Investment details</div>
+    <div class="input-grid">
+      <div class="input-group">
+        <label for="amount">Invested amount (₹)</label>
+        <input type="number" id="amount" value="1000000" min="1" step="1000" />
+      </div>
+      <div class="input-group">
+        <label for="buy">Buy price (₹)</label>
+        <input type="number" id="buy" placeholder="e.g. 150.00" min="0.01" step="0.01" />
+      </div>
+      <div class="input-group">
+        <label for="sell">Sell price (₹)</label>
+        <input type="number" id="sell" placeholder="e.g. 210.00" min="0.01" step="0.01" />
+      </div>
+    </div>
+    <button class="calc-btn" onclick="calculate()">Calculate return</button>
+  </div>
+
+  <div class="card hidden" id="result-panel">
+    <div class="result-header">
+      <span class="result-title">Return summary</span>
+      <span class="result-badge" id="result-badge"></span>
+    </div>
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Shares bought</div>
+        <div class="metric-value" id="res-shares">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Net return</div>
+        <div class="metric-value" id="res-return">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Final value</div>
+        <div class="metric-value" id="res-final">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="sug-panel">
+    <div class="suggestions-header">What if the sell price were different?</div>
+    <div id="sug-rows"></div>
+  </div>
+</div>
+
+<script>
+  function fmt(n) {
+    return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(n);
+  }
+  function fmtRupee(n) {
+    return '₹' + fmt(Math.abs(n));
+  }
+  function pct(n) {
+    return (n >= 0 ? '+' : '−') + Math.abs(n).toFixed(2) + '%';
+  }
+
+  function calculate() {
+    const amount = parseFloat(document.getElementById('amount').value);
+    const buy    = parseFloat(document.getElementById('buy').value);
+    const sell   = parseFloat(document.getElementById('sell').value);
+
+    if (!amount || !buy || !sell || buy <= 0 || sell <= 0) {
+      alert('Please fill in all three fields with valid values.');
+      return;
+    }
+
+    const shares     = Math.floor(amount / buy);
+    const invested   = shares * buy;
+    const finalVal   = shares * sell;
+    const net        = finalVal - invested;
+    const pctChange  = ((sell - buy) / buy) * 100;
+    const isGain     = net >= 0;
+
+    document.getElementById('result-panel').classList.remove('hidden');
+    document.getElementById('sug-panel').classList.remove('hidden');
+
+    const badge = document.getElementById('result-badge');
+    badge.textContent = pct(pctChange);
+    badge.className = 'result-badge ' + (isGain ? 'badge-gain' : 'badge-loss');
+
+    document.getElementById('res-shares').textContent = fmt(shares) + ' shares';
+
+    const retEl = document.getElementById('res-return');
+    retEl.textContent = (isGain ? '+' : '−') + fmtRupee(net);
+    retEl.className = 'metric-value ' + (isGain ? 'gain' : 'loss');
+
+    document.getElementById('res-final').textContent = fmtRupee(finalVal);
+
+    const offsets = [-0.2, 0.1, 0.25];
+    const labels  = ['−20% lower', '+10% higher', '+25% higher'];
+    const rowsEl  = document.getElementById('sug-rows');
+    rowsEl.innerHTML = '';
+
+    offsets.forEach((off, i) => {
+      const altSell  = sell * (1 + off);
+      const altFinal = shares * altSell;
+      const altNet   = altFinal - invested;
+      const altPct   = ((altSell - buy) / buy) * 100;
+      const altGain  = altNet >= 0;
+
+      const row = document.createElement('div');
+      row.className = 'suggestion-row';
+      row.innerHTML = `
+        <div class="sug-label">
+          If sell price were <strong>${fmtRupee(altSell)}</strong>
+          <span>(${labels[i]})</span>
+        </div>
+        <div class="sug-right">
+          <span class="sug-return ${altGain ? 'gain' : 'loss'}">${altGain ? '+' : '−'}${fmtRupee(altNet)}</span>
+          <span class="sug-pill ${altGain ? 'gain' : 'loss'}">${pct(altPct)}</span>
+        </div>
+      `;
+      rowsEl.appendChild(row);
+    });
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+</script>
+
+</body>
+</html>
