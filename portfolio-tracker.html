@@ -1174,6 +1174,148 @@
             color: var(--accent-cyan);
             transform: rotate(90deg);
         }
+
+        /* ─── Targets This Month ─── */
+        .targets-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            animation: fadeIn 0.6s ease-out 0.25s both;
+        }
+        .targets-section > h3 {
+            margin-bottom: 16px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+        .target-header-row {
+            display: grid;
+            grid-template-columns: 160px 1fr;
+            align-items: center;
+            gap: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2px;
+        }
+        .target-header-cols {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+        .target-header-col {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-secondary);
+        }
+        .target-header-col:last-child { text-align: right; }
+        .target-row {
+            display: grid;
+            grid-template-columns: 160px 1fr;
+            align-items: center;
+            gap: 16px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .target-row:last-child { border-bottom: none; }
+        .target-contract-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .target-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            align-items: center;
+        }
+        .target-input {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            width: 100%;
+            transition: border-color 0.2s;
+        }
+        .target-input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 2px rgba(0,245,255,0.1);
+        }
+        .target-input::-webkit-outer-spin-button,
+        .target-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .target-input[type=number] { -moz-appearance: textfield; }
+        .target-progress-col { display: flex; flex-direction: column; gap: 5px; }
+        .target-pct {
+            font-size: 14px;
+            font-weight: 700;
+            text-align: right;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .target-bar-track {
+            width: 100%;
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .target-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.4s ease, background 0.3s;
+        }
+        .targets-summary {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 2px solid var(--accent-cyan);
+            display: grid;
+            grid-template-columns: 160px 1fr;
+            align-items: center;
+            gap: 16px;
+        }
+        .targets-summary-label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-cyan);
+        }
+        .targets-summary-values {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            align-items: center;
+        }
+        .targets-summary-tile { display: flex; flex-direction: column; gap: 4px; }
+        .targets-summary-tile-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-secondary);
+        }
+        .targets-summary-tile-value {
+            font-size: 16px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-primary);
+        }
+        @media (max-width: 768px) {
+            .target-header-row,
+            .target-row,
+            .targets-summary { grid-template-columns: 1fr; }
+            .target-inputs,
+            .target-header-cols,
+            .targets-summary-values { grid-template-columns: 1fr 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -1209,6 +1351,12 @@
                 <thead id="table-head"></thead>
                 <tbody id="table-body"></tbody>
             </table>
+        </div>
+
+        <div class="targets-section">
+            <h3>◢ Targets This Month</h3>
+            <div id="targets-list"></div>
+            <div class="targets-summary" id="targets-summary"></div>
         </div>
 
         <div class="notes-section">
@@ -1262,6 +1410,12 @@
         <div class="modal-content">
             <h3>Add New Contract</h3>
             <input type="text" id="contract-name-input" placeholder="Enter contract name...">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:var(--text-secondary);">
+                    <input type="checkbox" id="contract-short-checkbox" style="width:auto; margin:0; accent-color:var(--accent-red);">
+                    Short position
+                </label>
+            </div>
             <div class="modal-actions">
                 <button class="btn" onclick="closeModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="confirmAddContract()">Add</button>
@@ -1291,6 +1445,23 @@
             
             <div class="modal-actions">
                 <button class="btn" onclick="closeHiddenItemsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="edit-contract-modal">
+        <div class="modal-content">
+            <h3>Edit Contract</h3>
+            <input type="text" id="edit-contract-name-input" placeholder="Enter contract name...">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:var(--text-secondary);">
+                    <input type="checkbox" id="edit-contract-short-checkbox" style="width:auto; margin:0; accent-color:var(--accent-red);">
+                    Short position
+                </label>
+            </div>
+            <div class="modal-actions">
+                <button class="btn" onclick="closeEditModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmEditContract()">Save</button>
             </div>
         </div>
     </div>
@@ -1551,7 +1722,9 @@
             cells: {},
             hiddenRows: new Set(),
             hiddenCols: new Set(),
-            notes: ''
+            notes: '',
+            contractPositions: {},
+            contractTargets: {}
         };
 
         let currentEditingCell = null;
@@ -1711,6 +1884,7 @@
         function renderTable() {
             renderTableHead();
             renderTableBody();
+            renderTargetsCard();
             renderChart();
         }
 
@@ -1802,8 +1976,17 @@
                 
                 const contractDiv = document.createElement('div');
                 contractDiv.className = 'cell-editable';
-                contractDiv.style.display = 'inline';
-                contractDiv.textContent = contract;
+                contractDiv.style.display = 'inline-flex';
+                contractDiv.style.alignItems = 'center';
+                contractDiv.style.gap = '6px';
+                const isShort = (portfolioData.contractPositions || {})[rowIndex] === 'S';
+                const posBadge = document.createElement('span');
+                posBadge.textContent = isShort ? 'S' : 'L';
+                posBadge.style.cssText = `font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;letter-spacing:0.5px;flex-shrink:0;background:${isShort ? 'rgba(255,51,102,0.15)' : 'rgba(0,255,136,0.15)'};color:${isShort ? 'var(--accent-red)' : 'var(--accent-green)'};border:1px solid ${isShort ? 'var(--accent-red)' : 'var(--accent-green)'};`;
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = contract;
+                contractDiv.appendChild(posBadge);
+                contractDiv.appendChild(nameSpan);
                 contractDiv.onclick = () => editCell(contractDiv, `contract-${rowIndex}`, contract);
                 
                 tdContract.appendChild(dragHandle);
@@ -2863,6 +3046,7 @@
         function addContract() {
             document.getElementById('add-contract-modal').classList.add('active');
             document.getElementById('contract-name-input').value = '';
+            document.getElementById('contract-short-checkbox').checked = false;
             document.getElementById('contract-name-input').focus();
         }
 
@@ -2873,7 +3057,11 @@
         function confirmAddContract() {
             const name = document.getElementById('contract-name-input').value.trim();
             if (name) {
+                const rowIndex = portfolioData.contracts.length;
                 portfolioData.contracts.push(name);
+                if (document.getElementById('contract-short-checkbox').checked) {
+                    portfolioData.contractPositions[rowIndex] = 'S';
+                }
                 saveCurrentMonthData();
                 renderTable();
                 closeModal();
@@ -2985,11 +3173,35 @@
         }
 
         function editRowName(index) {
-            const newName = prompt('Enter new contract name:', portfolioData.contracts[index]);
-            if (newName !== null && newName.trim()) {
-                portfolioData.contracts[index] = newName.trim();
+            const modal = document.getElementById('edit-contract-modal');
+            const nameInput = document.getElementById('edit-contract-name-input');
+            const shortCheckbox = document.getElementById('edit-contract-short-checkbox');
+            nameInput.value = portfolioData.contracts[index];
+            shortCheckbox.checked = ((portfolioData.contractPositions || {})[index] === 'S');
+            modal.dataset.editIndex = index;
+            modal.classList.add('active');
+            nameInput.focus();
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-contract-modal').classList.remove('active');
+        }
+
+        function confirmEditContract() {
+            const modal = document.getElementById('edit-contract-modal');
+            const index = parseInt(modal.dataset.editIndex);
+            const newName = document.getElementById('edit-contract-name-input').value.trim();
+            if (newName) {
+                portfolioData.contracts[index] = newName;
+                if (!portfolioData.contractPositions) portfolioData.contractPositions = {};
+                if (document.getElementById('edit-contract-short-checkbox').checked) {
+                    portfolioData.contractPositions[index] = 'S';
+                } else {
+                    delete portfolioData.contractPositions[index];
+                }
                 saveCurrentMonthData();
                 renderTable();
+                closeEditModal();
             }
         }
 
@@ -3005,6 +3217,15 @@
                         delete portfolioData.cells[key];
                     }
                 });
+
+                // Reindex contractPositions after deletion
+                const newPositions = {};
+                Object.keys(portfolioData.contractPositions || {}).forEach(k => {
+                    const ki = parseInt(k);
+                    if (ki === index) return;
+                    newPositions[ki > index ? ki - 1 : ki] = portfolioData.contractPositions[k];
+                });
+                portfolioData.contractPositions = newPositions;
                 
                 saveCurrentMonthData();
                 renderTable();
@@ -3138,6 +3359,21 @@
                 });
                 portfolioData.hiddenRows = newHiddenRows;
 
+                // Reorder contractPositions
+                const newPositions = {};
+                Object.keys(portfolioData.contractPositions || {}).forEach(k => {
+                    let rowIdx = parseInt(k);
+                    if (rowIdx === draggedRow) {
+                        rowIdx = targetIndex;
+                    } else if (draggedRow < targetIndex && rowIdx > draggedRow && rowIdx <= targetIndex) {
+                        rowIdx--;
+                    } else if (draggedRow > targetIndex && rowIdx >= targetIndex && rowIdx < draggedRow) {
+                        rowIdx++;
+                    }
+                    newPositions[rowIdx] = portfolioData.contractPositions[k];
+                });
+                portfolioData.contractPositions = newPositions;
+
                 saveCurrentMonthData();
                 renderTable();
             }
@@ -3163,7 +3399,9 @@
                 portfolioData = {
                     ...allMonthsData[monthKey],
                     hiddenRows: new Set(allMonthsData[monthKey].hiddenRows || []),
-                    hiddenCols: new Set(allMonthsData[monthKey].hiddenCols || [])
+                    hiddenCols: new Set(allMonthsData[monthKey].hiddenCols || []),
+                    contractPositions: allMonthsData[monthKey].contractPositions || {},
+                    contractTargets: allMonthsData[monthKey].contractTargets || {}
                 };
             } else {
                 // Create blank data for new month with only default rows
@@ -3173,7 +3411,9 @@
                     cells: {},
                     hiddenRows: new Set(),
                     hiddenCols: new Set(),
-                    notes: ''
+                    notes: '',
+                    contractPositions: {},
+                    contractTargets: {}
                 };
             }
         }
@@ -3357,6 +3597,188 @@
                 el.addEventListener('pointerleave',  onPointerUp);
             });
         })();
+
+        // ─── Targets This Month ───
+        function renderTargetsCard() {
+            const container = document.getElementById('targets-list');
+            const summaryEl = document.getElementById('targets-summary');
+            if (!container || !summaryEl) return;
+
+            if (!portfolioData.contractTargets) portfolioData.contractTargets = {};
+
+            // Deduplicate non-hidden contracts (by name)
+            const seen = new Set();
+            const uniqueContracts = [];
+            portfolioData.contracts.forEach((name, idx) => {
+                if (portfolioData.hiddenRows.has(idx)) return;
+                if (seen.has(name)) return;
+                seen.add(name);
+                uniqueContracts.push(name);
+            });
+
+            container.innerHTML = '';
+
+            if (uniqueContracts.length === 0) {
+                container.innerHTML = '<div style="color:var(--text-secondary);font-size:12px;text-align:center;padding:20px;font-style:italic;">No contracts available. Add contracts to set targets.</div>';
+                summaryEl.innerHTML = '';
+                return;
+            }
+
+            // Header row
+            const header = document.createElement('div');
+            header.className = 'target-header-row';
+            const headerLeft = document.createElement('div');
+            const headerCols = document.createElement('div');
+            headerCols.className = 'target-header-cols';
+            headerCols.innerHTML = '<div class="target-header-col">Month Target</div><div class="target-header-col">Current (Today)</div><div class="target-header-col" style="text-align:right;">Progress</div>';
+            header.appendChild(headerLeft);
+            header.appendChild(headerCols);
+            container.appendChild(header);
+
+            uniqueContracts.forEach(name => {
+                const tgt = portfolioData.contractTargets[name] || {};
+                const monthTarget = parseFloat(tgt.monthTarget) || 0;
+                const currentValue = parseFloat(tgt.currentValue) || 0;
+
+                const { pctText, pctColor, barColor, barWidth } = calcProgress(monthTarget, currentValue);
+
+                const row = document.createElement('div');
+                row.className = 'target-row';
+
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'target-contract-name';
+                nameDiv.textContent = name;
+                nameDiv.title = name;
+
+                const monthInput = document.createElement('input');
+                monthInput.type = 'number';
+                monthInput.className = 'target-input';
+                monthInput.value = tgt.monthTarget !== undefined ? tgt.monthTarget : '';
+                monthInput.placeholder = '0';
+                monthInput.setAttribute('aria-label', name + ' month target');
+
+                const currentInput = document.createElement('input');
+                currentInput.type = 'number';
+                currentInput.className = 'target-input';
+                currentInput.value = tgt.currentValue !== undefined ? tgt.currentValue : '';
+                currentInput.placeholder = '0';
+                currentInput.setAttribute('aria-label', name + ' current value');
+
+                const progressCol = document.createElement('div');
+                progressCol.className = 'target-progress-col';
+                const pctDiv = document.createElement('div');
+                pctDiv.className = 'target-pct';
+                pctDiv.textContent = pctText;
+                pctDiv.style.color = pctColor;
+                const barTrack = document.createElement('div');
+                barTrack.className = 'target-bar-track';
+                const barFill = document.createElement('div');
+                barFill.className = 'target-bar-fill';
+                barFill.style.width = barWidth + '%';
+                barFill.style.background = barColor;
+                barTrack.appendChild(barFill);
+                progressCol.appendChild(pctDiv);
+                progressCol.appendChild(barTrack);
+
+                const inputsGrid = document.createElement('div');
+                inputsGrid.className = 'target-inputs';
+                inputsGrid.appendChild(monthInput);
+                inputsGrid.appendChild(currentInput);
+                inputsGrid.appendChild(progressCol);
+
+                row.appendChild(nameDiv);
+                row.appendChild(inputsGrid);
+                container.appendChild(row);
+
+                // Event listeners — no inline eval, safe closure over name
+                function refreshRow() {
+                    const mt = parseFloat(monthInput.value) || 0;
+                    const cv = parseFloat(currentInput.value) || 0;
+                    const r = calcProgress(mt, cv);
+                    pctDiv.textContent = r.pctText;
+                    pctDiv.style.color = r.pctColor;
+                    barFill.style.width = r.barWidth + '%';
+                    barFill.style.background = r.barColor;
+                    updateTargetsSummary(uniqueContracts);
+                }
+
+                monthInput.addEventListener('input', () => {
+                    if (!portfolioData.contractTargets[name]) portfolioData.contractTargets[name] = {};
+                    portfolioData.contractTargets[name].monthTarget = monthInput.value;
+                    refreshRow();
+                });
+                monthInput.addEventListener('change', saveCurrentMonthData);
+
+                currentInput.addEventListener('input', () => {
+                    if (!portfolioData.contractTargets[name]) portfolioData.contractTargets[name] = {};
+                    portfolioData.contractTargets[name].currentValue = currentInput.value;
+                    refreshRow();
+                });
+                currentInput.addEventListener('change', saveCurrentMonthData);
+            });
+
+            updateTargetsSummary(uniqueContracts);
+        }
+
+        function calcProgress(monthTarget, currentValue) {
+            if (monthTarget === 0) {
+                return { pctText: '—', pctColor: 'var(--text-secondary)', barColor: 'var(--accent-green)', barWidth: 0 };
+            }
+            const pct = (currentValue / monthTarget) * 100;
+            const isPositive = pct >= 0;
+            return {
+                pctText: (isPositive ? '+' : '') + pct.toFixed(1) + '%',
+                pctColor: isPositive ? 'var(--accent-green)' : 'var(--accent-red)',
+                barColor: isPositive ? 'var(--accent-green)' : 'var(--accent-red)',
+                barWidth: Math.min(Math.abs(pct), 100)
+            };
+        }
+
+        function updateTargetsSummary(uniqueContracts) {
+            const summaryEl = document.getElementById('targets-summary');
+            if (!summaryEl) return;
+
+            if (!uniqueContracts || uniqueContracts.length === 0) {
+                summaryEl.innerHTML = '';
+                return;
+            }
+
+            if (!portfolioData.contractTargets) portfolioData.contractTargets = {};
+
+            let totalMonthTarget = 0;
+            let totalCurrentValue = 0;
+            uniqueContracts.forEach(name => {
+                const tgt = portfolioData.contractTargets[name] || {};
+                totalMonthTarget += parseFloat(tgt.monthTarget) || 0;
+                totalCurrentValue += parseFloat(tgt.currentValue) || 0;
+            });
+
+            const r = calcProgress(totalMonthTarget, totalCurrentValue);
+            const fmt = v => v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            summaryEl.innerHTML = `
+                <div class="targets-summary-label">Overall</div>
+                <div class="targets-summary-values">
+                    <div class="targets-summary-tile">
+                        <div class="targets-summary-tile-label">Total Month Target</div>
+                        <div class="targets-summary-tile-value">${fmt(totalMonthTarget)}</div>
+                    </div>
+                    <div class="targets-summary-tile">
+                        <div class="targets-summary-tile-label">Total Current Value</div>
+                        <div class="targets-summary-tile-value">${fmt(totalCurrentValue)}</div>
+                    </div>
+                    <div class="targets-summary-tile">
+                        <div class="targets-summary-tile-label">Achievement</div>
+                        <div style="display:flex;flex-direction:column;gap:6px;">
+                            <div class="targets-summary-tile-value" style="color:${r.pctColor}">${r.pctText}</div>
+                            <div class="target-bar-track">
+                                <div class="target-bar-fill" style="width:${r.barWidth}%;background:${r.barColor};"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
