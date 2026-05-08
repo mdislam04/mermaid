@@ -3599,6 +3599,43 @@
         })();
 
         // ─── Targets This Month ───
+        /**
+         * Normalise a raw contract name to a canonical display key.
+         * Rules:
+         *  - Strip month names (JAN–DEC, full names) and "FUT"  → suffix " FUT"
+         *  - Strip "CE" or "PE"                                  → suffix " OPTION"
+         *  - Strip bare numbers (strike prices / expiry codes)
+         *  - Remaining tokens form the base name (uppercased)
+         * Examples:
+         *   "NIFTY JUNE"      → "NIFTY FUT"
+         *   "NIFTY JULY"      → "NIFTY FUT"
+         *   "NIFTY 24500 CE"  → "NIFTY OPTION"
+         *   "NIFTY 24500 PE"  → "NIFTY OPTION"
+         *   "SUZLON JUNE FUT" → "SUZLON FUT"
+         *   "WIPRO"           → "WIPRO"
+         */
+        function contractDisplayKey(name) {
+            const MONTHS = new Set([
+                'JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC',
+                'JANUARY','FEBRUARY','MARCH','APRIL','JUNE','JULY','AUGUST',
+                'SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'
+            ]);
+            const tokens = name.trim().toUpperCase().split(/\s+/);
+            let isFuture = false;
+            let isOption = false;
+            const base = [];
+            for (const t of tokens) {
+                if (MONTHS.has(t) || t === 'FUT') { isFuture = true; }
+                else if (t === 'CE' || t === 'PE')  { isOption = true; }
+                else if (/^\d+$/.test(t))            { /* strike / expiry – skip */ }
+                else                                  { base.push(t); }
+            }
+            const baseName = base.join(' ');
+            if (isOption) return baseName + ' OPTION';
+            if (isFuture) return baseName + ' FUT';
+            return baseName;
+        }
+
         function renderTargetsCard() {
             const container = document.getElementById('targets-list');
             const summaryEl = document.getElementById('targets-summary');
@@ -3606,14 +3643,16 @@
 
             if (!portfolioData.contractTargets) portfolioData.contractTargets = {};
 
-            // Deduplicate non-hidden contracts (by name)
+            // Group non-hidden contracts by their canonical display key.
+            // uniqueContracts is an ordered array of display keys (e.g. "NIFTY FUT").
             const seen = new Set();
             const uniqueContracts = [];
             portfolioData.contracts.forEach((name, idx) => {
                 if (portfolioData.hiddenRows.has(idx)) return;
-                if (seen.has(name)) return;
-                seen.add(name);
-                uniqueContracts.push(name);
+                const key = contractDisplayKey(name);
+                if (seen.has(key)) return;
+                seen.add(key);
+                uniqueContracts.push(key);
             });
 
             container.innerHTML = '';
