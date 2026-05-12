@@ -1316,6 +1316,56 @@
             .target-header-cols,
             .targets-summary-values { grid-template-columns: 1fr 1fr; }
         }
+
+        /* ─── Card Accordion ─── */
+        .card-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        /* Table container nested inside a card-section loses its own card chrome */
+        .card-section .table-container {
+            border-radius: 4px;
+            margin-bottom: 0;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+        }
+        .card-header h3 {
+            margin-bottom: 0;
+            pointer-events: none;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+        .card-header:hover .card-chevron { color: var(--accent-cyan); }
+        .card-chevron {
+            font-size: 11px;
+            color: var(--text-secondary);
+            transition: transform 0.25s ease, color 0.2s;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+        .card-collapsed .card-chevron { transform: rotate(-90deg); }
+        .card-body {
+            display: grid;
+            grid-template-rows: 1fr;
+            transition: grid-template-rows 0.3s ease, margin-top 0.3s ease;
+            margin-top: 16px;
+        }
+        .card-collapsed .card-body {
+            grid-template-rows: 0fr;
+            margin-top: 0;
+        }
+        .card-body-inner { overflow: hidden; }
     </style>
 </head>
 <body>
@@ -1346,58 +1396,103 @@
             </div>
         </div>
 
-        <div class="table-container">
-            <table id="portfolio-table">
-                <thead id="table-head"></thead>
-                <tbody id="table-body"></tbody>
-            </table>
-        </div>
-
-        <div class="targets-section">
-            <h3>◢ Targets This Month</h3>
-            <div id="targets-list"></div>
-            <div class="targets-summary" id="targets-summary"></div>
-        </div>
-
-        <div class="notes-section">
-            <h3>◢ Trading Notes</h3>
-            <div class="notes-toolbar">
-                <button class="toolbar-btn" onclick="formatNote('bold')" title="Bold"><strong>B</strong></button>
-                <button class="toolbar-btn" onclick="formatNote('italic')" title="Italic"><em>I</em></button>
-                <button class="toolbar-btn" onclick="formatNote('underline')" title="Underline"><u>U</u></button>
-                <div class="toolbar-divider"></div>
-                <select id="font-size" class="font-size-select" onchange="changeFontSize()" title="Font Size">
-                    <option value="">Size</option>
-                    <option value="1">8pt</option>
-                    <option value="2">10pt</option>
-                    <option value="3">12pt</option>
-                    <option value="4">14pt</option>
-                    <option value="5">18pt</option>
-                    <option value="6">24pt</option>
-                    <option value="7">36pt</option>
-                </select>
-                <div class="toolbar-divider"></div>
-                <button class="toolbar-btn" onclick="formatNote('insertUnorderedList')" title="Bullet List">• List</button>
-                <button class="toolbar-btn" onclick="formatNote('insertOrderedList')" title="Numbered List">1. List</button>
-                <div class="toolbar-divider"></div>
-                <button class="toolbar-btn" onclick="formatNote('formatBlock', 'h3')" title="Heading">H</button>
-                <div class="toolbar-divider"></div>
-                <input type="color" id="text-color" class="color-picker" value="#00f5ff" title="Text Color">
-                <button class="toolbar-btn" onclick="applyTextColor()" title="Apply Color">A</button>
-                <button class="toolbar-btn" onclick="clearFormatting()" title="Clear Formatting">✕</button>
+        <div class="card-section" id="card-table">
+            <div class="card-header" onclick="toggleCard('card-table')" role="button" tabindex="0" aria-expanded="true"
+                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCard('card-table');}">
+                <h3>◢ Contracts</h3>
+                <span class="card-chevron" aria-hidden="true">&#9660;</span>
             </div>
-            <div id="notes" class="rich-notes" contenteditable="true" data-placeholder="Enter your trading notes, strategies, and observations..."></div>
+            <div class="card-body">
+                <div class="card-body-inner">
+                    <div class="table-container">
+                        <table id="portfolio-table">
+                            <thead id="table-head"></thead>
+                            <tbody id="table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="chart-section">
-            <h3>◢ Portfolio Analytics</h3>
-            <div class="summary-stats" id="summary-stats"></div>
-            <div class="chart-tabs">
-                <button class="chart-tab active" onclick="switchChart('standing')" title="View cumulative P&L over time">Standing AT</button>
-                <button class="chart-tab" onclick="switchChart('contracts')" title="View P&L breakdown by contract">By Contract</button>
-                <button class="chart-tab" onclick="switchChart('daily')" title="View day-wise realized P&L">Daily P&L</button>
+        <div class="targets-section card-section card-collapsed" id="card-targets">
+            <div class="card-header" onclick="toggleCard('card-targets')" role="button" tabindex="0" aria-expanded="false"
+                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCard('card-targets');}">
+                <h3>◢ Targets This Month</h3>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.8px;user-select:none;" title="When on, hidden contracts are included in the target list and summary">
+                        <span>Include Hidden</span>
+                        <span style="position:relative;display:inline-block;width:36px;height:20px;">
+                            <input type="checkbox" id="targets-include-hidden" style="opacity:0;width:0;height:0;position:absolute;" onchange="renderTargetsCard()">
+                            <span id="targets-include-hidden-track" style="position:absolute;inset:0;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:10px;transition:background 0.2s,border-color 0.2s;"></span>
+                            <span id="targets-include-hidden-thumb" style="position:absolute;top:3px;left:3px;width:12px;height:12px;background:var(--text-secondary);border-radius:50%;transition:transform 0.2s,background 0.2s;"></span>
+                        </span>
+                    </label>
+                    <span class="card-chevron" aria-hidden="true">▼</span>
+                </div>
             </div>
-            <canvas id="pnl-chart"></canvas>
+            <div class="card-body">
+                <div class="card-body-inner">
+                    <div id="targets-list"></div>
+                    <div class="targets-summary" id="targets-summary"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="notes-section card-section card-collapsed" id="card-notes">
+            <div class="card-header" onclick="toggleCard('card-notes')" role="button" tabindex="0" aria-expanded="false"
+                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCard('card-notes');}">
+                <h3>◢ Trading Notes</h3>
+                <span class="card-chevron" aria-hidden="true">▼</span>
+            </div>
+            <div class="card-body">
+                <div class="card-body-inner">
+                    <div class="notes-toolbar">
+                        <button class="toolbar-btn" onclick="formatNote('bold')" title="Bold"><strong>B</strong></button>
+                        <button class="toolbar-btn" onclick="formatNote('italic')" title="Italic"><em>I</em></button>
+                        <button class="toolbar-btn" onclick="formatNote('underline')" title="Underline"><u>U</u></button>
+                        <div class="toolbar-divider"></div>
+                        <select id="font-size" class="font-size-select" onchange="changeFontSize()" title="Font Size">
+                            <option value="">Size</option>
+                            <option value="1">8pt</option>
+                            <option value="2">10pt</option>
+                            <option value="3">12pt</option>
+                            <option value="4">14pt</option>
+                            <option value="5">18pt</option>
+                            <option value="6">24pt</option>
+                            <option value="7">36pt</option>
+                        </select>
+                        <div class="toolbar-divider"></div>
+                        <button class="toolbar-btn" onclick="formatNote('insertUnorderedList')" title="Bullet List">• List</button>
+                        <button class="toolbar-btn" onclick="formatNote('insertOrderedList')" title="Numbered List">1. List</button>
+                        <div class="toolbar-divider"></div>
+                        <button class="toolbar-btn" onclick="formatNote('formatBlock', 'h3')" title="Heading">H</button>
+                        <div class="toolbar-divider"></div>
+                        <input type="color" id="text-color" class="color-picker" value="#00f5ff" title="Text Color">
+                        <button class="toolbar-btn" onclick="applyTextColor()" title="Apply Color">A</button>
+                        <button class="toolbar-btn" onclick="clearFormatting()" title="Clear Formatting">✕</button>
+                    </div>
+                    <div id="notes" class="rich-notes" contenteditable="true" data-placeholder="Enter your trading notes, strategies, and observations..."></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-section card-section card-collapsed" id="card-analytics">
+            <div class="card-header" onclick="toggleCard('card-analytics')" role="button" tabindex="0" aria-expanded="false"
+                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCard('card-analytics');}">
+                <h3>◢ Portfolio Analytics</h3>
+                <span class="card-chevron" aria-hidden="true">▼</span>
+            </div>
+            <div class="card-body">
+                <div class="card-body-inner">
+                    <div class="summary-stats" id="summary-stats"></div>
+                    <div class="chart-tabs">
+                        <button class="chart-tab active" onclick="switchChart('standing')" title="View cumulative P&L over time">Standing AT</button>
+                        <button class="chart-tab" onclick="switchChart('contracts')" title="View P&L breakdown by contract">By Contract</button>
+                        <button class="chart-tab" onclick="switchChart('daily')" title="View day-wise realized P&L">Daily P&L</button>
+                    </div>
+                    <canvas id="pnl-chart"></canvas>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2514,30 +2609,43 @@
             }
 
             // Collect daily realized P&L (sum of bold cells per day)
+            // Also build a per-day contract breakdown for the tooltip
             const labels = [];
             const data = [];
-            
+            const breakdowns = []; // parallel array: breakdowns[i] = [{name, value}, ...]
+
             portfolioData.dates.forEach((date, colIndex) => {
                 if (portfolioData.hiddenCols.has(colIndex)) return;
 
                 let dayTotal = 0;
                 let hasData = false;
-                
+                const dayContracts = [];
+
                 portfolioData.contracts.forEach((contract, rowIndex) => {
                     const cellKey = `${rowIndex}-${colIndex}`;
                     const cellData = portfolioData.cells[cellKey];
-                    
+
                     // Only count bold/realized cells
                     if (cellData?.value && cellData.bold) {
                         const value = parseFloat(cellData.value.toString().replace(/,/g, '') || 0);
                         dayTotal += value;
                         hasData = true;
+                        // Merge contracts with same name (long + short of same underlying)
+                        const existing = dayContracts.find(c => c.name === contract);
+                        if (existing) {
+                            existing.value += value;
+                        } else {
+                            dayContracts.push({ name: contract, value });
+                        }
                     }
                 });
-                
+
                 if (hasData) {
                     labels.push(date);
                     data.push(dayTotal);
+                    // Sort descending by absolute value so biggest contributors are first
+                    dayContracts.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+                    breakdowns.push(dayContracts);
                 }
             });
 
@@ -2553,6 +2661,8 @@
             // Color bars based on positive/negative
             const backgroundColors = data.map(val => val >= 0 ? 'rgba(0, 255, 136, 0.6)' : 'rgba(255, 51, 102, 0.6)');
             const borderColors = data.map(val => val >= 0 ? '#00ff88' : '#ff3366');
+
+            const fmt = v => (v >= 0 ? '+' : '') + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
             pnlChart = new Chart(ctx, {
                 type: 'bar',
@@ -2597,7 +2707,21 @@
                             callbacks: {
                                 label: function(context) {
                                     const value = context.parsed.y;
-                                    return 'P&L: ' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                    const sign = value >= 0 ? '+' : '';
+                                    return 'Total P&L:  ' + sign + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                },
+                                afterBody: function(contexts) {
+                                    const idx = contexts[0].dataIndex;
+                                    const contracts = breakdowns[idx];
+                                    if (!contracts || contracts.length === 0) return [];
+                                    const lines = ['', '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'];
+                                    contracts.forEach(c => {
+                                        const valStr = fmt(c.value);
+                                        // Pad name to align values
+                                        const name = c.name.length > 18 ? c.name.slice(0, 17) + '\u2026' : c.name;
+                                        lines.push(name.padEnd(20) + valStr);
+                                    });
+                                    return lines;
                                 }
                             }
                         }
@@ -3636,6 +3760,25 @@
             return baseName;
         }
 
+        // Keep toggle visual state in sync whenever renderTargetsCard runs
+        function syncTargetsToggleStyle() {
+            const cb    = document.getElementById('targets-include-hidden');
+            const track = document.getElementById('targets-include-hidden-track');
+            const thumb = document.getElementById('targets-include-hidden-thumb');
+            if (!cb || !track || !thumb) return;
+            if (cb.checked) {
+                track.style.background     = 'var(--accent-cyan)';
+                track.style.borderColor    = 'var(--accent-cyan)';
+                thumb.style.background     = 'var(--bg-primary)';
+                thumb.style.transform      = 'translateX(16px)';
+            } else {
+                track.style.background     = 'var(--bg-tertiary)';
+                track.style.borderColor    = 'var(--border)';
+                thumb.style.background     = 'var(--text-secondary)';
+                thumb.style.transform      = 'translateX(0)';
+            }
+        }
+
         function renderTargetsCard() {
             const container = document.getElementById('targets-list');
             const summaryEl = document.getElementById('targets-summary');
@@ -3643,12 +3786,17 @@
 
             if (!portfolioData.contractTargets) portfolioData.contractTargets = {};
 
-            // Group non-hidden contracts by their canonical display key.
+            // Respect the "Include Hidden" toggle
+            const includeHidden = document.getElementById('targets-include-hidden')?.checked ?? false;
+            syncTargetsToggleStyle();
+
+            // Group contracts by their canonical display key.
+            // When includeHidden is false, skip rows in hiddenRows.
             // uniqueContracts is an ordered array of display keys (e.g. "NIFTY FUT").
             const seen = new Set();
             const uniqueContracts = [];
             portfolioData.contracts.forEach((name, idx) => {
-                if (portfolioData.hiddenRows.has(idx)) return;
+                if (!includeHidden && portfolioData.hiddenRows.has(idx)) return;
                 const key = contractDisplayKey(name);
                 if (seen.has(key)) return;
                 seen.add(key);
@@ -3817,6 +3965,32 @@
                     </div>
                 </div>
             `;
+        }
+
+        // ─── Card Accordion ───
+        function toggleCard(id) {
+            const section = document.getElementById(id);
+            if (!section) return;
+            const isNowCollapsed = section.classList.toggle('card-collapsed');
+            const header = section.querySelector('.card-header');
+            if (header) header.setAttribute('aria-expanded', String(!isNowCollapsed));
+            // Chart.js needs a re-render once its canvas becomes visible (after CSS transition)
+            if (id === 'card-analytics' && !isNowCollapsed) {
+                setTimeout(renderChart, 310);
+            }
+        }
+
+        // ─── Card Accordion ───
+        function toggleCard(id) {
+            const section = document.getElementById(id);
+            if (!section) return;
+            const isNowCollapsed = section.classList.toggle('card-collapsed');
+            const header = section.querySelector('.card-header');
+            if (header) header.setAttribute('aria-expanded', String(!isNowCollapsed));
+            // Chart.js needs a re-render once its canvas becomes visible (after CSS transition)
+            if (id === 'card-analytics' && !isNowCollapsed) {
+                setTimeout(renderChart, 310);
+            }
         }
 
         // Keyboard shortcuts
