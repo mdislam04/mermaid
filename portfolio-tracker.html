@@ -409,6 +409,35 @@
             background: rgba(0, 255, 136, 0.04) !important;
         }
 
+        /* ─── Last-Tuesday (monthly expiry) header highlight ─── */
+        th.expiry-column {
+            background: rgba(221, 203, 49, 0.18) !important;
+            border-left: 2px solid rgba(255, 235, 59, 0.5) !important;
+            border-right: 2px solid rgba(255, 235, 59, 0.5) !important;
+            color: #24e32e !important;
+        }
+
+        /* ─── Day-name floating tooltip (JS-driven, position:fixed to avoid clip) ─── */
+        #day-name-tooltip {
+            position: fixed;
+            display: none;
+            background: var(--bg-tertiary);
+            color: var(--accent-cyan);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            transform: translateX(-50%);
+        }
+
         .notes-section {
             background: var(--bg-secondary);
             border: 1px solid var(--border);
@@ -1983,6 +2012,55 @@
             renderChart();
         }
 
+        /**
+         * Given a date string formatted as "DD-MMM" (e.g. "27-May") and the
+         * current year/month, return a Date object for that date.
+         * Returns null if the string cannot be parsed.
+         */
+        function parseDateStr(dateStr, month, year) {
+            const parts = dateStr.split('-');
+            if (parts.length < 2) return null;
+            const day = parseInt(parts[0], 10);
+            if (isNaN(day)) return null;
+            return new Date(year, month, day);
+        }
+
+        /**
+         * Returns true if `d` is the last Tuesday of its month.
+         */
+        function isLastTuesdayOfMonth(d) {
+            if (!(d instanceof Date) || isNaN(d)) return false;
+            if (d.getDay() !== 2) return false; // 2 = Tuesday
+            // Check no later Tuesday exists in the same month
+            const nextWeek = new Date(d);
+            nextWeek.setDate(d.getDate() + 7);
+            return nextWeek.getMonth() !== d.getMonth();
+        }
+
+        /**
+         * Show the floating day-name tooltip below the hovered th.
+         * Uses position:fixed so it is never clipped by sticky/overflow parents.
+         */
+        function showDayTooltip(e, dayName) {
+            let tip = document.getElementById('day-name-tooltip');
+            if (!tip) {
+                tip = document.createElement('div');
+                tip.id = 'day-name-tooltip';
+                document.body.appendChild(tip);
+            }
+            tip.textContent = dayName;
+            const rect = e.currentTarget.getBoundingClientRect();
+            tip.style.left = (rect.left + rect.width / 2) + 'px';
+            tip.style.top  = (rect.bottom + 6) + 'px';
+            tip.style.display = 'block';
+        }
+
+        /** Hide the floating day-name tooltip. */
+        function hideDayTooltip() {
+            const tip = document.getElementById('day-name-tooltip');
+            if (tip) tip.style.display = 'none';
+        }
+
         function renderTableHead() {
             const thead = document.getElementById('table-head');
             const tr = document.createElement('tr');
@@ -2002,27 +2080,44 @@
             const isCurrentMonth = today.getMonth() === currentMonth && today.getFullYear() === currentYear;
 
             // Date columns
+            const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
             portfolioData.dates.forEach((date, index) => {
                 if (portfolioData.hiddenCols.has(index)) return;
 
                 const th = document.createElement('th');
+
+                // Resolve the Date object for this column (works for standard DD-MMM labels)
+                const colDate = parseDateStr(date, currentMonth, currentYear);
 
                 // Mark custom columns (beyond the month's natural days)
                 if (index >= daysInMonth) {
                     th.style.background = 'rgba(255, 215, 0, 0.1)';
                     th.style.borderLeft = '2px solid #ffd700';
                 }
-                
+
                 // Highlight today's column
                 if (isCurrentMonth && date === todayStr) {
                     th.classList.add('today-column');
+                }
+
+                // Last-Tuesday (monthly expiry) highlight — only on th, not td
+                if (colDate && isLastTuesdayOfMonth(colDate)) {
+                    th.classList.add('expiry-column');
+                    th.title = 'Expiry Day';
+                }
+
+                // Day-name floating tooltip
+                if (colDate && !isNaN(colDate)) {
+                    const dayName = DAY_NAMES[colDate.getDay()];
+                    th.addEventListener('mouseenter', (e) => showDayTooltip(e, dayName));
+                    th.addEventListener('mouseleave', hideDayTooltip);
                 }
 
                 const dateDiv = document.createElement('div');
                 dateDiv.textContent = date;
                 dateDiv.style.cursor = 'pointer';
                 dateDiv.style.userSelect = 'none';
-                dateDiv.title = 'Click to hide this column';
                 dateDiv.onclick = () => hideColumn(index);
 
                 // Add hover effect
