@@ -914,6 +914,120 @@
             font-size: 13px;
         }
 
+        /* ─── Current Status History Popup ─── */
+        #status-history-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 14, 26, 0.75);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.2s ease-out;
+        }
+        #status-history-backdrop.active {
+            display: flex;
+        }
+        #status-history-panel {
+            background: rgba(21, 27, 46, 0.96);
+            border: 1px solid rgba(42, 55, 82, 0.9);
+            border-radius: 12px;
+            padding: 28px 32px 24px;
+            width: min(680px, 94vw);
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,245,255,0.06);
+            animation: modalSlideIn 0.25s ease-out;
+        }
+        .sh-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        .sh-header h2 {
+            font-size: 15px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--accent-cyan);
+            margin: 0;
+        }
+        .sh-close-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            border-radius: 4px;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, color 0.15s;
+        }
+        .sh-close-btn:hover {
+            background: rgba(255,51,102,0.15);
+            color: var(--accent-red);
+            border-color: var(--accent-red);
+        }
+        .sh-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
+        }
+        .sh-cell {
+            border-radius: 8px;
+            padding: 12px 14px;
+            border: 1px solid rgba(42, 55, 82, 0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transition: transform 0.1s;
+        }
+        .sh-cell:hover {
+            transform: translateY(-2px);
+        }
+        .sh-cell-date {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-secondary);
+        }
+        .sh-cell-value {
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        .sh-cell.positive {
+            background: rgba(0, 255, 136, var(--sh-intensity, 0.08));
+            border-color: rgba(0, 255, 136, 0.25);
+        }
+        .sh-cell.positive .sh-cell-value { color: #00ff88; }
+        .sh-cell.negative {
+            background: rgba(255, 51, 102, var(--sh-intensity, 0.08));
+            border-color: rgba(255, 51, 102, 0.25);
+        }
+        .sh-cell.negative .sh-cell-value { color: #ff3366; }
+        .sh-cell.zero {
+            background: rgba(30, 40, 64, 0.5);
+        }
+        .sh-cell.zero .sh-cell-value { color: var(--text-secondary); }
+        .sh-no-data {
+            color: var(--text-secondary);
+            font-size: 13px;
+            text-align: center;
+            padding: 32px 0;
+            font-style: italic;
+        }
+
         .unhide-btn {
             background: var(--accent-cyan);
             color: var(--bg-primary);
@@ -1446,8 +1560,9 @@
         <div class="targets-section card-section card-collapsed" id="card-targets">
             <div class="card-header" onclick="toggleCard('card-targets')" role="button" tabindex="0" aria-expanded="false"
                  onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCard('card-targets');}">
-                <h3>◢ Targets This Month</h3>
+                <h3 id="targets-card-title">◢ Targets This Month</h3>
                 <div style="display:flex;align-items:center;gap:12px;">
+                    <button onclick="event.stopPropagation();syncCurrentValues()" style="display:flex;align-items:center;gap:6px;padding:4px 12px;font-size:11px;font-family:inherit;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--accent-cyan);background:rgba(0,245,255,0.08);border:1px solid rgba(0,245,255,0.3);border-radius:4px;cursor:pointer;transition:background 0.15s,border-color 0.15s;user-select:none;" title="Auto-fill Current (Today) values from today&apos;s column in the contracts table" onmouseenter="this.style.background='rgba(0,245,255,0.16)';this.style.borderColor='rgba(0,245,255,0.6)'" onmouseleave="this.style.background='rgba(0,245,255,0.08)';this.style.borderColor='rgba(0,245,255,0.3)'">&#8635; Sync</button>
                     <label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.8px;user-select:none;" title="When on, hidden contracts are included in the target list and summary">
                         <span>Include Hidden</span>
                         <span style="position:relative;display:inline-block;width:36px;height:20px;">
@@ -1599,6 +1714,18 @@
             </div>
         </div>
         <div class="month-picker-months" id="picker-months"></div>
+    </div>
+
+    <!-- Status History Popup -->
+    <div id="status-history-backdrop" role="dialog" aria-modal="true" aria-labelledby="sh-title"
+         onclick="if(event.target===this)closeStatusHistoryPopup()">
+        <div id="status-history-panel">
+            <div class="sh-header">
+                <h2 id="sh-title">Current Status History</h2>
+                <button class="sh-close-btn" onclick="closeStatusHistoryPopup()" aria-label="Close history popup">✕</button>
+            </div>
+            <div id="status-history-body"></div>
+        </div>
     </div>
 
     <!-- Notification Toast -->
@@ -3819,6 +3946,142 @@
 
         // ─── Targets This Month ───
         /**
+         * Compute the current-status value for a given date column.
+         *
+         * Formula:
+         *   Realized component  = SUM of ALL bold cells in columns 0 → colIndex (inclusive)
+         *   Running component   = SUM of non-bold cells in colIndex only
+         *   Result              = Realized + Running
+         *
+         * This correctly accumulates multiple P&L booking events during the month
+         * while adding the open-position running P&L for the target date.
+         * Mirrors the Include Hidden toggle exactly like renderTargetsCard.
+         */
+        function computeStatusForCol(colIndex, includeHidden) {
+            let realized = 0;
+            let running  = 0;
+            let hasData  = false;
+
+            portfolioData.contracts.forEach((name, rowIndex) => {
+                if (!includeHidden && portfolioData.hiddenRows.has(rowIndex)) return;
+
+                // Accumulate ALL bold (realized) cells from the start of the month
+                // up to and including the target column.
+                for (let c = 0; c <= colIndex; c++) {
+                    const cell = portfolioData.cells[`${rowIndex}-${c}`];
+                    if (cell?.bold && cell.value !== undefined && cell.value !== '') {
+                        realized += parseFloat(String(cell.value).replace(/,/g, '')) || 0;
+                        hasData = true;
+                    }
+                }
+
+                // Add the non-bold (open/running) value in the target column.
+                const runCell = portfolioData.cells[`${rowIndex}-${colIndex}`];
+                if (runCell && !runCell.bold && runCell.value !== undefined && runCell.value !== '') {
+                    running += parseFloat(String(runCell.value).replace(/,/g, '')) || 0;
+                    hasData = true;
+                }
+            });
+
+            return hasData ? (realized + running) : null;
+        }
+
+        function openStatusHistoryPopup() {
+            const backdrop = document.getElementById('status-history-backdrop');
+            const body = document.getElementById('status-history-body');
+            if (!backdrop || !body) return;
+
+            const includeHidden = document.getElementById('targets-include-hidden')?.checked ?? false;
+
+            // Determine the cutoff: only show dates strictly before today for the
+            // current month; for a past month, show all dates.
+            const now = new Date();
+            const isCurrentMonth = now.getMonth() === currentMonth && now.getFullYear() === currentYear;
+            const todayNum = now.getDate();
+
+            // Build ordered list of {label, value|null} for eligible date columns.
+            const entries = [];
+            portfolioData.dates.forEach((dateLabel, colIndex) => {
+                const d = parseDateStr(dateLabel, currentMonth, currentYear);
+                if (!d || isNaN(d)) return;
+
+                // For the current month, skip today and any future dates.
+                if (isCurrentMonth && d.getDate() >= todayNum) return;
+
+                const value = computeStatusForCol(colIndex, includeHidden);
+                if (value === null) return; // no data — hide per UX preference
+
+                entries.push({ dateLabel, d, value });
+            });
+
+            // Render
+            body.innerHTML = '';
+            if (entries.length === 0) {
+                body.innerHTML = '<div class="sh-no-data">No historical data available for this month yet.</div>';
+            } else {
+                // Find max absolute value for proportional intensity scaling.
+                const maxAbs = entries.reduce((m, e) => Math.max(m, Math.abs(e.value)), 0) || 1;
+
+                const grid = document.createElement('div');
+                grid.className = 'sh-grid';
+
+                const fmt = v => v.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+                entries.forEach(({ dateLabel, d, value }) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'sh-cell';
+
+                    if (value > 0) {
+                        cell.classList.add('positive');
+                        // Scale intensity: 0.06 (faint) to 0.35 (vivid)
+                        const intensity = 0.06 + (Math.abs(value) / maxAbs) * 0.29;
+                        cell.style.setProperty('--sh-intensity', intensity.toFixed(3));
+                    } else if (value < 0) {
+                        cell.classList.add('negative');
+                        const intensity = 0.06 + (Math.abs(value) / maxAbs) * 0.29;
+                        cell.style.setProperty('--sh-intensity', intensity.toFixed(3));
+                    } else {
+                        cell.classList.add('zero');
+                    }
+
+                    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+                    const sign = value > 0 ? '+' : '';
+
+                    const dateDiv = document.createElement('div');
+                    dateDiv.className = 'sh-cell-date';
+                    dateDiv.textContent = dayName + ' · ' + dateLabel;
+
+                    const valDiv = document.createElement('div');
+                    valDiv.className = 'sh-cell-value';
+                    valDiv.textContent = sign + fmt(value);
+
+                    cell.appendChild(dateDiv);
+                    cell.appendChild(valDiv);
+                    grid.appendChild(cell);
+                });
+
+                body.appendChild(grid);
+            }
+
+            backdrop.classList.add('active');
+            backdrop.focus();
+
+            // Escape-key handler — stored on backdrop so it can be cleaned up.
+            backdrop._escHandler = (e) => { if (e.key === 'Escape') closeStatusHistoryPopup(); };
+            document.addEventListener('keydown', backdrop._escHandler);
+        }
+
+        function closeStatusHistoryPopup() {
+            const backdrop = document.getElementById('status-history-backdrop');
+            if (!backdrop) return;
+            backdrop.classList.remove('active');
+            if (backdrop._escHandler) {
+                document.removeEventListener('keydown', backdrop._escHandler);
+                backdrop._escHandler = null;
+            }
+        }
+
+        /**
          * Normalise a raw contract name to a canonical display key.
          * Rules:
          *  - Strip month names (JAN–DEC, full names) and "FUT"  → suffix " FUT"
@@ -3874,10 +4137,95 @@
             }
         }
 
+        /**
+         * Sync Current (Today) values in the Targets card from today's column
+         * in the contracts table. Aggregates by contractDisplayKey group.
+         * Respects the Include Hidden toggle.
+         */
+        function syncCurrentValues() {
+            if (!portfolioData.contractTargets) portfolioData.contractTargets = {};
+
+            // Locate today's date string in the dates array
+            const now = new Date();
+            const isCurrentMonth = now.getMonth() === currentMonth && now.getFullYear() === currentYear;
+            if (!isCurrentMonth) {
+                showNotification('Sync skipped', 'Today\'s column only exists in the current month view. Navigate to the current month to sync.', 'warning');
+                return;
+            }
+            const todayStr = String(now.getDate()).padStart(2, '0') + '-' +
+                             now.toLocaleDateString('en-US', { month: 'short' });
+            const todayColIndex = portfolioData.dates.indexOf(todayStr);
+            if (todayColIndex === -1) {
+                showNotification('Sync skipped', 'Today\'s date column ("' + todayStr + '") was not found in the table. Add today\'s column first.', 'warning');
+                return;
+            }
+
+            // Respect the Include Hidden toggle (same rule as renderTargetsCard)
+            const includeHidden = document.getElementById('targets-include-hidden')?.checked ?? false;
+
+            // ── Aggregation per contract group ────────────────────────────────────
+            // Realized component : SUM of ALL bold cells across every date column.
+            //   Bold = a closed/booked P&L event. Multiple closings during the month
+            //   are each a separate bold cell and must ALL be included.
+            // Running component  : SUM of non-bold cells in TODAY's column only.
+            //   Non-bold today   = the current open-position running P&L.
+            // Current (Today)    = Realized + Running
+            // ─────────────────────────────────────────────────────────────────────
+            const realizedSums = {};
+            const runningSums  = {};
+
+            portfolioData.contracts.forEach((name, rowIndex) => {
+                if (!includeHidden && portfolioData.hiddenRows.has(rowIndex)) return;
+                const key = contractDisplayKey(name);
+
+                // Sum ALL bold (realized) cells across the entire month.
+                portfolioData.dates.forEach((_, colIndex) => {
+                    const cell = portfolioData.cells[`${rowIndex}-${colIndex}`];
+                    if (cell?.bold && cell.value !== undefined && cell.value !== '') {
+                        const v = parseFloat(String(cell.value).replace(/,/g, '')) || 0;
+                        realizedSums[key] = (realizedSums[key] ?? 0) + v;
+                    }
+                });
+
+                // Add today's non-bold (open/running) value.
+                const runCell = portfolioData.cells[`${rowIndex}-${todayColIndex}`];
+                if (runCell && !runCell.bold && runCell.value !== undefined && runCell.value !== '') {
+                    const v = parseFloat(String(runCell.value).replace(/,/g, '')) || 0;
+                    runningSums[key] = (runningSums[key] ?? 0) + v;
+                }
+            });
+
+            // Merge both components; include a group if it contributed any data.
+            const allKeys = new Set([...Object.keys(realizedSums), ...Object.keys(runningSums)]);
+            let updated = 0;
+            for (const key of allKeys) {
+                if (!portfolioData.contractTargets[key]) portfolioData.contractTargets[key] = {};
+                const total = (realizedSums[key] ?? 0) + (runningSums[key] ?? 0);
+                portfolioData.contractTargets[key].currentValue = String(total);
+                updated++;
+            }
+
+            if (updated === 0) {
+                showNotification('Sync complete', 'No contract values found for today. Cells may be empty.', 'info');
+                return;
+            }
+
+            saveCurrentMonthData();
+            renderTargetsCard();
+            showNotification('Sync complete', updated + ' contract group' + (updated !== 1 ? 's' : '') + ' updated from today\'s column.', 'success');
+        }
+
         function renderTargetsCard() {
             const container = document.getElementById('targets-list');
             const summaryEl = document.getElementById('targets-summary');
             if (!container || !summaryEl) return;
+
+            // Update card title to show current month name
+            const titleEl = document.getElementById('targets-card-title');
+            if (titleEl) {
+                const monthName = new Date(currentYear, currentMonth).toLocaleDateString('en-US', { month: 'long' });
+                titleEl.textContent = '\u25e2 Targets \u2014 ' + monthName + ' ' + currentYear;
+            }
 
             if (!portfolioData.contractTargets) portfolioData.contractTargets = {};
 
@@ -4042,11 +4390,11 @@
                 <div class="targets-summary-label">Overall</div>
                 <div class="targets-summary-values">
                     <div class="targets-summary-tile">
-                        <div class="targets-summary-tile-label">Total Month Target</div>
+                        <div class="targets-summary-tile-label">Month Target</div>
                         <div class="targets-summary-tile-value">${fmt(totalMonthTarget)}</div>
                     </div>
-                    <div class="targets-summary-tile">
-                        <div class="targets-summary-tile-label">Total Current Value</div>
+                    <div class="targets-summary-tile" onclick="openStatusHistoryPopup()" style="cursor:pointer;" title="Click to view daily history for this month">
+                        <div class="targets-summary-tile-label" style="display:flex;align-items:center;gap:5px;">Current Status <span style="font-size:10px;opacity:0.6;">&#x2197;</span></div>
                         <div class="targets-summary-tile-value">${fmt(totalCurrentValue)}</div>
                     </div>
                     <div class="targets-summary-tile">
