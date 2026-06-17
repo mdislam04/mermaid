@@ -6,37 +6,38 @@
 <title>Notes & Todo</title>
 <style>
   :root{
-    --bg: #FAF8F3;
-    --surface: #FFFFFF;
-    --border: #EAE5DA;
-    --border-soft: #F1ECE2;
-    --ink: #20241F;
-    --ink-muted: #767971;
-    --ink-faint: #A6A89F;
-    --accent: #1C6E5E;
-    --accent-dark: #154F44;
-    --accent-tint: #E7F1ED;
-    --overdue: #C1502E;
-    --overdue-tint: #FBEAE3;
-    --due-today: #B07A14;
-    --due-today-tint: #FBF0DC;
-    --danger: #C1502E;
-    --priority-low-bg: #F1EDFB;
-    --priority-low-border: #DED4F6;
-    --priority-low-text: #5B4FA0;
-    --priority-medium-bg: #CBB8EF;
-    --priority-medium-border: #B79FE3;
-    --priority-medium-text: #3A2D78;
-    --priority-high-bg: #4B3B96;
-    --priority-high-border: #3A2D78;
+    color-scheme: dark;
+    --bg: #1B1630;
+    --surface: #241D3C;
+    --border: #3C3260;
+    --border-soft: #2E2550;
+    --ink: #EDE8F8;
+    --ink-muted: #9B93BC;
+    --ink-faint: #6A618E;
+    --accent: #2DC4A2;
+    --accent-dark: #24A489;
+    --accent-tint: rgba(45,196,162,0.15);
+    --overdue: #F07A5E;
+    --overdue-tint: rgba(240,122,94,0.15);
+    --due-today: #DEAD5A;
+    --due-today-tint: rgba(222,173,90,0.15);
+    --danger: #F07A5E;
+    --priority-low-bg: #252048;
+    --priority-low-border: #3D3470;
+    --priority-low-text: #C5B8F5;
+    --priority-medium-bg: #342E72;
+    --priority-medium-border: #4E44A5;
+    --priority-medium-text: #E2DCFF;
+    --priority-high-bg: #5C4AB8;
+    --priority-high-border: #4D3EA8;
     --priority-high-text: #FFFFFF;
-    --shadow-sm: 0 1px 2px rgba(32,36,31,0.05), 0 1px 1px rgba(32,36,31,0.04);
-    --shadow-md: 0 4px 14px rgba(32,36,31,0.07), 0 1px 3px rgba(32,36,31,0.05);
-    --shadow-lg: 0 16px 40px rgba(32,36,31,0.14), 0 4px 10px rgba(32,36,31,0.08);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.4), 0 1px 1px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 14px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.35);
+    --shadow-lg: 0 16px 40px rgba(0,0,0,0.65), 0 4px 10px rgba(0,0,0,0.4);
     --radius-sm: 10px;
     --radius-md: 14px;
     --radius-lg: 18px;
-    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font: "Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
 
   *{ box-sizing: border-box; }
@@ -44,7 +45,7 @@
   html, body{
     margin:0;
     padding:0;
-    background: var(--bg);
+    background: linear-gradient(160deg, #1B1630 0%, #181428 50%, #1A1A2E 100%) fixed;
     color: var(--ink);
     font-family: var(--font);
     -webkit-font-smoothing: antialiased;
@@ -56,7 +57,7 @@
   }
 
   .app{
-    max-width: 640px;
+    max-width: 960px;
     margin: 0 auto;
   }
 
@@ -70,23 +71,50 @@
 
   /* ---------- Header ---------- */
   .app-header{
-    margin-bottom: 28px;
-    padding: 4px 4px 0;
+    margin-bottom: 36px;
+    padding: 8px 4px 28px;
+    border-bottom: 1px solid var(--border-soft);
+    position: relative;
+  }
+
+  .app-header::after{
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 52px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  .header-eyebrow{
+    margin: 0 0 10px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
   }
 
   .notes-count{
-    font-size: 38px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
     margin: 0;
-    line-height: 1.1;
+    line-height: 1.05;
+    background: linear-gradient(120deg, #EDE8F8 20%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     transition: opacity 0.15s ease;
   }
 
   .header-sub{
-    margin: 6px 0 0;
-    font-size: 15px;
-    color: var(--ink-muted);
+    margin: 10px 0 0;
+    font-size: 13px;
+    color: var(--ink-faint);
+    letter-spacing: 0.015em;
   }
 
   /* ---------- Composer ---------- */
@@ -102,7 +130,7 @@
 
   .composer:focus-within{
     box-shadow: var(--shadow-md);
-    border-color: #D7CDB9;
+    border-color: var(--accent);
   }
 
   .composer textarea{
@@ -183,7 +211,7 @@
   }
 
   .date-field:hover{
-    border-color: #D7CDB9;
+    border-color: var(--ink-faint);
   }
 
   .date-field:focus-within{
@@ -301,9 +329,11 @@
 
   /* ---------- Notes list ---------- */
   .notes-list{
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    align-items: start;
+    margin-bottom: 28px;
   }
 
   .note-card{
@@ -313,6 +343,7 @@
     box-shadow: var(--shadow-sm);
     padding: 16px 18px 14px;
     position: relative;
+    overflow: hidden;
     transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
     animation: cardIn 0.28s ease;
   }
@@ -323,7 +354,7 @@
   }
 
   .note-card.overdue{
-    border-color: #EAC4B5;
+    border-color: rgba(240,122,94,0.45);
   }
 
   .note-card.priority-low{
@@ -407,6 +438,10 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 12px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 0;
+    margin: 8px 0;
   }
 
   .note-content{
@@ -462,10 +497,10 @@
   .due-pill{
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 13px;
+    gap: 5px;
+    font-size: 11px;
     font-weight: 600;
-    padding: 4px 10px;
+    padding: 3px 8px;
     border-radius: 999px;
     background: var(--accent-tint);
     color: var(--accent-dark);
@@ -484,9 +519,9 @@
   .priority-badge{
     display: inline-flex;
     align-items: center;
-    font-size: 12.5px;
+    font-size: 11px;
     font-weight: 600;
-    padding: 4px 10px;
+    padding: 3px 8px;
     border-radius: 999px;
   }
 
@@ -496,7 +531,7 @@
   }
 
   .priority-badge.medium{
-    background: #fff;
+    background: rgba(255,255,255,0.2);
     color: var(--priority-medium-text);
   }
 
@@ -506,7 +541,7 @@
   }
 
   .age-text{
-    font-size: 12.5px;
+    font-size: 10.5px;
     color: var(--ink-faint);
   }
 
@@ -761,8 +796,13 @@
     transform: translateX(-50%) translateY(0);
   }
 
+  @media (max-width: 700px){
+    .notes-list{ grid-template-columns: repeat(2, 1fr); }
+  }
+
   @media (max-width: 480px){
     .notes-count{ font-size: 32px; }
+    .notes-list{ grid-template-columns: 1fr; }
     .composer-footer{ justify-content: stretch; }
     .priority-select{ order: 1; width: 100%; }
     .date-field{ order: 0; }
@@ -781,11 +821,20 @@
 
 <div class="app">
   <header class="app-header">
+    <p class="header-eyebrow" aria-hidden="true">My Workspace</p>
     <h1 class="notes-count" id="notesCount" aria-live="polite">0 Notes</h1>
-    <p class="header-sub">Quick notes, reminders & todos</p>
+    <p class="header-sub">Quick notes, reminders &amp; todos</p>
   </header>
 
   <main>
+    <section class="notes-list" id="notesList" aria-label="Notes"></section>
+
+    <div class="empty-state" id="emptyState" style="display:none;">
+      <div class="empty-icon" aria-hidden="true">📝</div>
+      <h3>No notes yet.</h3>
+      <p>Use the form below to add your first note.</p>
+    </div>
+
     <form class="composer" id="composerForm">
       <label for="noteInput" class="sr-only">Note content</label>
       <div class="format-toolbar" role="toolbar" aria-label="Text formatting" id="composerToolbar">
@@ -812,14 +861,6 @@
         <button type="submit" class="add-btn" id="addBtn" disabled>Add note</button>
       </div>
     </form>
-
-    <section class="notes-list" id="notesList" aria-label="Notes"></section>
-
-    <div class="empty-state" id="emptyState" style="display:none;">
-      <div class="empty-icon" aria-hidden="true">📝</div>
-      <h3>No notes yet.</h3>
-      <p>Create your first note above.</p>
-    </div>
   </main>
 
   <p class="footer-note">Notes are stored locally in your browser and automatically removed after 90 days.</p>
@@ -918,11 +959,22 @@
   }
 
   async function readRawNotes(){
-    if (!hasStorageApi()) return [];
+    if (hasStorageApi()){
+      try{
+        var result = await window.storage.get(STORAGE_KEY, false);
+        if (!result || !result.value) return [];
+        var parsed = JSON.parse(result.value);
+        if (!Array.isArray(parsed)) return [];
+        return parsed;
+      }catch(err){
+        return [];
+      }
+    }
+    // localStorage fallback for plain browser usage
     try{
-      var result = await window.storage.get(STORAGE_KEY, false);
-      if (!result || !result.value) return [];
-      var parsed = JSON.parse(result.value);
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      var parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) return [];
       return parsed;
     }catch(err){
@@ -931,10 +983,18 @@
   }
 
   async function writeRawNotes(list){
-    if (!hasStorageApi()) return false;
+    if (hasStorageApi()){
+      try{
+        var result = await window.storage.set(STORAGE_KEY, JSON.stringify(list), false);
+        return !!result;
+      }catch(err){
+        return false;
+      }
+    }
+    // localStorage fallback for plain browser usage
     try{
-      var result = await window.storage.set(STORAGE_KEY, JSON.stringify(list), false);
-      return !!result;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      return true;
     }catch(err){
       return false;
     }
@@ -1041,12 +1101,7 @@
 
   function ageLabel(note){
     var since = daysSinceCreated(note);
-    var createdText = since === 0 ? "Created today" : since === 1 ? "Created yesterday" : "Created " + since + " days ago";
-
-    var until = daysUntilExpiry(note);
-    var expiryText = until <= 1 ? "Expires tomorrow" : "Expires in " + until + " days";
-
-    return createdText + " · " + expiryText;
+    return since === 0 ? "Created today" : since === 1 ? "Created yesterday" : "Created " + since + " days ago";
   }
 
   function escapeHtml(str){
@@ -1123,8 +1178,7 @@
         '<span class="due-pill ' + pillClass + '">📅 ' + formatDisplayDate(note.dueDate) + ' · ' + statusLabel + '</span>' +
         '<span class="priority-badge ' + priority + '">' + PRIORITY_LABEL[priority] + '</span>' +
         '<span class="age-text">' + ageLabel(note) + '</span>' +
-      '</div>' +
-      '<div class="expiry-track"><div class="expiry-fill" style="width:' + elapsedPct + '%; background:' + barColor + ';"></div></div>';
+      '</div>';
 
     card.querySelector(".note-content").innerHTML = renderRichText(note.content);
 
@@ -1325,6 +1379,11 @@
   async function init(){
     setupFormatToolbar(composerToolbar, noteInput);
     PrioritySelector.init(composerPriority, "medium");
+    var today = new Date();
+    dueDateInput.value = today.getFullYear() + "-" +
+      String(today.getMonth() + 1).padStart(2, "0") + "-" +
+      String(today.getDate()).padStart(2, "0");
+    validateComposer();
     await loadNotes();
     render();
   }
