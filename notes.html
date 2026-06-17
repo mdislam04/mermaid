@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Notes & Todo</title>
+<style>
+  :root{
+    --bg: #FAF8F3;
+    --surface: #FFFFFF;
+    --border: #EAE5DA;
+    --border-soft: #F1ECE2;
+    --ink: #20241F;
+    --ink-muted: #767971;
+    --ink-faint: #A6A89F;
+    --accent: #1C6E5E;
+    --accent-dark: #154F44;
+    --accent-tint: #E7F1ED;
+    --overdue: #C1502E;
+    --overdue-tint: #FBEAE3;
+    --due-today: #B07A14;
+    --due-today-tint: #FBF0DC;
+    --danger: #C1502E;
+    --priority-low-bg: #F1EDFB;
+    --priority-low-border: #DED4F6;
+    --priority-low-text: #5B4FA0;
+    --priority-medium-bg: #CBB8EF;
+    --priority-medium-border: #B79FE3;
+    --priority-medium-text: #3A2D78;
+    --priority-high-bg: #4B3B96;
+    --priority-high-border: #3A2D78;
+    --priority-high-text: #FFFFFF;
+    --shadow-sm: 0 1px 2px rgba(32,36,31,0.05), 0 1px 1px rgba(32,36,31,0.04);
+    --shadow-md: 0 4px 14px rgba(32,36,31,0.07), 0 1px 3px rgba(32,36,31,0.05);
+    --shadow-lg: 0 16px 40px rgba(32,36,31,0.14), 0 4px 10px rgba(32,36,31,0.08);
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 18px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    margin:0;
+    padding:0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body{
+    min-height: 100vh;
+    padding: 32px 16px 64px;
+  }
+
+  .app{
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .sr-only{
+    position:absolute;
+    width:1px; height:1px;
+    overflow:hidden;
+    clip:rect(0,0,0,0);
+    white-space:nowrap;
+  }
+
+  /* ---------- Header ---------- */
+  .app-header{
+    margin-bottom: 28px;
+    padding: 4px 4px 0;
+  }
+
+  .notes-count{
+    font-size: 38px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+    line-height: 1.1;
+    transition: opacity 0.15s ease;
+  }
+
+  .header-sub{
+    margin: 6px 0 0;
+    font-size: 15px;
+    color: var(--ink-muted);
+  }
+
+  /* ---------- Composer ---------- */
+  .composer{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 16px 18px 14px;
+    margin-bottom: 28px;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  .composer:focus-within{
+    box-shadow: var(--shadow-md);
+    border-color: #D7CDB9;
+  }
+
+  .composer textarea{
+    width: 100%;
+    border: none;
+    outline: none;
+    resize: none;
+    background: transparent;
+    font-family: var(--font);
+    font-size: 17px;
+    line-height: 1.55;
+    color: var(--ink);
+    padding: 4px 2px 8px;
+    min-height: 26px;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  .composer textarea::placeholder{
+    color: var(--ink-faint);
+  }
+
+  .format-toolbar{
+    display: flex;
+    gap: 2px;
+    margin-bottom: 4px;
+  }
+
+  .format-btn{
+    appearance: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13.5px;
+    color: var(--ink-faint);
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .format-btn:hover{
+    background: var(--bg);
+    color: var(--ink-muted);
+  }
+
+  .format-btn:active{
+    transform: scale(0.94);
+  }
+
+  .format-btn strong, .format-btn em{
+    font-family: var(--font);
+  }
+
+  .composer-footer{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-soft);
+    flex-wrap: wrap;
+  }
+
+  .date-field{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 7px 12px;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .date-field:hover{
+    border-color: #D7CDB9;
+  }
+
+  .date-field:focus-within{
+    border-color: var(--accent);
+    background: var(--surface);
+  }
+
+  .date-field .cal-icon{
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  .date-field input[type="date"]{
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: var(--font);
+    font-size: 14px;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .priority-select{
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .priority-option{
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 6px 13px;
+    border-radius: 999px;
+    opacity: 0.55;
+    transform: scale(0.97);
+    transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .priority-option[aria-checked="true"]{
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .priority-option[aria-checked="true"]::before{
+    content: "✓ ";
+  }
+
+  .priority-option[data-level="low"]{
+    background: var(--priority-low-bg);
+    color: var(--priority-low-text);
+  }
+
+  .priority-option[data-level="medium"]{
+    background: var(--priority-medium-bg);
+    color: var(--priority-medium-text);
+  }
+
+  .priority-option[data-level="high"]{
+    background: var(--priority-high-bg);
+    color: var(--priority-high-text);
+  }
+
+  .priority-option[data-level="low"][aria-checked="true"]{
+    box-shadow: 0 0 0 2px var(--priority-low-border);
+  }
+
+  .priority-option[data-level="medium"][aria-checked="true"]{
+    box-shadow: 0 0 0 2px var(--priority-medium-border);
+  }
+
+  .priority-option[data-level="high"][aria-checked="true"]{
+    box-shadow: 0 0 0 2px var(--priority-high-border);
+  }
+
+  .add-btn{
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--font);
+    font-size: 14.5px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.12s ease, background 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .add-btn:hover:not(:disabled){
+    background: var(--accent-dark);
+    box-shadow: var(--shadow-md);
+  }
+
+  .add-btn:active:not(:disabled){
+    transform: scale(0.97);
+  }
+
+  .add-btn:disabled{
+    background: #DDD8CB;
+    color: #A6A89F;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .add-btn:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible{
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* ---------- Notes list ---------- */
+  .notes-list{
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .note-card{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 16px 18px 14px;
+    position: relative;
+    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+    animation: cardIn 0.28s ease;
+  }
+
+  .note-card:hover{
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+
+  .note-card.overdue{
+    border-color: #EAC4B5;
+  }
+
+  .note-card.priority-low{
+    background: var(--priority-low-bg);
+    border-color: var(--priority-low-border);
+  }
+
+  .note-card.priority-medium{
+    background: var(--priority-medium-bg);
+    border-color: var(--priority-medium-border);
+  }
+
+  .note-card.priority-high{
+    background: var(--priority-high-bg);
+    border-color: var(--priority-high-border);
+  }
+
+  .note-card.priority-high .note-content{
+    color: #fff;
+  }
+
+  .note-card.priority-high .age-text{
+    color: rgba(255,255,255,0.72);
+  }
+
+  .note-card.priority-high .icon-btn{
+    color: rgba(255,255,255,0.65);
+  }
+
+  .note-card.priority-high .icon-btn:hover{
+    background: rgba(255,255,255,0.14);
+    color: #fff;
+  }
+
+  .note-card.priority-high .icon-btn.delete-btn:hover{
+    background: rgba(255,255,255,0.18);
+    color: #FFD9CD;
+  }
+
+  .note-card.priority-high .expiry-track{
+    background: rgba(255,255,255,0.18);
+  }
+
+  .note-card.priority-high .confirm-text{
+    color: rgba(255,255,255,0.85);
+  }
+
+  .note-card.priority-high .confirm-actions button{
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.32);
+    color: #fff;
+  }
+
+  .note-card.priority-high .confirm-actions .confirm-delete{
+    background: #fff;
+    border-color: #fff;
+    color: var(--overdue);
+  }
+
+  .note-card.priority-medium .age-text{
+    color: var(--priority-medium-text);
+    opacity: 0.7;
+  }
+
+  @keyframes cardIn{
+    from{ opacity: 0; transform: translateY(8px) scale(0.99); }
+    to{ opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .note-card.removing{
+    animation: cardOut 0.22s ease forwards;
+  }
+
+  @keyframes cardOut{
+    from{ opacity: 1; transform: scale(1); max-height: 400px; }
+    to{ opacity: 0; transform: scale(0.96); max-height: 0; margin-top: 0; margin-bottom: 0; padding-top:0; padding-bottom:0; }
+  }
+
+  .note-top{
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .note-content{
+    font-size: 16.5px;
+    line-height: 1.6;
+    color: var(--ink);
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 0;
+    flex: 1;
+  }
+
+  .note-actions{
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .icon-btn{
+    appearance: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: var(--ink-faint);
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .icon-btn:hover{
+    background: var(--bg);
+    color: var(--ink-muted);
+  }
+
+  .icon-btn.delete-btn:hover{
+    background: var(--overdue-tint);
+    color: var(--overdue);
+  }
+
+  .note-meta{
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .due-pill{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--accent-tint);
+    color: var(--accent-dark);
+  }
+
+  .due-pill.due-today{
+    background: var(--due-today-tint);
+    color: var(--due-today);
+  }
+
+  .due-pill.overdue{
+    background: var(--overdue-tint);
+    color: var(--overdue);
+  }
+
+  .priority-badge{
+    display: inline-flex;
+    align-items: center;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+
+  .priority-badge.low{
+    background: var(--priority-low-border);
+    color: var(--priority-low-text);
+  }
+
+  .priority-badge.medium{
+    background: #fff;
+    color: var(--priority-medium-text);
+  }
+
+  .priority-badge.high{
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+  }
+
+  .age-text{
+    font-size: 12.5px;
+    color: var(--ink-faint);
+  }
+
+  .expiry-track{
+    margin-top: 12px;
+    height: 3px;
+    border-radius: 3px;
+    background: var(--border-soft);
+    overflow: hidden;
+  }
+
+  .expiry-fill{
+    height: 100%;
+    border-radius: 3px;
+    background: var(--accent);
+    transition: width 0.3s ease, background 0.3s ease;
+  }
+
+  /* ---------- Inline delete confirm ---------- */
+  .confirm-row{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    animation: cardIn 0.18s ease;
+  }
+
+  .confirm-text{
+    font-size: 13.5px;
+    color: var(--ink-muted);
+  }
+
+  .confirm-actions{
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .confirm-actions button{
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .confirm-actions .confirm-delete{
+    background: var(--overdue);
+    border-color: var(--overdue);
+    color: #fff;
+  }
+
+  .confirm-actions .confirm-delete:hover{
+    background: #A53F22;
+  }
+
+  .confirm-actions .confirm-cancel:hover{
+    background: var(--bg);
+  }
+
+  /* ---------- Empty state ---------- */
+  .empty-state{
+    text-align: center;
+    padding: 56px 20px;
+    color: var(--ink-muted);
+  }
+
+  .empty-icon{
+    font-size: 34px;
+    margin-bottom: 10px;
+    opacity: 0.85;
+  }
+
+  .empty-state h3{
+    margin: 0 0 4px;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .empty-state p{
+    margin: 0;
+    font-size: 14px;
+  }
+
+  /* ---------- Footer ---------- */
+  .footer-note{
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    margin-top: 28px;
+    padding: 0 20px;
+    line-height: 1.6;
+  }
+
+  /* ---------- Edit modal ---------- */
+  .modal-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(32,36,31,0.42);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 50;
+    animation: fadeIn 0.15s ease;
+  }
+
+  @keyframes fadeIn{
+    from{ opacity: 0; }
+    to{ opacity: 1; }
+  }
+
+  .modal-card{
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 420px;
+    padding: 20px 20px 18px;
+    animation: modalIn 0.18s ease;
+  }
+
+  @keyframes modalIn{
+    from{ opacity: 0; transform: translateY(10px) scale(0.98); }
+    to{ opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .modal-card h2{
+    margin: 0 0 14px;
+    font-size: 17px;
+    font-weight: 600;
+  }
+
+  .modal-card textarea{
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-family: var(--font);
+    font-size: 15.5px;
+    line-height: 1.55;
+    color: var(--ink);
+    resize: vertical;
+    min-height: 80px;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  .modal-card textarea:focus{
+    border-color: var(--accent);
+  }
+
+  .modal-field-label{
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    margin: 14px 0 6px;
+  }
+
+  .modal-card input[type="date"]{
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    font-family: var(--font);
+    font-size: 14.5px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  .modal-card input[type="date"]:focus{
+    border-color: var(--accent);
+  }
+
+  .modal-actions{
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .modal-actions button{
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    padding: 9px 18px;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.15s ease, transform 0.12s ease;
+  }
+
+  .modal-cancel{
+    background: var(--bg);
+    color: var(--ink-muted);
+    border: 1px solid var(--border) !important;
+  }
+
+  .modal-cancel:hover{
+    background: var(--border-soft);
+  }
+
+  .modal-save{
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .modal-save:hover:not(:disabled){
+    background: var(--accent-dark);
+  }
+
+  .modal-save:disabled{
+    background: #DDD8CB;
+    color: #A6A89F;
+    cursor: not-allowed;
+  }
+
+  .modal-actions button:active:not(:disabled){
+    transform: scale(0.97);
+  }
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position: fixed;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: var(--ink);
+    color: #fff;
+    font-size: 13.5px;
+    font-weight: 500;
+    padding: 10px 18px;
+    border-radius: 999px;
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 60;
+  }
+
+  .toast.show{
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  @media (max-width: 480px){
+    .notes-count{ font-size: 32px; }
+    .composer-footer{ justify-content: stretch; }
+    .priority-select{ order: 1; width: 100%; }
+    .date-field{ order: 0; }
+    .add-btn{ order: 2; flex: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="app-header">
+    <h1 class="notes-count" id="notesCount" aria-live="polite">0 Notes</h1>
+    <p class="header-sub">Quick notes, reminders & todos</p>
+  </header>
+
+  <main>
+    <form class="composer" id="composerForm">
+      <label for="noteInput" class="sr-only">Note content</label>
+      <div class="format-toolbar" role="toolbar" aria-label="Text formatting" id="composerToolbar">
+        <button type="button" class="format-btn" data-format="bold" aria-label="Bold" title="Bold (Ctrl+B)"><strong>B</strong></button>
+        <button type="button" class="format-btn" data-format="italic" aria-label="Italic" title="Italic (Ctrl+I)"><em>I</em></button>
+      </div>
+      <textarea
+        id="noteInput"
+        rows="1"
+        placeholder="Write a note, reminder, or todo..."
+        aria-label="Write a note, reminder, or todo"
+      ></textarea>
+      <div class="composer-footer">
+        <div class="date-field">
+          <span class="cal-icon" aria-hidden="true">📅</span>
+          <label for="dueDateInput" class="sr-only">Due date</label>
+          <input type="date" id="dueDateInput" required aria-label="Due date" />
+        </div>
+        <div class="priority-select" role="radiogroup" aria-label="Priority" id="composerPriority">
+          <button type="button" class="priority-option" data-level="low" role="radio" aria-checked="false">Low</button>
+          <button type="button" class="priority-option" data-level="medium" role="radio" aria-checked="false">Medium</button>
+          <button type="button" class="priority-option" data-level="high" role="radio" aria-checked="false">High</button>
+        </div>
+        <button type="submit" class="add-btn" id="addBtn" disabled>Add note</button>
+      </div>
+    </form>
+
+    <section class="notes-list" id="notesList" aria-label="Notes"></section>
+
+    <div class="empty-state" id="emptyState" style="display:none;">
+      <div class="empty-icon" aria-hidden="true">📝</div>
+      <h3>No notes yet.</h3>
+      <p>Create your first note above.</p>
+    </div>
+  </main>
+
+  <p class="footer-note">Notes are stored locally in your browser and automatically removed after 90 days.</p>
+</div>
+
+<div id="editModalRoot"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = "notes_todo_widget_v1";
+  var LIFETIME_MS = 90 * 24 * 60 * 60 * 1000;
+  var DAY_MS = 24 * 60 * 60 * 1000;
+
+  var notes = [];
+  var pendingDeleteId = null;
+
+  var notesListEl = document.getElementById("notesList");
+  var emptyStateEl = document.getElementById("emptyState");
+  var notesCountEl = document.getElementById("notesCount");
+  var noteInput = document.getElementById("noteInput");
+  var dueDateInput = document.getElementById("dueDateInput");
+  var addBtn = document.getElementById("addBtn");
+  var composerForm = document.getElementById("composerForm");
+  var composerToolbar = document.getElementById("composerToolbar");
+  var composerPriority = document.getElementById("composerPriority");
+  var editModalRoot = document.getElementById("editModalRoot");
+  var toastEl = document.getElementById("toast");
+
+  var PRIORITY_LEVELS = ["low", "medium", "high"];
+  var PRIORITY_WEIGHT = { low: 0, medium: 1, high: 2 };
+  var PRIORITY_LABEL = { low: "Low priority", medium: "Medium priority", high: "High priority" };
+
+  var PrioritySelector = {
+    init: function(containerEl, initialLevel){
+      var options = containerEl.querySelectorAll(".priority-option");
+      for (var i = 0; i < options.length; i++){
+        options[i].addEventListener("click", (function(opt){
+          return function(){ PrioritySelector.set(containerEl, opt.dataset.level); };
+        })(options[i]));
+      }
+      PrioritySelector.set(containerEl, initialLevel);
+    },
+    set: function(containerEl, level){
+      var options = containerEl.querySelectorAll(".priority-option");
+      for (var i = 0; i < options.length; i++){
+        options[i].setAttribute("aria-checked", options[i].dataset.level === level ? "true" : "false");
+      }
+    },
+    get: function(containerEl){
+      var active = containerEl.querySelector('.priority-option[aria-checked="true"]');
+      return active ? active.dataset.level : "medium";
+    }
+  };
+
+  function applyFormat(textareaEl, marker){
+    var start = textareaEl.selectionStart;
+    var end = textareaEl.selectionEnd;
+    var value = textareaEl.value;
+    var selected = value.slice(start, end);
+    var before = value.slice(0, start);
+    var after = value.slice(end);
+    textareaEl.value = before + marker + selected + marker + after;
+    var cursorPos = selected ? (before.length + marker.length * 2 + selected.length) : (before.length + marker.length);
+    textareaEl.focus();
+    textareaEl.setSelectionRange(cursorPos, cursorPos);
+    textareaEl.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  function setupFormatToolbar(toolbarEl, textareaEl){
+    var buttons = toolbarEl.querySelectorAll(".format-btn");
+    for (var i = 0; i < buttons.length; i++){
+      buttons[i].addEventListener("click", function(){
+        applyFormat(textareaEl, this.dataset.format === "bold" ? "**" : "*");
+      });
+    }
+    textareaEl.addEventListener("keydown", function(e){
+      var meta = e.metaKey || e.ctrlKey;
+      if (!meta) return;
+      if (e.key === "b" || e.key === "B"){
+        e.preventDefault();
+        applyFormat(textareaEl, "**");
+      }else if (e.key === "i" || e.key === "I"){
+        e.preventDefault();
+        applyFormat(textareaEl, "*");
+      }
+    });
+  }
+
+  /* ---------------- storage helpers ---------------- */
+
+  function hasStorageApi(){
+    return typeof window.storage !== "undefined" && window.storage;
+  }
+
+  async function readRawNotes(){
+    if (!hasStorageApi()) return [];
+    try{
+      var result = await window.storage.get(STORAGE_KEY, false);
+      if (!result || !result.value) return [];
+      var parsed = JSON.parse(result.value);
+      if (!Array.isArray(parsed)) return [];
+      return parsed;
+    }catch(err){
+      return [];
+    }
+  }
+
+  async function writeRawNotes(list){
+    if (!hasStorageApi()) return false;
+    try{
+      var result = await window.storage.set(STORAGE_KEY, JSON.stringify(list), false);
+      return !!result;
+    }catch(err){
+      return false;
+    }
+  }
+
+  function sanitizeNote(raw){
+    if (!raw || typeof raw !== "object") return null;
+    var content = typeof raw.content === "string" ? raw.content.trim() : "";
+    if (!content) return null;
+
+    var createdAt = parseDate(raw.createdAt);
+    if (!createdAt) return null;
+
+    var dueDate = typeof raw.dueDate === "string" && isValidDateString(raw.dueDate) ? raw.dueDate : null;
+    if (!dueDate) return null;
+
+    var updatedAt = parseDate(raw.updatedAt) || createdAt;
+    var id = typeof raw.id === "string" && raw.id ? raw.id : generateId();
+    var priority = PRIORITY_LEVELS.indexOf(raw.priority) !== -1 ? raw.priority : "medium";
+
+    return {
+      id: id,
+      content: content,
+      dueDate: dueDate,
+      priority: priority,
+      createdAt: createdAt.toISOString(),
+      updatedAt: updatedAt.toISOString()
+    };
+  }
+
+  function parseDate(value){
+    if (!value) return null;
+    var d = new Date(value);
+    if (isNaN(d.getTime())) return null;
+    return d;
+  }
+
+  function isValidDateString(s){
+    return /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(new Date(s).getTime());
+  }
+
+  function generateId(){
+    return "note_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9);
+  }
+
+  /* ---------------- expiration logic ---------------- */
+
+  function isExpired(note){
+    var created = new Date(note.createdAt).getTime();
+    return (Date.now() - created) >= LIFETIME_MS;
+  }
+
+  function runCleanup(list){
+    return list.filter(function(n){ return !isExpired(n); });
+  }
+
+  async function loadNotes(){
+    var raw = await readRawNotes();
+    var sanitized = raw.map(sanitizeNote).filter(Boolean);
+    var cleaned = runCleanup(sanitized);
+    if (cleaned.length !== raw.length){
+      await writeRawNotes(cleaned);
+    }
+    notes = cleaned;
+  }
+
+  async function persist(){
+    notes = runCleanup(notes);
+    await writeRawNotes(notes);
+  }
+
+  /* ---------------- date / text formatting ---------------- */
+
+  function startOfDay(date){
+    var d = new Date(date);
+    d.setHours(0,0,0,0);
+    return d;
+  }
+
+  function formatDisplayDate(dateStr){
+    var d = new Date(dateStr + "T00:00:00");
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+
+  function dueStatus(dateStr){
+    var due = startOfDay(new Date(dateStr + "T00:00:00")).getTime();
+    var today = startOfDay(new Date()).getTime();
+    if (due < today) return "overdue";
+    if (due === today) return "due-today";
+    return "upcoming";
+  }
+
+  function daysSinceCreated(note){
+    var created = startOfDay(new Date(note.createdAt)).getTime();
+    var today = startOfDay(new Date()).getTime();
+    return Math.max(0, Math.round((today - created) / DAY_MS));
+  }
+
+  function daysUntilExpiry(note){
+    var elapsed = Date.now() - new Date(note.createdAt).getTime();
+    var remainingMs = LIFETIME_MS - elapsed;
+    return Math.max(0, Math.ceil(remainingMs / DAY_MS));
+  }
+
+  function ageLabel(note){
+    var since = daysSinceCreated(note);
+    var createdText = since === 0 ? "Created today" : since === 1 ? "Created yesterday" : "Created " + since + " days ago";
+
+    var until = daysUntilExpiry(note);
+    var expiryText = until <= 1 ? "Expires tomorrow" : "Expires in " + until + " days";
+
+    return createdText + " · " + expiryText;
+  }
+
+  function escapeHtml(str){
+    var div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function renderRichText(raw){
+    var html = escapeHtml(raw);
+    html = html.replace(/\*\*([^\n*]+)\*\*/g, "<strong>$1</strong>");
+    html = html.replace(/\*([^\n*]+)\*/g, "<em>$1</em>");
+    return html;
+  }
+
+  /* ---------------- rendering ---------------- */
+
+  function updateCount(){
+    var n = notes.length;
+    notesCountEl.textContent = n + (n === 1 ? " Note" : " Notes");
+  }
+
+  function sortedNotes(){
+    return notes.slice().sort(function(a, b){
+      var da = new Date(a.dueDate).getTime();
+      var db = new Date(b.dueDate).getTime();
+      if (da !== db) return da - db;
+      var pa = PRIORITY_WEIGHT[a.priority] || 0;
+      var pb = PRIORITY_WEIGHT[b.priority] || 0;
+      if (pa !== pb) return pb - pa;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }
+
+  function render(){
+    updateCount();
+    notesListEl.innerHTML = "";
+
+    var list = sortedNotes();
+
+    if (list.length === 0){
+      emptyStateEl.style.display = "";
+      return;
+    }
+    emptyStateEl.style.display = "none";
+
+    list.forEach(function(note){
+      notesListEl.appendChild(buildCard(note));
+    });
+  }
+
+  function buildCard(note){
+    var status = dueStatus(note.dueDate);
+    var priority = PRIORITY_LEVELS.indexOf(note.priority) !== -1 ? note.priority : "medium";
+    var card = document.createElement("article");
+    card.className = "note-card priority-" + priority + (status === "overdue" ? " overdue" : "");
+    card.dataset.id = note.id;
+
+    var statusLabel = status === "overdue" ? "Overdue" : status === "due-today" ? "Due today" : "Upcoming";
+    var pillClass = status === "overdue" ? "overdue" : status === "due-today" ? "due-today" : "";
+
+    var elapsedPct = Math.min(100, Math.round((daysSinceCreated(note) / 90) * 100));
+    var barColor = elapsedPct >= 85 ? "var(--overdue)" : elapsedPct >= 60 ? "var(--due-today)" : "var(--accent)";
+
+    card.innerHTML =
+      '<div class="note-top">' +
+        '<p class="note-content"></p>' +
+        '<div class="note-actions">' +
+          '<button type="button" class="icon-btn edit-btn" aria-label="Edit note">✏️</button>' +
+          '<button type="button" class="icon-btn delete-btn" aria-label="Delete note">🗑️</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="note-meta">' +
+        '<span class="due-pill ' + pillClass + '">📅 ' + formatDisplayDate(note.dueDate) + ' · ' + statusLabel + '</span>' +
+        '<span class="priority-badge ' + priority + '">' + PRIORITY_LABEL[priority] + '</span>' +
+        '<span class="age-text">' + ageLabel(note) + '</span>' +
+      '</div>' +
+      '<div class="expiry-track"><div class="expiry-fill" style="width:' + elapsedPct + '%; background:' + barColor + ';"></div></div>';
+
+    card.querySelector(".note-content").innerHTML = renderRichText(note.content);
+
+    card.querySelector(".edit-btn").addEventListener("click", function(){
+      openEditModal(note.id);
+    });
+
+    card.querySelector(".delete-btn").addEventListener("click", function(){
+      showDeleteConfirm(card, note.id);
+    });
+
+    return card;
+  }
+
+  function showDeleteConfirm(card, id){
+    var savedHtml = card.innerHTML;
+    card.innerHTML =
+      '<div class="confirm-row">' +
+        '<span class="confirm-text">Delete this note? This cannot be undone.</span>' +
+        '<div class="confirm-actions">' +
+          '<button type="button" class="confirm-cancel">Cancel</button>' +
+          '<button type="button" class="confirm-delete">Delete</button>' +
+        '</div>' +
+      '</div>';
+
+    card.querySelector(".confirm-cancel").addEventListener("click", function(){
+      render();
+    });
+
+    card.querySelector(".confirm-delete").addEventListener("click", function(){
+      deleteNote(id, card);
+    });
+  }
+
+  async function deleteNote(id, card){
+    card.classList.add("removing");
+    notes = notes.filter(function(n){ return n.id !== id; });
+    await persist();
+    showToast("Note deleted");
+    setTimeout(render, 180);
+  }
+
+  /* ---------------- edit modal ---------------- */
+
+  function openEditModal(id){
+    var note = notes.find(function(n){ return n.id === id; });
+    if (!note) return;
+
+    var overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.innerHTML =
+      '<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">' +
+        '<h2 id="editModalTitle">Edit note</h2>' +
+        '<div class="format-toolbar" role="toolbar" aria-label="Text formatting" id="editToolbar">' +
+          '<button type="button" class="format-btn" data-format="bold" aria-label="Bold" title="Bold (Ctrl+B)"><strong>B</strong></button>' +
+          '<button type="button" class="format-btn" data-format="italic" aria-label="Italic" title="Italic (Ctrl+I)"><em>I</em></button>' +
+        '</div>' +
+        '<textarea id="editContent"></textarea>' +
+        '<label class="modal-field-label" for="editDueDate">Due date</label>' +
+        '<input type="date" id="editDueDate" />' +
+        '<label class="modal-field-label">Priority</label>' +
+        '<div class="priority-select" role="radiogroup" aria-label="Priority" id="editPriority">' +
+          '<button type="button" class="priority-option" data-level="low" role="radio" aria-checked="false">Low</button>' +
+          '<button type="button" class="priority-option" data-level="medium" role="radio" aria-checked="false">Medium</button>' +
+          '<button type="button" class="priority-option" data-level="high" role="radio" aria-checked="false">High</button>' +
+        '</div>' +
+        '<div class="modal-actions">' +
+          '<button type="button" class="modal-cancel">Cancel</button>' +
+          '<button type="button" class="modal-save">Save changes</button>' +
+        '</div>' +
+      '</div>';
+
+    editModalRoot.appendChild(overlay);
+
+    var contentField = overlay.querySelector("#editContent");
+    var dueField = overlay.querySelector("#editDueDate");
+    var saveBtn = overlay.querySelector(".modal-save");
+    var editToolbar = overlay.querySelector("#editToolbar");
+    var editPriority = overlay.querySelector("#editPriority");
+
+    contentField.value = note.content;
+    dueField.value = note.dueDate;
+    setupFormatToolbar(editToolbar, contentField);
+    PrioritySelector.init(editPriority, note.priority || "medium");
+
+    function validate(){
+      saveBtn.disabled = !contentField.value.trim() || !dueField.value;
+    }
+    contentField.addEventListener("input", validate);
+    dueField.addEventListener("input", validate);
+    validate();
+
+    function close(){
+      overlay.remove();
+    }
+
+    overlay.addEventListener("click", function(e){
+      if (e.target === overlay) close();
+    });
+
+    overlay.querySelector(".modal-cancel").addEventListener("click", close);
+
+    document.addEventListener("keydown", function escHandler(e){
+      if (e.key === "Escape"){
+        close();
+        document.removeEventListener("keydown", escHandler);
+      }
+    });
+
+    saveBtn.addEventListener("click", async function(){
+      var newContent = contentField.value.trim();
+      var newDue = dueField.value;
+      if (!newContent || !newDue) return;
+
+      note.content = newContent;
+      note.dueDate = newDue;
+      note.priority = PrioritySelector.get(editPriority);
+      note.updatedAt = new Date().toISOString();
+
+      await persist();
+      close();
+      render();
+      showToast("Note updated");
+    });
+
+    setTimeout(function(){ contentField.focus(); }, 10);
+  }
+
+  /* ---------------- composer ---------------- */
+
+  function autoResize(){
+    noteInput.style.height = "auto";
+    noteInput.style.height = Math.min(noteInput.scrollHeight, 240) + "px";
+  }
+
+  function validateComposer(){
+    addBtn.disabled = !noteInput.value.trim() || !dueDateInput.value;
+  }
+
+  noteInput.addEventListener("input", function(){
+    autoResize();
+    validateComposer();
+  });
+
+  dueDateInput.addEventListener("input", validateComposer);
+
+  noteInput.addEventListener("keydown", function(e){
+    var isSubmitCombo = (e.key === "Enter") && (e.metaKey || e.ctrlKey);
+    if (isSubmitCombo && !addBtn.disabled){
+      e.preventDefault();
+      composerForm.requestSubmit();
+    }
+  });
+
+  composerForm.addEventListener("submit", async function(e){
+    e.preventDefault();
+    var content = noteInput.value.trim();
+    var due = dueDateInput.value;
+    if (!content || !due) return;
+
+    var now = new Date().toISOString();
+    var note = {
+      id: generateId(),
+      content: content,
+      dueDate: due,
+      priority: PrioritySelector.get(composerPriority),
+      createdAt: now,
+      updatedAt: now
+    };
+
+    notes.push(note);
+    await persist();
+
+    noteInput.value = "";
+    dueDateInput.value = "";
+    autoResize();
+    validateComposer();
+    PrioritySelector.set(composerPriority, "medium");
+
+    render();
+    showToast("Note added");
+  });
+
+  /* ---------------- toast ---------------- */
+
+  var toastTimer = null;
+  function showToast(message){
+    toastEl.textContent = message;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){
+      toastEl.classList.remove("show");
+    }, 2200);
+  }
+
+  /* ---------------- init ---------------- */
+
+  async function init(){
+    setupFormatToolbar(composerToolbar, noteInput);
+    PrioritySelector.init(composerPriority, "medium");
+    await loadNotes();
+    render();
+  }
+
+  init();
+})();
+</script>
+
+</body>
+</html>
