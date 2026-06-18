@@ -510,6 +510,56 @@
             color: var(--accent-cyan);
         }
 
+        /* ─── Stat-tile breakdown tooltip ─── */
+        #stat-breakdown-tooltip {
+            display: none;
+            position: fixed;
+            z-index: 9998;
+            max-width: 260px;
+            max-height: 260px;
+            overflow-y: auto;
+            background: rgba(21, 27, 46, 0.97);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.55);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            pointer-events: none;
+        }
+        .sbt-title {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.9px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border);
+        }
+        .sbt-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 12px;
+            padding: 3px 0;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .sbt-name {
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
+        .sbt-value {
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .sbt-value.pos { color: var(--accent-green); }
+        .sbt-value.neg { color: var(--accent-red); }
+
         .chart-section h3 {
             margin-bottom: 20px;
             font-size: 14px;
@@ -1156,7 +1206,29 @@
             font-weight: 700;
         }
 
-        /* ─── Sync Status Badge ─── */
+        /* ─── Contracts header stats badge ─── */
+        .contracts-stats-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.4px;
+            background: rgba(0, 245, 255, 0.07);
+            border: 1px solid rgba(0, 245, 255, 0.18);
+            border-radius: 4px;
+            padding: 2px 8px;
+            margin-left: 10px;
+            vertical-align: middle;
+            line-height: 1.6;
+            white-space: nowrap;
+        }
+        .csb-total  { color: var(--text-primary); }
+        .csb-arrow  { color: var(--text-secondary); margin: 0 4px; }
+        .csb-active { color: var(--accent-cyan); }
+        .csb-sep    { color: var(--border); margin: 0 4px; }
+        .csb-hidden { color: var(--text-secondary); opacity: 0.6; }
         .sync-badge {
             display: inline-flex;
             align-items: center;
@@ -1544,7 +1616,7 @@
         <div class="card-section" id="card-table">
             <div class="card-header" onclick="toggleCard('card-table')" role="button" tabindex="0" aria-expanded="true"
                  onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCard('card-table');}">
-                <h3>◢ Contracts</h3>
+                <h3>&#9698; Contracts<span class="contracts-stats-badge" id="contracts-stats-badge" aria-label="contract statistics"><span class="csb-total">0</span><span class="csb-arrow">→</span><span class="csb-active">0</span><span class="csb-sep">|</span><span class="csb-hidden">0</span></span></h3>
                 <span class="card-chevron" aria-hidden="true">&#9660;</span>
             </div>
             <div class="card-body">
@@ -1729,6 +1801,9 @@
             <div id="status-history-body"></div>
         </div>
     </div>
+
+    <!-- Stat-tile breakdown tooltip (shared, fixed-position to avoid clip) -->
+    <div id="stat-breakdown-tooltip" role="tooltip" aria-hidden="true"></div>
 
     <!-- Hidden file input for JSON import -->
     <input type="file" id="import-file-input" accept=".json" style="display:none;"
@@ -2143,6 +2218,21 @@
             renderTableBody();
             renderTargetsCard();
             renderChart();
+            updateContractsBadge();
+        }
+
+        /** Update the compact stats badge in the Contracts card header. */
+        function updateContractsBadge() {
+            const badge = document.getElementById('contracts-stats-badge');
+            if (!badge) return;
+            const total  = portfolioData.contracts.length;
+            const hidden = portfolioData.hiddenRows.size;
+            const active = total - hidden;
+            badge.querySelector('.csb-total').textContent  = total;
+            badge.querySelector('.csb-active').textContent = active;
+            badge.querySelector('.csb-hidden').textContent = hidden;
+            badge.setAttribute('aria-label',
+                `${total} total, ${active} active, ${hidden} hidden`);
         }
 
         /**
@@ -2993,46 +3083,142 @@
 
         function updateSummaryStats() {
             const container = document.getElementById('summary-stats');
-            
+
             let totalProfit = 0;
-            let totalLoss = 0;
-            
+            let totalLoss   = 0;
+
+            // Per-contract contribution maps  { contractName -> number }
+            const profitByContract = {};
+            const lossByContract   = {};
+
             // Calculate from all bold cells (including hidden rows)
             portfolioData.contracts.forEach((contract, rowIndex) => {
                 portfolioData.dates.forEach((date, colIndex) => {
                     if (portfolioData.hiddenCols.has(colIndex)) return;
-                    
-                    const cellKey = `${rowIndex}-${colIndex}`;
+
+                    const cellKey  = `${rowIndex}-${colIndex}`;
                     const cellData = portfolioData.cells[cellKey];
-                    
+
                     // Only count bold/realized cells
                     if (cellData?.value && cellData.bold) {
                         const value = parseFloat(cellData.value.toString().replace(/,/g, '') || 0);
                         if (value > 0) {
                             totalProfit += value;
+                            profitByContract[contract] = (profitByContract[contract] ?? 0) + value;
                         } else if (value < 0) {
                             totalLoss += value;
+                            lossByContract[contract]   = (lossByContract[contract]   ?? 0) + value;
                         }
                     }
                 });
             });
-            
+
             const grossPnL = totalProfit + totalLoss;
-            
-            container.innerHTML = `
-                <div class="stat-tile">
-                    <div class="stat-tile-label">Total Profit</div>
-                    <div class="stat-tile-value profit">${totalProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                </div>
-                <div class="stat-tile">
-                    <div class="stat-tile-label">Total Loss</div>
-                    <div class="stat-tile-value loss">${totalLoss.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                </div>
-                <div class="stat-tile">
-                    <div class="stat-tile-label">Gross P&L</div>
-                    <div class="stat-tile-value gross">${grossPnL.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                </div>
-            `;
+            const fmt = v => v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            container.innerHTML = '';
+
+            // ── Helper: build a stat tile DOM node with optional breakdown tooltip ──
+            function makeTile(label, value, cssClass, breakdownMap) {
+                const tile = document.createElement('div');
+                tile.className = 'stat-tile';
+                if (breakdownMap) tile.style.cursor = 'default';
+
+                const lbl = document.createElement('div');
+                lbl.className = 'stat-tile-label';
+                lbl.textContent = label;
+
+                const val = document.createElement('div');
+                val.className = `stat-tile-value ${cssClass}`;
+                val.textContent = fmt(value);
+
+                tile.appendChild(lbl);
+                tile.appendChild(val);
+
+                if (breakdownMap && Object.keys(breakdownMap).length > 0) {
+                    tile.addEventListener('mouseenter', (e) => showStatTooltip(e, label, breakdownMap));
+                    tile.addEventListener('mousemove',  (e) => repositionStatTooltip(e));
+                    tile.addEventListener('mouseleave', hideStatTooltip);
+                }
+
+                return tile;
+            }
+
+            container.appendChild(makeTile('Total Profit', totalProfit, 'profit', profitByContract));
+            container.appendChild(makeTile('Total Loss',   totalLoss,   'loss',   lossByContract));
+            container.appendChild(makeTile('Gross P&L',    grossPnL,    'gross',  null));
+        }
+
+        // Generated by GitHub Copilot
+        /**
+         * Show a per-contract breakdown tooltip anchored to the hovered tile.
+         * Uses position:fixed so it is never clipped by overflow or sticky parents.
+         */
+        function showStatTooltip(e, title, breakdownMap) {
+            const tip = document.getElementById('stat-breakdown-tooltip');
+            if (!tip) return;
+
+            tip.innerHTML = '';
+            tip.setAttribute('aria-hidden', 'false');
+
+            const hd = document.createElement('div');
+            hd.className = 'sbt-title';
+            hd.textContent = title + ' breakdown';
+            tip.appendChild(hd);
+
+            // Sort entries: profits descending, losses ascending (largest loss first)
+            const entries = Object.entries(breakdownMap)
+                .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+
+            const fmtVal = v => (v > 0 ? '+' : '') +
+                v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            entries.forEach(([name, val]) => {
+                const row = document.createElement('div');
+                row.className = 'sbt-row';
+
+                const nm = document.createElement('span');
+                nm.className = 'sbt-name';
+                nm.textContent = name;
+                nm.title = name; // full name on native hover for truncated labels
+
+                const vl = document.createElement('span');
+                vl.className = 'sbt-value ' + (val >= 0 ? 'pos' : 'neg');
+                vl.textContent = fmtVal(val);
+
+                row.appendChild(nm);
+                row.appendChild(vl);
+                tip.appendChild(row);
+            });
+
+            repositionStatTooltip(e);
+            tip.style.display = 'block';
+        }
+
+        function repositionStatTooltip(e) {
+            const tip = document.getElementById('stat-breakdown-tooltip');
+            if (!tip || tip.style.display === 'none') return;
+
+            const GAP = 12;
+            const tw  = tip.offsetWidth  || 260;
+            const th  = tip.offsetHeight || 100;
+            let   left = e.clientX + GAP;
+            let   top  = e.clientY + GAP;
+
+            // Keep within viewport
+            if (left + tw > window.innerWidth  - 8) left = e.clientX - tw - GAP;
+            if (top  + th > window.innerHeight - 8) top  = e.clientY - th - GAP;
+
+            tip.style.left = left + 'px';
+            tip.style.top  = top  + 'px';
+        }
+
+        function hideStatTooltip() {
+            const tip = document.getElementById('stat-breakdown-tooltip');
+            if (tip) {
+                tip.style.display = 'none';
+                tip.setAttribute('aria-hidden', 'true');
+            }
         }
 
         function addCalculatedRow(label, rowType) {
