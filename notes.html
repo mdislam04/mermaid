@@ -1484,12 +1484,6 @@
     async function acquire(){
       try{
         wakeLock = await navigator.wakeLock.request("screen");
-        wakeLock.addEventListener("release", function(){
-          // Auto-reacquire only if user still wants it on
-          if (toggle.checked){
-            acquire();
-          }
-        });
         wrap.classList.add("active");
       }catch(err){
         toggle.checked = false;
@@ -1507,13 +1501,6 @@
 
     toggle.addEventListener("change", function(){
       if (toggle.checked){ acquire(); } else { release(); }
-    });
-
-    // Reacquire when tab becomes visible again (browser releases lock on hide)
-    document.addEventListener("visibilitychange", function(){
-      if (document.visibilityState === "visible" && toggle.checked && !wakeLock){
-        acquire();
-      }
     });
   })();
 
