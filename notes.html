@@ -7,6 +7,7 @@
 <style>
   :root{
     color-scheme: dark;
+    --card-zoom: 1;
     --bg: #1B1630;
     --surface: #241D3C;
     --border: #3C3260;
@@ -330,8 +331,8 @@
   /* ---------- Notes list ---------- */
   .notes-list{
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(calc(220px * var(--card-zoom)), 1fr));
+    gap: calc(16px * var(--card-zoom));
     align-items: start;
     margin-bottom: 28px;
   }
@@ -339,9 +340,9 @@
   .note-card{
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    border-radius: calc(var(--radius-lg) * var(--card-zoom));
     box-shadow: var(--shadow-sm);
-    padding: 16px 18px 14px;
+    padding: calc(16px * var(--card-zoom)) calc(18px * var(--card-zoom)) calc(14px * var(--card-zoom));
     position: relative;
     overflow: hidden;
     transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
@@ -437,15 +438,15 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 12px;
+    gap: calc(12px * var(--card-zoom));
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
-    padding: 10px 0;
-    margin: 8px 0;
+    padding: calc(10px * var(--card-zoom)) 0;
+    margin: calc(8px * var(--card-zoom)) 0;
   }
 
   .note-content{
-    font-size: 16.5px;
+    font-size: calc(16.5px * var(--card-zoom));
     line-height: 1.6;
     color: var(--ink);
     white-space: pre-wrap;
@@ -456,7 +457,7 @@
 
   .note-actions{
     display: flex;
-    gap: 4px;
+    gap: calc(4px * var(--card-zoom));
     flex-shrink: 0;
   }
 
@@ -465,13 +466,13 @@
     border: none;
     background: transparent;
     cursor: pointer;
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
+    width: calc(30px * var(--card-zoom));
+    height: calc(30px * var(--card-zoom));
+    border-radius: calc(8px * var(--card-zoom));
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 15px;
+    font-size: calc(15px * var(--card-zoom));
     color: var(--ink-faint);
     transition: background 0.15s ease, color 0.15s ease;
   }
@@ -490,17 +491,17 @@
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 12px;
+    gap: calc(8px * var(--card-zoom));
+    margin-top: calc(12px * var(--card-zoom));
   }
 
   .due-pill{
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    font-size: 11px;
+    gap: calc(5px * var(--card-zoom));
+    font-size: calc(11px * var(--card-zoom));
     font-weight: 600;
-    padding: 3px 8px;
+    padding: calc(3px * var(--card-zoom)) calc(8px * var(--card-zoom));
     border-radius: 999px;
     background: var(--accent-tint);
     color: var(--accent-dark);
@@ -519,9 +520,9 @@
   .priority-badge{
     display: inline-flex;
     align-items: center;
-    font-size: 11px;
+    font-size: calc(11px * var(--card-zoom));
     font-weight: 600;
-    padding: 3px 8px;
+    padding: calc(3px * var(--card-zoom)) calc(8px * var(--card-zoom));
     border-radius: 999px;
   }
 
@@ -541,7 +542,7 @@
   }
 
   .age-text{
-    font-size: 10.5px;
+    font-size: calc(10.5px * var(--card-zoom));
     color: var(--ink-faint);
   }
 
@@ -796,13 +797,8 @@
     transform: translateX(-50%) translateY(0);
   }
 
-  @media (max-width: 700px){
-    .notes-list{ grid-template-columns: repeat(2, 1fr); }
-  }
-
   @media (max-width: 480px){
     .notes-count{ font-size: 32px; }
-    .notes-list{ grid-template-columns: 1fr; }
     .composer-footer{ justify-content: stretch; }
     .priority-select{ order: 1; width: 100%; }
     .date-field{ order: 0; }
@@ -899,6 +895,62 @@
     cursor: not-allowed;
     opacity: 0.4;
   }
+
+  /* ---------- Notes zoom controls ---------- */
+  .zoom-wrap{
+    position: fixed;
+    top: 52px;
+    right: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(36,29,60,0.85);
+    backdrop-filter: blur(4px);
+    z-index: 40;
+  }
+
+  .zoom-label{
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    user-select: none;
+  }
+
+  .zoom-btn{
+    appearance: none;
+    border: 1px solid var(--border-soft);
+    background: transparent;
+    color: var(--ink);
+    border-radius: 999px;
+    width: 22px;
+    height: 22px;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .zoom-btn:hover:not(:disabled){
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .zoom-btn:disabled{
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .zoom-value{
+    min-width: 38px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-muted);
+  }
 </style>
 </head>
 <body>
@@ -910,6 +962,13 @@
     <input type="checkbox" id="wakelockToggle" role="switch" aria-label="Keep screen on" />
     <span class="toggle-track"></span>
   </label>
+</div>
+
+<div class="zoom-wrap" id="zoomWrap" aria-label="Notes zoom controls">
+  <span class="zoom-label" aria-hidden="true">Cards</span>
+  <button type="button" class="zoom-btn" id="zoomOutBtn" aria-label="Zoom out note cards">-</button>
+  <span class="zoom-value" id="zoomValue" aria-live="polite">100%</span>
+  <button type="button" class="zoom-btn" id="zoomInBtn" aria-label="Zoom in note cards">+</button>
 </div>
 
 <div class="app">
@@ -967,8 +1026,12 @@
   "use strict";
 
   var STORAGE_KEY = "notes_todo_widget_v1";
+  var ZOOM_STORAGE_KEY = "notes_card_zoom_v1";
   var LIFETIME_MS = 90 * 24 * 60 * 60 * 1000;
   var DAY_MS = 24 * 60 * 60 * 1000;
+  var MIN_ZOOM = 0.7;
+  var MAX_ZOOM = 1.4;
+  var ZOOM_STEP = 0.1;
 
   var notes = [];
   var pendingDeleteId = null;
@@ -984,10 +1047,87 @@
   var composerPriority = document.getElementById("composerPriority");
   var editModalRoot = document.getElementById("editModalRoot");
   var toastEl = document.getElementById("toast");
+  var zoomOutBtn = document.getElementById("zoomOutBtn");
+  var zoomInBtn = document.getElementById("zoomInBtn");
+  var zoomValueEl = document.getElementById("zoomValue");
 
   var PRIORITY_LEVELS = ["low", "medium", "high"];
   var PRIORITY_WEIGHT = { low: 0, medium: 1, high: 2 };
   var PRIORITY_LABEL = { low: "Low priority", medium: "Medium priority", high: "High priority" };
+
+  // Generated by GitHub Copilot
+  /**
+   * Restricts note-card zoom to the supported range.
+   * @param {number} value Candidate zoom value.
+   * @returns {number} Clamped zoom value.
+   */
+  function clampZoom(value){
+    return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
+  }
+
+  // Generated by GitHub Copilot
+  /**
+   * Applies card zoom in CSS and updates zoom controls state.
+   * @param {number} value Desired zoom level.
+   */
+  function applyCardZoom(value){
+    var zoom = clampZoom(value);
+    document.documentElement.style.setProperty("--card-zoom", zoom.toFixed(2));
+    zoomValueEl.textContent = Math.round(zoom * 100) + "%";
+    zoomOutBtn.disabled = zoom <= MIN_ZOOM;
+    zoomInBtn.disabled = zoom >= MAX_ZOOM;
+  }
+
+  // Generated by GitHub Copilot
+  /**
+   * Reads persisted card zoom preference from local storage.
+   * @returns {number} Saved zoom level or default zoom.
+   */
+  function readSavedZoom(){
+    try{
+      var raw = localStorage.getItem(ZOOM_STORAGE_KEY);
+      if (!raw) return 1;
+      var parsed = Number(raw);
+      if (isNaN(parsed)) return 1;
+      return clampZoom(parsed);
+    }catch(err){
+      return 1;
+    }
+  }
+
+  // Generated by GitHub Copilot
+  /**
+   * Persists card zoom preference to local storage.
+   * @param {number} value Zoom value to save.
+   */
+  function saveZoom(value){
+    try{
+      localStorage.setItem(ZOOM_STORAGE_KEY, String(clampZoom(value)));
+    }catch(err){
+      // Ignore storage write failures.
+    }
+  }
+
+  // Generated by GitHub Copilot
+  /**
+   * Initializes zoom-in/zoom-out controls for note cards.
+   */
+  function setupZoomControls(){
+    var currentZoom = readSavedZoom();
+    applyCardZoom(currentZoom);
+
+    zoomOutBtn.addEventListener("click", function(){
+      currentZoom = clampZoom(currentZoom - ZOOM_STEP);
+      applyCardZoom(currentZoom);
+      saveZoom(currentZoom);
+    });
+
+    zoomInBtn.addEventListener("click", function(){
+      currentZoom = clampZoom(currentZoom + ZOOM_STEP);
+      applyCardZoom(currentZoom);
+      saveZoom(currentZoom);
+    });
+  }
 
   var PrioritySelector = {
     init: function(containerEl, initialLevel){
@@ -1507,6 +1647,7 @@
   /* ---------------- init ---------------- */
 
   async function init(){
+    setupZoomControls();
     setupFormatToolbar(composerToolbar, noteInput);
     PrioritySelector.init(composerPriority, "medium");
     var today = new Date();
