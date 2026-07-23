@@ -1,0 +1,2357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCX Silver Mini · XAGUSD Trading Calculator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════════
+   DESIGN TOKENS — Terminal Silver Theme
+   Palette: Deep gunmetal base, molten silver accent,
+   precision amber for highlights, crimson/jade P&L
+═══════════════════════════════════════════════ */
+:root {
+  --bg-primary:    #0d0f14;
+  --bg-secondary:  #141820;
+  --bg-card:       #1a1f2e;
+  --bg-card-hover: #1f2535;
+  --bg-input:      #0f1218;
+  --border:        #252c3d;
+  --border-bright: #3a4460;
+
+  --silver:        #c8d4e8;
+  --silver-dim:    #7a8aaa;
+  --silver-bright: #e2ecff;
+
+  --amber:         #f0a500;
+  --amber-dim:     #8a6010;
+
+  --profit:        #00c87a;
+  --profit-dim:    #004d30;
+  --loss:          #ff4560;
+  --loss-dim:      #5c0f1e;
+  --neutral:       #556080;
+
+  --text-primary:  #e4ecff;
+  --text-secondary:#8896b8;
+  --text-muted:    #4a5470;
+
+  --font-mono:     'Courier New', 'Lucida Console', monospace;
+  --font-ui:       -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --radius-sm:     4px;
+  --radius-md:     8px;
+  --radius-lg:     12px;
+  --transition:    0.15s ease;
+}
+
+/* Light mode */
+[data-theme="light"] {
+  --bg-primary:    #f0f2f8;
+  --bg-secondary:  #e4e8f2;
+  --bg-card:       #ffffff;
+  --bg-card-hover: #f7f9ff;
+  --bg-input:      #f0f2f8;
+  --border:        #d0d6e8;
+  --border-bright: #9faac8;
+  --silver:        #2a3560;
+  --silver-dim:    #556090;
+  --silver-bright: #0f1840;
+  --amber:         #c07800;
+  --text-primary:  #141828;
+  --text-secondary:#384060;
+  --text-muted:    #8896b8;
+  --bg-card:       #ffffff;
+}
+
+/* ═══ RESET & BASE ═══ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-ui);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ═══ SCROLLBAR ═══ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+
+/* ═══ LAYOUT ═══ */
+.app-header {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.app-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--silver-bright);
+  letter-spacing: 0.5px;
+}
+.app-logo .ticker {
+  font-family: var(--font-mono);
+  color: var(--amber);
+  font-size: 11px;
+  background: var(--amber-dim);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 1px;
+}
+
+.header-actions { display: flex; gap: 8px; align-items: center; }
+
+.nav-tabs {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  overflow-x: auto;
+  padding: 0 20px;
+  gap: 2px;
+}
+.nav-tab {
+  padding: 12px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: var(--transition);
+  letter-spacing: 0.3px;
+}
+.nav-tab:hover { color: var(--text-primary); }
+.nav-tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+
+.main-content {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.tab-section { display: none; }
+.tab-section.active { display: block; }
+
+/* ═══ GRID SYSTEM ═══ */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+
+/* ═══ CARDS ═══ */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  transition: var(--transition);
+}
+.card:hover { border-color: var(--border-bright); }
+.card-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.card-title::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 12px;
+  background: var(--amber);
+  border-radius: 2px;
+}
+
+/* ═══ KPI CARDS ═══ */
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  transition: var(--transition);
+}
+.kpi-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.kpi-value {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--silver-bright);
+  line-height: 1.1;
+}
+.kpi-value.profit { color: var(--profit); }
+.kpi-value.loss { color: var(--loss); }
+.kpi-sub {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+.kpi-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.kpi-badge.profit { background: var(--profit-dim); color: var(--profit); }
+.kpi-badge.loss   { background: var(--loss-dim);   color: var(--loss); }
+
+/* ═══ FORM ELEMENTS ═══ */
+.form-group { margin-bottom: 14px; }
+.form-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+}
+.form-control {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  transition: var(--transition);
+  outline: none;
+}
+.form-control:focus { border-color: var(--amber); box-shadow: 0 0 0 2px rgba(240,165,0,0.12); }
+.form-control::placeholder { color: var(--text-muted); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+/* ═══ BUTTONS ═══ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: var(--transition);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.btn-primary   { background: var(--amber); color: #000; }
+.btn-primary:hover { background: #ffb820; }
+.btn-secondary { background: var(--bg-card); border-color: var(--border); color: var(--text-primary); }
+.btn-secondary:hover { border-color: var(--border-bright); background: var(--bg-card-hover); }
+.btn-ghost     { background: transparent; color: var(--text-secondary); }
+.btn-ghost:hover { color: var(--text-primary); background: var(--bg-card); }
+.btn-profit    { background: var(--profit-dim); color: var(--profit); border-color: var(--profit-dim); }
+.btn-danger    { background: var(--loss-dim);   color: var(--loss);   border-color: var(--loss-dim); }
+.btn-sm { padding: 5px 10px; font-size: 11px; }
+.btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ═══ BADGES & TAGS ═══ */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  font-family: var(--font-mono);
+}
+.badge-amber { background: var(--amber-dim); color: var(--amber); }
+.badge-silver { background: var(--border); color: var(--silver); }
+
+/* ═══ DIVIDER ═══ */
+.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+/* ═══ SECTION HEADER ═══ */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--silver-bright);
+  letter-spacing: 0.5px;
+}
+
+/* ═══ DATA TABLE ═══ */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+.data-table th {
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 8px 12px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.data-table th:first-child { text-align: left; }
+.data-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  color: var(--text-primary);
+}
+.data-table td:first-child { text-align: left; color: var(--text-secondary); }
+.data-table tr:hover td { background: var(--bg-card-hover); }
+.cell-profit { color: var(--profit); font-weight: 600; }
+.cell-loss   { color: var(--loss);   font-weight: 600; }
+.cell-neutral{ color: var(--text-muted); }
+
+/* ═══ MODE TABS ═══ */
+.mode-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.mode-tab {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  background: transparent;
+  transition: var(--transition);
+}
+.mode-tab:hover { border-color: var(--border-bright); color: var(--text-primary); }
+.mode-tab.active { background: var(--amber); color: #000; border-color: var(--amber); }
+
+/* ═══ SLIDER ═══ */
+.slider-wrap { margin-bottom: 20px; }
+.slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.slider-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.slider-value {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--amber);
+  min-width: 80px;
+  text-align: right;
+}
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--amber);
+  cursor: pointer;
+  border: 2px solid var(--bg-primary);
+  box-shadow: 0 0 0 2px var(--amber);
+}
+input[type=range]:focus::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(240,165,0,0.25); }
+
+/* ═══ CHART CONTAINER ═══ */
+.chart-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.chart-wrap canvas { max-height: 260px; }
+
+/* ═══ SCENARIO CARDS ═══ */
+.scenario-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  position: relative;
+}
+.scenario-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 10px;
+}
+.scenario-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--border);
+}
+.scenario-row:last-child { border-bottom: none; }
+.s-key { color: var(--text-muted); }
+.s-val { font-family: var(--font-mono); color: var(--text-primary); font-weight: 600; }
+.scenario-del {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px;
+}
+.scenario-del:hover { color: var(--loss); }
+
+/* ═══ FORMULA DISPLAY ═══ */
+.formula-block {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--amber);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--silver);
+  margin-bottom: 10px;
+  white-space: pre-wrap;
+}
+.formula-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ═══ TOAST ═══ */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toast {
+  background: var(--bg-card);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text-primary);
+  animation: slideIn 0.2s ease;
+  max-width: 280px;
+}
+@keyframes slideIn {
+  from { transform: translateX(20px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* ═══ RESULT ROWS ═══ */
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+.result-row:last-child { border-bottom: none; }
+.result-key { font-size: 12px; color: var(--text-secondary); }
+.result-val {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.result-val.profit { color: var(--profit); }
+.result-val.loss   { color: var(--loss); }
+.result-val.amber  { color: var(--amber); }
+
+/* ═══ INFO PILL ═══ */
+.info-pill {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ═══ SENSITIVITY TABLE ═══ */
+.sens-scroll { overflow-x: auto; }
+.sens-table {
+  border-collapse: collapse;
+  min-width: 700px;
+  font-size: 12px;
+}
+.sens-table th {
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  text-align: center;
+  white-space: nowrap;
+}
+.sens-table td {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: default;
+  transition: var(--transition);
+}
+.sens-table td:hover { filter: brightness(1.3); }
+.sens-table .row-header {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-weight: 700;
+  text-align: right;
+}
+.sens-cell-value { font-weight: 600; font-size: 10px; }
+.sens-cell-pnl   { font-size: 10px; }
+
+/* ═══ WATERFALL ═══ */
+.waterfall-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.waterfall-label { width: 140px; font-size: 12px; color: var(--text-secondary); text-align: right; }
+.waterfall-track {
+  flex: 1;
+  height: 28px;
+  background: var(--bg-input);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+.waterfall-fill {
+  height: 100%;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: width 0.3s ease;
+}
+.waterfall-fill.profit { background: var(--profit-dim); color: var(--profit); }
+.waterfall-fill.loss   { background: var(--loss-dim);   color: var(--loss); }
+.waterfall-fill.neutral{ background: var(--border);     color: var(--text-secondary); }
+
+/* ═══ TOGGLE SWITCH ═══ */
+.toggle-wrap { display: flex; align-items: center; gap: 8px; }
+.toggle-switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--border);
+  border-radius: 20px;
+  transition: 0.2s;
+}
+.toggle-slider:before {
+  position: absolute; content: '';
+  height: 14px; width: 14px; left: 3px; bottom: 3px;
+  background: white; border-radius: 50%; transition: 0.2s;
+}
+input:checked + .toggle-slider { background: var(--amber); }
+input:checked + .toggle-slider:before { transform: translateX(16px); }
+
+/* ═══ COMPARISON TABLE ═══ */
+.compare-grid {
+  display: grid;
+  gap: 12px;
+}
+.compare-diff {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  text-align: center;
+}
+.compare-diff .diff-label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; }
+.compare-diff .diff-val { font-family: var(--font-mono); font-size: 18px; font-weight: 700; }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 900px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .form-row, .form-row-3 { grid-template-columns: 1fr; }
+  .main-content { padding: 12px; }
+  .nav-tab { padding: 10px 12px; font-size: 12px; }
+}
+
+/* ═══ PRINT ═══ */
+@media print {
+  .app-header, .nav-tabs, .header-actions, .btn-group { display: none !important; }
+  body { background: white; color: black; }
+  .card, .kpi-card, .chart-wrap { break-inside: avoid; }
+}
+
+/* ═══ MISC ═══ */
+.mb-0 { margin-bottom: 0; }
+.mb-8 { margin-bottom: 8px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-20 { margin-bottom: 20px; }
+.text-center { text-align: center; }
+.text-muted { color: var(--text-muted); }
+.text-profit { color: var(--profit); }
+.text-loss   { color: var(--loss); }
+.text-amber  { color: var(--amber); }
+.mono { font-family: var(--font-mono); }
+.hidden { display: none; }
+.flex { display: flex; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap-8 { gap: 8px; }
+.mt-8 { margin-top: 8px; }
+</style>
+</head>
+<body data-theme="dark">
+
+<!-- ═══ HEADER ═══ -->
+<header class="app-header">
+  <div class="app-logo">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0a500" stroke-width="2">
+      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+      <polyline points="16 7 22 7 22 13"/>
+    </svg>
+    MCX Silver Mini
+    <span class="ticker">XAGUSD · INR</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-secondary btn-sm" onclick="exportExcel()">⬇ Excel</button>
+    <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Print</button>
+    <button class="btn btn-secondary btn-sm" onclick="copyResults()">⧉ Copy</button>
+    <button class="btn btn-secondary btn-sm" onclick="resetAll()">↺ Reset</button>
+    <div class="toggle-wrap">
+      <span style="font-size:11px;color:var(--text-muted)">☀</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="themeToggle" checked onchange="toggleTheme()">
+        <span class="toggle-slider"></span>
+      </label>
+      <span style="font-size:11px;color:var(--text-muted)">🌑</span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══ NAV TABS ═══ -->
+<nav class="nav-tabs">
+  <div class="nav-tab active" onclick="showTab('dashboard')">Dashboard</div>
+  <div class="nav-tab" onclick="showTab('target')">Target Calculator</div>
+  <div class="nav-tab" onclick="showTab('whatif')">What-if Analysis</div>
+  <div class="nav-tab" onclick="showTab('sensitivity')">Sensitivity Table</div>
+  <div class="nav-tab" onclick="showTab('scenarios')">Scenarios</div>
+  <div class="nav-tab" onclick="showTab('charts')">Charts</div>
+  <div class="nav-tab" onclick="showTab('formulas')">Formulas</div>
+</nav>
+
+<!-- ═══════════════════════════════
+     TAB 1: DASHBOARD
+═══════════════════════════════ -->
+<main class="main-content">
+
+<section class="tab-section active" id="tab-dashboard">
+  <!-- INPUT PANEL -->
+  <div class="grid-2 mb-16">
+    <div class="card">
+      <div class="card-title">Entry Prices</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Entry MCX Price (₹/KG) *</label>
+          <input class="form-control" id="entryMCX" type="number" placeholder="e.g. 92000" oninput="calc()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Entry XAGUSD ($/oz)</label>
+          <input class="form-control" id="entryXAG" type="number" placeholder="e.g. 30.00" step="0.01" oninput="calc()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">USDINR at Entry</label>
+        <input class="form-control" id="entryUSDINR" type="number" placeholder="e.g. 84.50" step="0.01" oninput="calc()">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Current Prices</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Current MCX Price (₹/KG)</label>
+          <input class="form-control" id="curMCX" type="number" placeholder="e.g. 93500" oninput="calc()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Current XAGUSD ($/oz)</label>
+          <input class="form-control" id="curXAG" type="number" placeholder="e.g. 30.50" step="0.01" oninput="calc()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Current USDINR</label>
+        <input class="form-control" id="curUSDINR" type="number" placeholder="e.g. 85.00" step="0.01" oninput="calc()">
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-3 mb-16">
+    <div class="card">
+      <div class="card-title">Position Size</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Lot Size (KG)</label>
+          <input class="form-control" id="lotSize" type="number" value="5" min="1" oninput="calc()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Number of Lots</label>
+          <input class="form-control" id="numLots" type="number" value="1" min="1" oninput="calc()">
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Charges</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Brokerage (₹)</label>
+          <input class="form-control" id="brokerage" type="number" placeholder="0" oninput="calc()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Taxes/Charges (₹)</label>
+          <input class="form-control" id="taxes" type="number" placeholder="0" oninput="calc()">
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Basis & Premium</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Import Premium (₹/KG)</label>
+          <input class="form-control" id="importPremium" type="number" placeholder="0" oninput="calc()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Basis Difference (₹/KG)</label>
+          <input class="form-control" id="basisDiff" type="number" placeholder="0" oninput="calc()">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI DASHBOARD -->
+  <div class="section-header">
+    <div class="section-title">Live P&L Dashboard</div>
+    <div class="info-pill">5 KG · MCX Silver Mini · Auto-update</div>
+  </div>
+  <div class="grid-4 mb-16">
+    <div class="kpi-card">
+      <div class="kpi-label">Entry Value</div>
+      <div class="kpi-value" id="kpi-entryVal">—</div>
+      <div class="kpi-sub" id="kpi-entryVal-sub"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Current Value</div>
+      <div class="kpi-value" id="kpi-curVal">—</div>
+      <div class="kpi-sub" id="kpi-curVal-sub"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">MTM Profit / Loss</div>
+      <div class="kpi-value" id="kpi-pnl">—</div>
+      <div class="kpi-sub"><span class="kpi-badge" id="kpi-pnlPct">0%</span> net of charges</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Price Difference</div>
+      <div class="kpi-value" id="kpi-priceDiff">—</div>
+      <div class="kpi-sub" id="kpi-priceDiff-sub">per KG</div>
+    </div>
+  </div>
+
+  <div class="grid-4 mb-16">
+    <div class="kpi-card">
+      <div class="kpi-label">Break-even MCX</div>
+      <div class="kpi-value amber" id="kpi-breakeven">—</div>
+      <div class="kpi-sub">including charges</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Break-even XAGUSD</div>
+      <div class="kpi-value amber" id="kpi-breakevenXAG">—</div>
+      <div class="kpi-sub">at entry USDINR</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">XAGUSD Change</div>
+      <div class="kpi-value" id="kpi-xagDiff">—</div>
+      <div class="kpi-sub" id="kpi-xagDiffPct"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">USDINR Change</div>
+      <div class="kpi-value" id="kpi-usdinrDiff">—</div>
+      <div class="kpi-sub" id="kpi-usdinrEffect"></div>
+    </div>
+  </div>
+
+  <!-- DETAILED RESULTS -->
+  <div class="grid-2 mb-16">
+    <div class="card">
+      <div class="card-title">Position Details</div>
+      <div class="result-row">
+        <span class="result-key">Total Position Size (KG)</span>
+        <span class="result-val" id="r-posSize">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">Entry Value (₹)</span>
+        <span class="result-val" id="r-entryVal">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">Current Value (₹)</span>
+        <span class="result-val" id="r-curVal">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">Price Diff per KG (₹)</span>
+        <span class="result-val" id="r-diffPerKg">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">Price Diff for Entire Position (₹)</span>
+        <span class="result-val" id="r-diffTotal">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">Total Charges (₹)</span>
+        <span class="result-val" id="r-charges">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">Net P&L after Charges (₹)</span>
+        <span class="result-val" id="r-netPnl">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">P&L %</span>
+        <span class="result-val" id="r-pnlPct">—</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">FX & Basis Analysis</div>
+      <div class="result-row">
+        <span class="result-key">XAGUSD Difference ($/oz)</span>
+        <span class="result-val" id="r-xagDiff">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">XAGUSD % Change</span>
+        <span class="result-val" id="r-xagPct">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">USDINR Difference</span>
+        <span class="result-val" id="r-usdinrDiff">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">Est. USDINR Effect (₹ P&L)</span>
+        <span class="result-val" id="r-usdinrEffect">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">Est. Silver Price Effect (₹ P&L)</span>
+        <span class="result-val" id="r-silverEffect">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">Manual Premium / Basis (₹/KG)</span>
+        <span class="result-val" id="r-premBasis">—</span>
+      </div>
+      <div class="result-row" style="background:rgba(240,165,0,0.06);border-radius:4px;padding:9px 6px">
+        <span class="result-key" style="color:var(--amber)">⚡ Auto-Implied MCX Premium (₹/KG)</span>
+        <span class="result-val amber" id="r-impliedPrem">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">Theoretical MCX (curXAG × curFX × KG)</span>
+        <span class="result-val" id="r-theorMCX">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">MCX vs Theoretical (= ~implied premium)</span>
+        <span class="result-val" id="r-mcxVsTheor">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- WATERFALL -->
+  <div class="card mb-16">
+    <div class="card-title">P&L Attribution Waterfall</div>
+    <div id="waterfall-container"></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════
+     TAB 2: TARGET CALCULATOR
+═══════════════════════════════ -->
+<section class="tab-section" id="tab-target">
+  <div class="mode-tabs">
+    <button class="mode-tab active" onclick="switchMode(1)">Mode 1 · Target MCX</button>
+    <button class="mode-tab" onclick="switchMode(2)">Mode 2 · Target XAGUSD</button>
+    <button class="mode-tab" onclick="switchMode(3)">Mode 3 · Target P&L ₹</button>
+    <button class="mode-tab" onclick="switchMode(4)">Mode 4 · Target %</button>
+    <button class="mode-tab" onclick="switchMode(5)">Mode 5 · Target $ Move</button>
+    <button class="mode-tab" onclick="switchMode(6)">Mode 6 · Target USDINR</button>
+  </div>
+
+  <!-- MODE 1: Target MCX -->
+  <div class="mode-panel active" id="mode-1">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Target MCX Price</div>
+        <div class="form-group">
+          <label class="form-label">Target MCX Price (₹/KG)</label>
+          <input class="form-control" id="m1-targetMCX" type="number" placeholder="e.g. 95000" oninput="calcMode1()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">USDINR to use</label>
+          <input class="form-control" id="m1-usdinr" type="number" placeholder="Use entry USDINR" oninput="calcMode1()">
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Results</div>
+        <div class="result-row"><span class="result-key">Expected Profit / Loss</span><span class="result-val" id="m1-pnl">—</span></div>
+        <div class="result-row"><span class="result-key">Profit %</span><span class="result-val" id="m1-pct">—</span></div>
+        <div class="result-row"><span class="result-key">Required XAGUSD (at that MCX)</span><span class="result-val" id="m1-xag">—</span></div>
+        <div class="result-row"><span class="result-key">Required USDINR (if XAGUSD fixed)</span><span class="result-val" id="m1-fx">—</span></div>
+        <div class="result-row"><span class="result-key">Price Move needed (₹/KG)</span><span class="result-val" id="m1-move">—</span></div>
+        <div class="result-row"><span class="result-key">% Move from Entry</span><span class="result-val" id="m1-movePct">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODE 2: Target XAGUSD -->
+  <div class="mode-panel hidden" id="mode-2">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Target XAGUSD</div>
+        <div class="form-group">
+          <label class="form-label">Target XAGUSD ($/oz)</label>
+          <input class="form-control" id="m2-targetXAG" type="number" placeholder="e.g. 32.00" step="0.01" oninput="calcMode2()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">USDINR to use</label>
+          <input class="form-control" id="m2-usdinr" type="number" placeholder="Use entry USDINR" oninput="calcMode2()">
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Results</div>
+        <div class="result-row"><span class="result-key">Expected MCX Price (₹/KG)</span><span class="result-val" id="m2-mcx">—</span></div>
+        <div class="result-row"><span class="result-key">Expected Profit / Loss (₹)</span><span class="result-val" id="m2-pnl">—</span></div>
+        <div class="result-row"><span class="result-key">Expected ROI %</span><span class="result-val" id="m2-roi">—</span></div>
+        <div class="result-row"><span class="result-key">Price Difference (₹/KG)</span><span class="result-val" id="m2-diff">—</span></div>
+        <div class="result-row"><span class="result-key">XAGUSD Move ($)</span><span class="result-val" id="m2-xagMove">—</span></div>
+        <div class="result-row"><span class="result-key">MCX Move per $ of XAGUSD</span><span class="result-val" id="m2-sensitivity">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODE 3: Target P&L -->
+  <div class="mode-panel hidden" id="mode-3">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Target P&L (₹)</div>
+        <div class="form-group">
+          <label class="form-label">Target P&L (₹) — use – for loss</label>
+          <input class="form-control" id="m3-targetPnl" type="number" placeholder="e.g. 25000 or -18000" oninput="calcMode3()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">USDINR for XAGUSD reverse calc</label>
+          <input class="form-control" id="m3-usdinr" type="number" placeholder="Defaults to Entry USDINR" step="0.01" oninput="calcMode3()">
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+          Required XAGUSD = what XAG level (at the given USDINR) hits your target MCX price. Uses Entry USDINR by default — <strong>do not fall back to Current USDINR</strong> as that gives a wrong answer when FX has moved.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Results</div>
+        <div class="result-row"><span class="result-key">Required MCX Price (₹/KG)</span><span class="result-val" id="m3-mcx">—</span></div>
+        <div class="result-row"><span class="result-key">Required XAGUSD (at USDINR above)</span><span class="result-val" id="m3-xag">—</span></div>
+        <div class="result-row"><span class="result-key">Required % Move in MCX</span><span class="result-val" id="m3-pct">—</span></div>
+        <div class="result-row"><span class="result-key">Required ₹/KG Move</span><span class="result-val" id="m3-move">—</span></div>
+        <div class="result-row"><span class="result-key">Required $ Move in XAGUSD</span><span class="result-val" id="m3-xagMove">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODE 4: Target % -->
+  <div class="mode-panel hidden" id="mode-4">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Target Percentage Move</div>
+        <div class="form-group">
+          <label class="form-label">Target % (e.g. 5 for +5%, -3 for -3%)</label>
+          <input class="form-control" id="m4-targetPct" type="number" placeholder="e.g. 5 or -3" step="0.1" oninput="calcMode4()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">USDINR for XAGUSD reverse calc</label>
+          <input class="form-control" id="m4-usdinr" type="number" placeholder="Defaults to Entry USDINR" step="0.01" oninput="calcMode4()">
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+          Target XAGUSD = what XAG level (at the given USDINR) hits the target MCX. Uses Entry USDINR by default.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Results</div>
+        <div class="result-row"><span class="result-key">Target MCX Price (₹/KG)</span><span class="result-val" id="m4-mcx">—</span></div>
+        <div class="result-row"><span class="result-key">Target P&L (₹)</span><span class="result-val" id="m4-pnl">—</span></div>
+        <div class="result-row"><span class="result-key">Target XAGUSD ($/oz)</span><span class="result-val" id="m4-xag">—</span></div>
+        <div class="result-row"><span class="result-key">Required $ Move in XAGUSD</span><span class="result-val" id="m4-xagMove">—</span></div>
+        <div class="result-row"><span class="result-key">MCX Move Needed (₹/KG)</span><span class="result-val" id="m4-mcxMove">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODE 5: Target $ Move -->
+  <div class="mode-panel hidden" id="mode-5">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Target XAGUSD Dollar Move</div>
+        <div class="form-group">
+          <label class="form-label">Dollar Move added to Entry/Current XAGUSD (e.g. 2 for +$2, -1.25 for -$1.25)</label>
+          <input class="form-control" id="m5-dollarMove" type="number" placeholder="e.g. 2 or -1.25" step="0.01" oninput="calcMode5()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">USDINR to use (defaults to entry/current)</label>
+          <input class="form-control" id="m5-usdinr" type="number" placeholder="Use entry/current USDINR" oninput="calcMode5()">
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+          Base XAGUSD = Entry XAGUSD (or Current if entry blank). Target = Base + Move.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Results</div>
+        <div class="result-row"><span class="result-key">Target XAGUSD</span><span class="result-val" id="m5-xag">—</span></div>
+        <div class="result-row"><span class="result-key">Expected MCX Price (₹/KG)</span><span class="result-val" id="m5-mcx">—</span></div>
+        <div class="result-row"><span class="result-key">Expected Profit / Loss (₹)</span><span class="result-val" id="m5-pnl">—</span></div>
+        <div class="result-row"><span class="result-key">Expected Return %</span><span class="result-val" id="m5-ret">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODE 6: Target USDINR -->
+  <div class="mode-panel hidden" id="mode-6">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Target USDINR</div>
+        <div class="form-group">
+          <label class="form-label">Target USDINR Rate</label>
+          <input class="form-control" id="m6-usdinr" type="number" placeholder="e.g. 87.00" step="0.01" oninput="calcMode6()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">XAGUSD to hold fixed</label>
+          <input class="form-control" id="m6-xag" type="number" placeholder="Use current XAGUSD" step="0.01" oninput="calcMode6()">
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Results</div>
+        <div class="result-row"><span class="result-key">New MCX Price (₹/KG)</span><span class="result-val" id="m6-mcx">—</span></div>
+        <div class="result-row"><span class="result-key">Profit / Loss (₹)</span><span class="result-val" id="m6-pnl">—</span></div>
+        <div class="result-row"><span class="result-key">Currency-only Impact (₹ P&L)</span><span class="result-val" id="m6-fxOnly">—</span></div>
+        <div class="result-row"><span class="result-key">USDINR Change</span><span class="result-val" id="m6-fxDiff">—</span></div>
+        <div class="result-row"><span class="result-key">MCX Change (₹/KG)</span><span class="result-val" id="m6-mcxDiff">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-8" style="background:var(--bg-secondary)">
+    <div class="text-muted" style="font-size:12px">⚠ All target calculations use Entry MCX as baseline. Ensure Entry MCX is filled in the Dashboard tab.</div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════
+     TAB 3: WHAT-IF ANALYSIS
+═══════════════════════════════ -->
+<section class="tab-section" id="tab-whatif">
+  <div class="grid-2 mb-16">
+    <div class="card">
+      <div class="card-title">What-if Sliders</div>
+
+      <div class="slider-wrap">
+        <div class="slider-header">
+          <span class="slider-label">XAGUSD ($/oz)</span>
+          <span class="slider-value" id="wi-xag-val">29.00</span>
+        </div>
+        <input type="range" id="wi-xag" min="20" max="60" step="0.25" value="29" oninput="updateWhatif()">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted)"><span>$20</span><span>$60</span></div>
+      </div>
+
+      <div class="slider-wrap">
+        <div class="slider-header">
+          <span class="slider-label">USDINR</span>
+          <span class="slider-value" id="wi-fx-val">84.00</span>
+        </div>
+        <input type="range" id="wi-fx" min="75" max="100" step="0.25" value="84" oninput="updateWhatif()">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted)"><span>75</span><span>100</span></div>
+      </div>
+
+      <div class="slider-wrap">
+        <div class="slider-header">
+          <span class="slider-label">MCX Premium / Basis (₹/KG)</span>
+          <span class="slider-value" id="wi-prem-val">0</span>
+        </div>
+        <input type="range" id="wi-prem" min="-5000" max="5000" step="50" value="0" oninput="updateWhatif()">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted)"><span>-₹5000</span><span>+₹5000</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">What-if Results</div>
+      <div class="result-row"><span class="result-key">XAGUSD</span><span class="result-val amber" id="wi-r-xag">—</span></div>
+      <div class="result-row"><span class="result-key">USDINR</span><span class="result-val amber" id="wi-r-fx">—</span></div>
+      <div class="result-row"><span class="result-key">Estimated MCX Price (₹/KG)</span><span class="result-val" id="wi-r-mcx">—</span></div>
+      <div class="result-row"><span class="result-key">P&L vs Entry MCX (₹)</span><span class="result-val" id="wi-r-pnl">—</span></div>
+      <div class="result-row"><span class="result-key">P&L vs Current MCX (₹)</span><span class="result-val" id="wi-r-pnlCur">—</span></div>
+      <div class="result-row"><span class="result-key">ROI vs Entry %</span><span class="result-val" id="wi-r-roi">—</span></div>
+      <div class="result-row"><span class="result-key">Premium Applied</span><span class="result-val" id="wi-r-prem">—</span></div>
+    </div>
+  </div>
+
+  <!-- Mini what-if chart -->
+  <div class="chart-wrap">
+    <div class="section-header mb-16"><div class="section-title">What-if P&L vs XAGUSD Sweep</div></div>
+    <canvas id="wiChart"></canvas>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════
+     TAB 4: SENSITIVITY TABLE
+═══════════════════════════════ -->
+<section class="tab-section" id="tab-sensitivity">
+  <div class="card mb-16">
+    <div class="card-title">Sensitivity Table Configuration</div>
+    <div class="form-row-3">
+      <div class="form-group">
+        <label class="form-label">XAGUSD Min</label>
+        <input class="form-control" id="sens-xagMin" type="number" value="55" oninput="buildSensTable()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">XAGUSD Max</label>
+        <input class="form-control" id="sens-xagMax" type="number" value="63" oninput="buildSensTable()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">XAGUSD Step</label>
+        <input class="form-control" id="sens-xagStep" type="number" value="1" oninput="buildSensTable()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">USDINR Min</label>
+        <input class="form-control" id="sens-fxMin" type="number" value="84" oninput="buildSensTable()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">USDINR Max</label>
+        <input class="form-control" id="sens-fxMax" type="number" value="90" oninput="buildSensTable()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">USDINR Step</label>
+        <input class="form-control" id="sens-fxStep" type="number" value="1" oninput="buildSensTable()">
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-header mb-16">
+      <div class="section-title">Expected MCX Price &amp; P&L Grid</div>
+      <div class="info-pill">Green = profit · Red = loss vs entry</div>
+    </div>
+    <div class="sens-scroll">
+      <div id="sens-table-container"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════
+     TAB 5: SCENARIOS
+═══════════════════════════════ -->
+<section class="tab-section" id="tab-scenarios">
+  <div class="card mb-16">
+    <div class="card-title">Add New Scenario</div>
+    <div class="form-row-3">
+      <div class="form-group">
+        <label class="form-label">Scenario Label</label>
+        <input class="form-control" id="sc-label" type="text" placeholder="e.g. Scenario A">
+      </div>
+      <div class="form-group">
+        <label class="form-label">XAGUSD ($/oz)</label>
+        <input class="form-control" id="sc-xag" type="number" placeholder="e.g. 59" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">USDINR</label>
+        <input class="form-control" id="sc-usdinr" type="number" placeholder="e.g. 86" step="0.01">
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="addScenario()">+ Add Scenario</button>
+    </div>
+  </div>
+
+  <div class="section-header mb-16">
+    <div class="section-title">Saved Scenarios</div>
+    <button class="btn btn-secondary btn-sm" onclick="clearScenarios()">Clear All</button>
+  </div>
+  <div class="grid-3 mb-16" id="scenario-cards"></div>
+
+  <div class="card" id="scenario-compare-section" style="display:none">
+    <div class="card-title">Scenario Comparison</div>
+    <div class="sens-scroll">
+      <table class="data-table" id="scenario-compare-table">
+        <thead>
+          <tr>
+            <th style="text-align:left">Scenario</th>
+            <th>XAGUSD</th>
+            <th>USDINR</th>
+            <th>Est. MCX (₹/KG)</th>
+            <th>P&L vs Entry (₹)</th>
+            <th>P&L %</th>
+            <th>vs Best (₹)</th>
+          </tr>
+        </thead>
+        <tbody id="scenario-compare-body"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════
+     TAB 6: CHARTS
+═══════════════════════════════ -->
+<section class="tab-section" id="tab-charts">
+  <div class="grid-2 mb-16">
+    <div class="chart-wrap"><div class="section-title mb-16">P&L vs XAGUSD</div><canvas id="chart-pnl-xag"></canvas></div>
+    <div class="chart-wrap"><div class="section-title mb-16">P&L vs MCX Price</div><canvas id="chart-pnl-mcx"></canvas></div>
+  </div>
+  <div class="grid-2 mb-16">
+    <div class="chart-wrap"><div class="section-title mb-16">P&L vs USDINR</div><canvas id="chart-pnl-fx"></canvas></div>
+    <div class="chart-wrap"><div class="section-title mb-16">XAGUSD vs MCX Price</div><canvas id="chart-xag-mcx"></canvas></div>
+  </div>
+  <div class="chart-wrap mb-16">
+    <div class="section-title mb-16">P&L Waterfall — Component Breakdown</div>
+    <canvas id="chart-waterfall" style="max-height:300px"></canvas>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════
+     TAB 7: FORMULAS
+═══════════════════════════════ -->
+<section class="tab-section" id="tab-formulas">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Contract Specifications</div>
+      <div class="formula-block">Instrument    : MCX Silver Mini Futures
+Lot Size      : 5 KG
+Multiplier    : 5
+Quote         : ₹ per KG (MCX) · $ per troy oz (XAGUSD)
+1 Troy Ounce  = 31.1034768 grams
+1 KG          = 32.1507466 troy ounces</div>
+
+      <div class="card-title">MCX Price from XAGUSD</div>
+      <div class="formula-block">MCX (₹/KG) = XAGUSD × USDINR × 32.1507466</div>
+      <div class="formula-note">Derives the fair MCX price from international prices. Add premium/basis as needed.</div>
+
+      <div class="card-title">Reverse XAGUSD from MCX</div>
+      <div class="formula-block">XAGUSD = Target_MCX ÷ (USDINR × 32.1507466)</div>
+
+      <div class="card-title">Reverse USDINR from MCX</div>
+      <div class="formula-block">USDINR = Target_MCX ÷ (XAGUSD × 32.1507466)</div>
+    </div>
+    <div class="card">
+      <div class="card-title">P&L Calculation</div>
+      <div class="formula-block">Gross P&L = (Current_MCX − Entry_MCX)
+           × Lot_Size_KG
+           × Number_of_Lots
+
+Net P&L = Gross_P&L − Brokerage − Taxes</div>
+
+      <div class="card-title">Percentage Return</div>
+      <div class="formula-block">P&L % = (Current_MCX − Entry_MCX) ÷ Entry_MCX × 100</div>
+
+      <div class="card-title">Break-even Price</div>
+      <div class="formula-block">Break-even MCX = Entry_MCX + (Total_Charges ÷ (LotSize × NumLots))
+
+Break-even XAGUSD = Break-even_MCX ÷ (Entry_USDINR × 32.1507466)</div>
+
+      <div class="card-title">With Premium Adjustment</div>
+      <div class="formula-block">MCX = (XAGUSD × USDINR × 32.1507466) + Premium + Basis</div>
+
+      <div class="card-title">Sensitivity</div>
+      <div class="formula-block">MCX change per $1 XAGUSD move
+  = USDINR × 32.1507466
+
+MCX change per ₹1 USDINR move
+  = XAGUSD × 32.1507466</div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════
+const KG_PER_OZ    = 32.1507466;   // troy oz per KG
+const GRAMS_PER_OZ = 31.1034768;   // grams per troy oz
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let scenarios = JSON.parse(localStorage.getItem('mcx_scenarios') || '[]');
+let chartPnlXag = null, chartPnlMcx = null, chartPnlFx = null;
+let chartXagMcx = null, chartWaterfall = null, wiChartInst = null;
+let lastCalc = {}; // last successful calc result
+
+// ═══════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════
+const g = id => document.getElementById(id);
+const fmtINR = v => '₹' + v.toLocaleString('en-IN', {maximumFractionDigits: 2});
+const fmtUSD = v => '$' + v.toFixed(2);
+const fmtPct = v => (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+const fmtNum = (v, d=2) => v.toLocaleString('en-IN', {maximumFractionDigits: d});
+const num  = id => parseFloat(g(id)?.value) || 0;
+const numOrNull = id => { const v = parseFloat(g(id)?.value); return isNaN(v) ? null : v; };
+
+function pnlClass(v) { return v > 0 ? 'profit' : v < 0 ? 'loss' : ''; }
+
+function setEl(id, text, cls) {
+  const el = g(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'result-val ' + (cls || '');
+}
+
+function setKpi(id, text, cls) {
+  const el = g(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'kpi-value ' + (cls || '');
+}
+
+// ═══════════════════════════════════════════════
+// CORE CALC ENGINE
+// ═══════════════════════════════════════════════
+
+/**
+ * Convert XAGUSD → MCX price (base formula, no premium)
+ */
+function xagToMCX(xag, usdinr, premium = 0, basis = 0) {
+  return xag * usdinr * KG_PER_OZ + premium + basis;
+}
+
+/**
+ * Convert MCX → XAGUSD (at given usdinr, no premium adjustment)
+ */
+function mcxToXAG(mcx, usdinr) {
+  if (!usdinr) return null;
+  return mcx / (usdinr * KG_PER_OZ);
+}
+
+/**
+ * Get the implied MCX premium per KG.
+ * MCX Silver Mini trades at a large premium over the theoretical
+ * (XAGUSD × USDINR × KG_PER_OZ) value due to import duties, GST,
+ * carrying costs, and market-specific demand. When the user fills
+ * BOTH entryMCX and entryXAG + entryUSDINR, we auto-derive this
+ * premium and apply it to ALL forward and reverse calculations so
+ * that every XAGUSD output is consistent with actual MCX levels.
+ *
+ * Without this: Mode 2 (XAG=63) → MCX ≈ 1,95,460 (wrong, too low)
+ * With this:    Mode 2 (XAG=63) → MCX ≈ 2,44,095 (correct)
+ *
+ * Similarly, break-even XAGUSD reverses out of the typed entryMCX
+ * which includes the premium, giving a correct ~59 instead of ~74.
+ */
+function getImpliedPremium() {
+  const entryMCX  = numOrNull('entryMCX');
+  const entryXAG  = numOrNull('entryXAG');
+  const entryFX   = numOrNull('entryUSDINR');
+  if (entryMCX && entryXAG && entryFX) {
+    // premium = typed MCX − theoretical MCX at entry conditions
+    return entryMCX - (entryXAG * entryFX * KG_PER_OZ);
+  }
+  // Fall back to manually entered import premium + basis
+  return (num('importPremium') || 0) + (num('basisDiff') || 0);
+}
+
+/**
+ * Forward calc: XAG → MCX including implied premium.
+ * Use for all "what will MCX be at this XAG level?" questions.
+ */
+function xagToMCXwithPremium(xag, usdinr, impliedPremium) {
+  return xag * usdinr * KG_PER_OZ + (impliedPremium || 0);
+}
+
+/**
+ * Reverse calc: MCX → XAGUSD including implied premium.
+ * Use for all "what XAG level corresponds to this MCX?" questions.
+ * Subtracts the premium before dividing so result is in XAG space.
+ */
+function mcxToXAGwithPremium(mcx, usdinr, impliedPremium) {
+  if (!usdinr) return null;
+  return (mcx - (impliedPremium || 0)) / (usdinr * KG_PER_OZ);
+}
+
+/**
+ * Gross P&L
+ */
+function calcPnl(curMCX, entryMCX, lotSize, numLots) {
+  return (curMCX - entryMCX) * lotSize * numLots;
+}
+
+/**
+ * P&L%
+ */
+function calcPnlPct(curMCX, entryMCX) {
+  if (!entryMCX) return 0;
+  return (curMCX - entryMCX) / entryMCX * 100;
+}
+
+/**
+ * Break-even MCX price
+ */
+function calcBreakeven(entryMCX, totalCharges, lotSize, numLots) {
+  if (!lotSize || !numLots) return entryMCX;
+  return entryMCX + (totalCharges / (lotSize * numLots));
+}
+
+// ═══════════════════════════════════════════════
+// MAIN DASHBOARD CALC
+// ═══════════════════════════════════════════════
+function calc() {
+  const entryMCX     = numOrNull('entryMCX');
+  const curMCX       = numOrNull('curMCX');
+  const entryXAG     = numOrNull('entryXAG');
+  const curXAG       = numOrNull('curXAG');
+  const entryUSDINR  = numOrNull('entryUSDINR');
+  const curUSDINR    = numOrNull('curUSDINR');
+  const lotSize      = num('lotSize')   || 5;
+  const numLots      = num('numLots')   || 1;
+  const brokerage    = num('brokerage') || 0;
+  const taxes        = num('taxes')     || 0;
+  const importPrem   = num('importPremium') || 0;
+  const basisDiff    = num('basisDiff') || 0;
+
+  const posSize      = lotSize * numLots;
+  const totalCharges = brokerage + taxes;
+
+  // Entry Value
+  const entryVal = entryMCX ? entryMCX * posSize : null;
+  const curVal   = curMCX   ? curMCX   * posSize : null;
+
+  // P&L
+  const grossPnl = (entryMCX && curMCX)
+    ? calcPnl(curMCX, entryMCX, lotSize, numLots) : null;
+  const netPnl   = grossPnl !== null ? grossPnl - totalCharges : null;
+  const pnlPct   = (entryMCX && curMCX) ? calcPnlPct(curMCX, entryMCX) : null;
+
+  // Implied premium: typed entryMCX minus theoretical at entry conditions.
+  // This captures import duties, GST, carrying costs baked into the actual MCX price.
+  // Applied to every forward/reverse XAGUSD calc so results are consistent with real MCX.
+  const impliedPremium = (entryMCX && entryXAG && entryUSDINR)
+    ? entryMCX - (entryXAG * entryUSDINR * KG_PER_OZ)
+    : importPrem + basisDiff;
+
+  // Break-even
+  const bevenMCX = entryMCX
+    ? calcBreakeven(entryMCX, totalCharges, lotSize, numLots) : null;
+  // Break-even XAGUSD: what XAG (at entry FX, with same premium) returns MCX to bevenMCX?
+  // = (bevenMCX - impliedPremium) / (entryFX * KG_PER_OZ)
+  const bevenXAG = (bevenMCX && entryUSDINR)
+    ? mcxToXAGwithPremium(bevenMCX, entryUSDINR, impliedPremium) : null;
+
+  // Price differences
+  const diffPerKg   = (entryMCX && curMCX) ? curMCX - entryMCX : null;
+  const diffTotal   = diffPerKg !== null ? diffPerKg * posSize : null;
+  const xagDiff     = (entryXAG && curXAG) ? curXAG - entryXAG : null;
+  const xagPct      = (entryXAG && curXAG) ? (curXAG - entryXAG) / entryXAG * 100 : null;
+  const usdinrDiff  = (entryUSDINR && curUSDINR) ? curUSDINR - entryUSDINR : null;
+
+  // FX Attribution — use premium-aware MCX levels so the attribution is meaningful.
+  // FX-only: silver stays at entry XAG, only USDINR changes.
+  //   mcxFxOnly = entryXAG * curUSDINR * KG + premium  → compared to actual entryMCX
+  // Silver-only: USDINR stays at entry FX, only XAG changes.
+  //   mcxXagOnly = curXAG * entryUSDINR * KG + premium  → compared to actual entryMCX
+  let usdinrEffect = null, silverEffect = null;
+  if (entryXAG && entryUSDINR && curUSDINR && curXAG && entryMCX) {
+    const mcxFxOnly  = xagToMCXwithPremium(entryXAG, curUSDINR,  impliedPremium);
+    const mcxXagOnly = xagToMCXwithPremium(curXAG,   entryUSDINR, impliedPremium);
+    usdinrEffect = calcPnl(mcxFxOnly,  entryMCX, lotSize, numLots);
+    silverEffect = calcPnl(mcxXagOnly, entryMCX, lotSize, numLots);
+  }
+
+  // Theoretical MCX = curXAG * curFX * KG (pure formula, no premium) + manual overrides
+  // This shows where MCX "should" theoretically be without the MCX-specific premium.
+  const theorMCX = (curXAG && curUSDINR)
+    ? xagToMCX(curXAG, curUSDINR, importPrem, basisDiff) : null;
+  const mcxVsTheor = (curMCX && theorMCX) ? curMCX - theorMCX : null;
+
+  // Store for other calcs
+  lastCalc = {
+    entryMCX, curMCX, entryXAG, curXAG, entryUSDINR, curUSDINR,
+    lotSize, numLots, posSize, totalCharges,
+    entryVal, curVal, grossPnl, netPnl, pnlPct,
+    bevenMCX, bevenXAG, diffPerKg, diffTotal,
+    xagDiff, xagPct, usdinrDiff, usdinrEffect, silverEffect,
+    theorMCX, mcxVsTheor, importPrem, basisDiff, impliedPremium
+  };
+
+  // ─── Render KPIs ───
+  if (entryVal !== null) {
+    setKpi('kpi-entryVal', fmtINR(entryVal));
+    g('kpi-entryVal-sub').textContent = `${posSize} KG × ₹${fmtNum(entryMCX)}`;
+  }
+  if (curVal !== null) {
+    setKpi('kpi-curVal', fmtINR(curVal));
+    g('kpi-curVal-sub').textContent = `${posSize} KG × ₹${fmtNum(curMCX)}`;
+  }
+  if (netPnl !== null) {
+    setKpi('kpi-pnl', fmtINR(netPnl), pnlClass(netPnl));
+    const badge = g('kpi-pnlPct');
+    badge.textContent = fmtPct(pnlPct);
+    badge.className = 'kpi-badge ' + pnlClass(netPnl);
+  }
+  if (diffPerKg !== null) {
+    setKpi('kpi-priceDiff', fmtINR(diffPerKg), pnlClass(diffPerKg));
+    g('kpi-priceDiff-sub').textContent = `₹${fmtNum(diffTotal)} for entire position`;
+  }
+  if (bevenMCX !== null) setKpi('kpi-breakeven', fmtINR(bevenMCX), 'amber');
+  if (bevenXAG !== null) setKpi('kpi-breakevenXAG', fmtUSD(bevenXAG), 'amber');
+  if (xagDiff !== null) {
+    setKpi('kpi-xagDiff', (xagDiff >= 0 ? '+' : '') + fmtUSD(Math.abs(xagDiff)), pnlClass(xagDiff));
+    g('kpi-xagDiffPct').textContent = fmtPct(xagPct);
+  }
+  if (usdinrDiff !== null) {
+    setKpi('kpi-usdinrDiff', (usdinrDiff >= 0 ? '+' : '') + usdinrDiff.toFixed(2), pnlClass(usdinrDiff));
+    g('kpi-usdinrEffect').textContent = usdinrEffect ? 'FX impact: ' + fmtINR(usdinrEffect) : '';
+  }
+
+  // ─── Render Detail Rows ───
+  g('r-posSize').textContent = posSize + ' KG';
+  g('r-entryVal').textContent = entryVal ? fmtINR(entryVal) : '—';
+  g('r-curVal').textContent   = curVal   ? fmtINR(curVal)   : '—';
+  setEl('r-diffPerKg', diffPerKg !== null ? fmtINR(diffPerKg) : '—', pnlClass(diffPerKg || 0));
+  setEl('r-diffTotal', diffTotal !== null ? fmtINR(diffTotal) : '—', pnlClass(diffTotal || 0));
+  g('r-charges').textContent  = fmtINR(totalCharges);
+  setEl('r-netPnl', netPnl !== null ? fmtINR(netPnl) : '—', pnlClass(netPnl || 0));
+  setEl('r-pnlPct', pnlPct !== null ? fmtPct(pnlPct) : '—', pnlClass(pnlPct || 0));
+
+  setEl('r-xagDiff',     xagDiff   !== null ? (xagDiff >= 0 ? '+' : '') + fmtUSD(Math.abs(xagDiff)) : '—', pnlClass(xagDiff || 0));
+  setEl('r-xagPct',      xagPct    !== null ? fmtPct(xagPct) : '—', pnlClass(xagPct || 0));
+  setEl('r-usdinrDiff',  usdinrDiff !== null ? (usdinrDiff >= 0 ? '+' : '') + usdinrDiff.toFixed(4) : '—', pnlClass(usdinrDiff || 0));
+  setEl('r-usdinrEffect',usdinrEffect !== null ? fmtINR(usdinrEffect) : '—', pnlClass(usdinrEffect || 0));
+  setEl('r-silverEffect',silverEffect !== null ? fmtINR(silverEffect) : '—', pnlClass(silverEffect || 0));
+  g('r-premBasis').textContent  = fmtINR(importPrem + basisDiff);
+  g('r-impliedPrem').textContent = fmtINR(impliedPremium);
+  g('r-theorMCX').textContent   = theorMCX ? fmtINR(theorMCX) : '—';
+  setEl('r-mcxVsTheor', mcxVsTheor !== null ? fmtINR(mcxVsTheor) : '—', pnlClass(mcxVsTheor || 0));
+
+  // ─── Waterfall ───
+  renderWaterfall(silverEffect, usdinrEffect, importPrem + basisDiff, totalCharges, netPnl);
+
+  // ─── Save to localStorage ───
+  saveState();
+}
+
+// ═══════════════════════════════════════════════
+// WATERFALL RENDER
+// ═══════════════════════════════════════════════
+function renderWaterfall(silverEff, fxEff, basis, charges, netPnl) {
+  const container = g('waterfall-container');
+  const items = [
+    { label: 'Silver Price Effect', value: silverEff },
+    { label: 'Currency (USDINR) Effect', value: fxEff },
+    { label: 'Basis / Premium', value: basis * (lastCalc.posSize || 5) },
+    { label: 'Charges', value: -(charges || 0) },
+    { label: 'Net P&L', value: netPnl },
+  ].filter(i => i.value !== null && i.value !== undefined);
+
+  if (!items.length) { container.innerHTML = '<div class="text-muted" style="padding:12px">Fill in entry and current prices to see attribution.</div>'; return; }
+
+  const maxAbs = Math.max(...items.map(i => Math.abs(i.value || 0)), 1);
+
+  container.innerHTML = items.map(item => {
+    const pct = Math.abs(item.value / maxAbs * 100);
+    const cls = item.label === 'Net P&L' ? pnlClass(item.value) : (item.value >= 0 ? 'profit' : 'loss');
+    return `<div class="waterfall-bar">
+      <div class="waterfall-label">${item.label}</div>
+      <div class="waterfall-track">
+        <div class="waterfall-fill ${cls}" style="width:${pct.toFixed(1)}%">
+          ${item.value >= 0 ? '+' : ''}${fmtINR(item.value)}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+// TARGET CALCULATOR MODES
+// ═══════════════════════════════════════════════
+function getEntryMCX() { return numOrNull('entryMCX'); }
+function getEntryXAG()  { return numOrNull('entryXAG'); }
+function getEntryFX()   { return numOrNull('entryUSDINR'); }
+function getCurXAG()    { return numOrNull('curXAG'); }
+function getCurFX()     { return numOrNull('curUSDINR'); }
+function getLS()        { return num('lotSize') || 5; }
+function getNL()        { return num('numLots')  || 1; }
+function getCharges()   { return (num('brokerage') || 0) + (num('taxes') || 0); }
+
+// ─── MODE HELPERS ─────────────────────────────────────────────────────────
+// For reverse XAGUSD: use entryFX only, never silently fall back to curFX.
+// Using curFX when FX has moved gives a wrong answer.
+function resolveUsdinrForReverse(modeOverrideId) {
+  return numOrNull(modeOverrideId) || getEntryFX() || null;
+}
+// For forward MCX projection: curFX acceptable since we're projecting, not reversing.
+function resolveUsdinrForForward(modeOverrideId) {
+  return numOrNull(modeOverrideId) || getEntryFX() || getCurFX() || null;
+}
+// Baseline XAGUSD for $ move display.
+function resolveBaseXAG() {
+  return getEntryXAG() || getCurXAG() || null;
+}
+
+// ─── MODE 1: Target MCX ───────────────────────────────────────────────────
+// P&L from typed entry MCX to target MCX.
+// Required XAGUSD: reverse out of (targetMCX - impliedPremium) at entryFX.
+//   = (targetMCX - premium) / (entryFX * KG_PER_OZ)
+// This gives a sensible XAG level (~59.xx for MCX near entry) not ~74.
+// Required USDINR: if XAG stays at baseXAG, what FX hits targetMCX?
+//   = (targetMCX - premium) / (baseXAG * KG_PER_OZ)
+function calcMode1() {
+  const tMCX    = numOrNull('m1-targetMCX');
+  const usdinr  = resolveUsdinrForReverse('m1-usdinr');
+  const entry   = getEntryMCX();
+  const baseXAG = resolveBaseXAG();
+  const prem    = getImpliedPremium();
+  if (!tMCX) return;
+
+  const pnl     = entry   ? calcPnl(tMCX, entry, getLS(), getNL()) - getCharges() : null;
+  const pct     = entry   ? calcPnlPct(tMCX, entry) : null;
+  // Reverse: strip premium before converting MCX→XAG
+  const xag     = usdinr  ? mcxToXAGwithPremium(tMCX, usdinr, prem) : null;
+  // Required FX: (targetMCX - premium) / (baseXAG * KG)
+  const fx      = baseXAG ? (tMCX - prem) / (baseXAG * KG_PER_OZ) : null;
+  const move    = entry   ? tMCX - entry : null;
+  const movePct = entry   ? (tMCX - entry) / entry * 100 : null;
+
+  setEl('m1-pnl',     pnl     !== null ? fmtINR(pnl)     : '—', pnlClass(pnl     || 0));
+  setEl('m1-pct',     pct     !== null ? fmtPct(pct)     : '—', pnlClass(pct     || 0));
+  g('m1-xag').textContent = xag ? fmtUSD(xag) : (usdinr ? '—' : '⚠ Fill Entry USDINR');
+  g('m1-fx').textContent  = fx  ? fx.toFixed(4) : '—';
+  setEl('m1-move',    move    !== null ? fmtINR(move)    : '—', pnlClass(move    || 0));
+  setEl('m1-movePct', movePct !== null ? fmtPct(movePct) : '—', pnlClass(movePct || 0));
+}
+
+// ─── MODE 2: Target XAGUSD ────────────────────────────────────────────────
+// Forward calc: MCX = XAGUSD * USDINR * KG + impliedPremium
+// The premium is added so the projected MCX matches the real MCX trading level.
+// Without premium: XAG=63 → MCX ≈ 1,95,460 (wrong, too low)
+// With premium:    XAG=63 → MCX ≈ 2,44,095 (correct)
+function calcMode2() {
+  const tXAG    = numOrNull('m2-targetXAG');
+  const usdinr  = resolveUsdinrForForward('m2-usdinr');
+  const entry   = getEntryMCX();
+  const baseXAG = resolveBaseXAG();
+  const prem    = getImpliedPremium();
+  if (!tXAG) return;
+  if (!usdinr) { g('m2-mcx').textContent = '⚠ Fill USDINR'; return; }
+
+  // Forward: add premium to project realistic MCX
+  const tMCX    = xagToMCXwithPremium(tXAG, usdinr, prem);
+  const pnl     = entry   ? calcPnl(tMCX, entry, getLS(), getNL()) - getCharges() : null;
+  const roi     = entry   ? calcPnlPct(tMCX, entry) : null;
+  const diff    = entry   ? tMCX - entry : null;
+  const xagMove = baseXAG ? tXAG - baseXAG : null;
+  const sensi   = usdinr * KG_PER_OZ;
+
+  g('m2-mcx').textContent = fmtINR(tMCX);
+  setEl('m2-pnl',  pnl  !== null ? fmtINR(pnl)  : '—', pnlClass(pnl  || 0));
+  setEl('m2-roi',  roi  !== null ? fmtPct(roi)   : '—', pnlClass(roi  || 0));
+  setEl('m2-diff', diff !== null ? fmtINR(diff)  : '—', pnlClass(diff || 0));
+  setEl('m2-xagMove', xagMove !== null
+    ? (xagMove >= 0 ? '+' : '') + fmtUSD(Math.abs(xagMove))
+    : '—', pnlClass(xagMove || 0));
+  g('m2-sensitivity').textContent = '₹' + sensi.toFixed(2) + '/KG per $1';
+}
+
+// ─── MODE 3: Target P&L ₹ ────────────────────────────────────────────────
+// reqMCX = entryMCX + (targetPnl + charges) / positionSize
+// reqXAG = (reqMCX - impliedPremium) / (entryFX * KG_PER_OZ)
+// Subtracting premium gives a XAG level in the correct range (~59.xx).
+function calcMode3() {
+  const tPnl    = numOrNull('m3-targetPnl');
+  const entry   = getEntryMCX();
+  const usdinr  = resolveUsdinrForReverse('m3-usdinr');
+  const baseXAG = resolveBaseXAG();
+  const prem    = getImpliedPremium();
+  if (tPnl === null || !entry) return;
+
+  const grossNeeded = tPnl + getCharges();
+  const reqMCX  = entry + grossNeeded / (getLS() * getNL());
+  const pct     = (reqMCX - entry) / entry * 100;
+  const move    = reqMCX - entry;
+  // Reverse: strip premium before converting MCX→XAG
+  const reqXAG  = usdinr ? mcxToXAGwithPremium(reqMCX, usdinr, prem) : null;
+  const xagMove = (baseXAG !== null && reqXAG !== null) ? reqXAG - baseXAG : null;
+
+  g('m3-mcx').textContent = fmtINR(reqMCX);
+  g('m3-xag').textContent = reqXAG ? fmtUSD(reqXAG) : '⚠ Fill Entry USDINR';
+  setEl('m3-pct',     fmtPct(pct),  pnlClass(pct));
+  setEl('m3-move',    fmtINR(move), pnlClass(move));
+  setEl('m3-xagMove', xagMove !== null
+    ? (xagMove >= 0 ? '+' : '') + fmtUSD(Math.abs(xagMove))
+    : '—', pnlClass(xagMove || 0));
+}
+
+// ─── MODE 4: Target % ─────────────────────────────────────────────────────
+// tMCX = entryMCX * (1 + tPct/100)
+// tXAG = (tMCX - impliedPremium) / (entryFX * KG_PER_OZ)
+function calcMode4() {
+  const tPct    = numOrNull('m4-targetPct');
+  const entry   = getEntryMCX();
+  const usdinr  = resolveUsdinrForReverse('m4-usdinr');
+  const baseXAG = resolveBaseXAG();
+  const prem    = getImpliedPremium();
+  if (tPct === null || !entry) return;
+
+  const tMCX    = entry * (1 + tPct / 100);
+  const pnl     = calcPnl(tMCX, entry, getLS(), getNL()) - getCharges();
+  // Reverse: strip premium
+  const tXAG    = usdinr ? mcxToXAGwithPremium(tMCX, usdinr, prem) : null;
+  const xagMove = (baseXAG !== null && tXAG !== null) ? tXAG - baseXAG : null;
+  const mcxMove = tMCX - entry;
+
+  g('m4-mcx').textContent = fmtINR(tMCX);
+  setEl('m4-pnl', fmtINR(pnl), pnlClass(pnl));
+  g('m4-xag').textContent = tXAG ? fmtUSD(tXAG) : '⚠ Fill Entry USDINR';
+  setEl('m4-xagMove', xagMove !== null
+    ? (xagMove >= 0 ? '+$' : '-$') + Math.abs(xagMove).toFixed(4)
+    : '—', pnlClass(xagMove || 0));
+  setEl('m4-mcxMove', fmtINR(mcxMove), pnlClass(mcxMove));
+}
+
+// ─── MODE 5: Target $ Move ────────────────────────────────────────────────
+// tXAG = baseXAG + dollarMove  (e.g. 59 + 1 = 60, not 74)
+// tMCX = tXAG * USDINR * KG + impliedPremium  (forward calc with premium)
+function calcMode5() {
+  const dMove   = numOrNull('m5-dollarMove');
+  const usdinr  = resolveUsdinrForForward('m5-usdinr');
+  const baseXAG = resolveBaseXAG();
+  const entry   = getEntryMCX();
+  const prem    = getImpliedPremium();
+
+  if (dMove === null) return;
+  if (!baseXAG) {
+    ['m5-xag','m5-mcx'].forEach(id => g(id).textContent = '—');
+    ['m5-pnl','m5-ret'].forEach(id => setEl(id, '⚠ Fill Entry or Current XAGUSD', 'amber'));
+    return;
+  }
+  if (!usdinr) {
+    g('m5-xag').textContent = fmtUSD(baseXAG + dMove);
+    g('m5-mcx').textContent = '⚠ Fill USDINR';
+    return;
+  }
+
+  const tXAG = baseXAG + dMove;
+  // Forward: add premium so MCX projection matches real trading level
+  const tMCX = xagToMCXwithPremium(tXAG, usdinr, prem);
+  const pnl  = entry ? calcPnl(tMCX, entry, getLS(), getNL()) - getCharges() : null;
+  const ret  = entry ? calcPnlPct(tMCX, entry) : null;
+
+  g('m5-xag').textContent = fmtUSD(tXAG);
+  g('m5-mcx').textContent = fmtINR(tMCX);
+  setEl('m5-pnl', pnl !== null ? fmtINR(pnl) : '—', pnlClass(pnl || 0));
+  setEl('m5-ret', ret !== null ? fmtPct(ret)  : '—', pnlClass(ret  || 0));
+}
+
+// ─── MODE 6: Target USDINR ────────────────────────────────────────────────
+// Forward calc: newMCX = XAG * targetFX * KG + impliedPremium
+// Currency-only impact: same XAG, entry FX vs target FX, premium stays constant.
+function calcMode6() {
+  const tFX   = numOrNull('m6-usdinr');
+  const xag   = numOrNull('m6-xag') || getCurXAG() || getEntryXAG();
+  const entFX = getEntryFX();
+  const entry = getEntryMCX();
+  const prem  = getImpliedPremium();
+  if (!tFX || !xag) return;
+
+  const newMCX  = xagToMCXwithPremium(xag, tFX, prem);
+  const pnl     = entry ? calcPnl(newMCX, entry, getLS(), getNL()) - getCharges() : null;
+  // FX-only: premium cancels out (same XAG, same premium, only FX differs)
+  const fxOnly  = (entFX)
+    ? calcPnl(xagToMCXwithPremium(xag, tFX, prem), xagToMCXwithPremium(xag, entFX, prem), getLS(), getNL())
+    : null;
+  const fxDiff  = entFX ? tFX - entFX : null;
+  const mcxDiff = entry ? newMCX - entry : null;
+
+  g('m6-mcx').textContent    = fmtINR(newMCX);
+  setEl('m6-pnl',    pnl     !== null ? fmtINR(pnl)     : '—', pnlClass(pnl    || 0));
+  setEl('m6-fxOnly', fxOnly  !== null ? fmtINR(fxOnly)  : '—', pnlClass(fxOnly || 0));
+  setEl('m6-fxDiff', fxDiff  !== null ? (fxDiff >= 0 ? '+' : '') + fxDiff.toFixed(4) : '—', pnlClass(fxDiff || 0));
+  setEl('m6-mcxDiff',mcxDiff !== null ? fmtINR(mcxDiff) : '—', pnlClass(mcxDiff || 0));
+}
+
+// ═══════════════════════════════════════════════
+// WHAT-IF ANALYSIS
+// ═══════════════════════════════════════════════
+function updateWhatif() {
+  const xag      = parseFloat(g('wi-xag').value);
+  const fx       = parseFloat(g('wi-fx').value);
+  const wiPrem   = parseFloat(g('wi-prem').value);  // slider = additional premium adjustment
+  const autoPrem = getImpliedPremium();              // auto-derived from entry inputs
+  // Total premium = auto-implied + what-if slider adjustment
+  const totalPrem = autoPrem + wiPrem;
+
+  g('wi-xag-val').textContent  = '$' + xag.toFixed(2);
+  g('wi-fx-val').textContent   = fx.toFixed(2);
+  g('wi-prem-val').textContent = (wiPrem >= 0 ? '+' : '') + '₹' + wiPrem.toFixed(0);
+
+  // Use implied premium so projected MCX is realistic
+  const mcx    = xagToMCXwithPremium(xag, fx, totalPrem);
+  const entry  = getEntryMCX();
+  const curXAG = getCurXAG(), curFX = getCurFX();
+  const curMCX = (curXAG && curFX) ? xagToMCXwithPremium(curXAG, curFX, autoPrem) : null;
+  const pnl    = entry ? calcPnl(mcx, entry, getLS(), getNL()) - getCharges() : null;
+  const pnlCur = curMCX ? calcPnl(mcx, curMCX, getLS(), getNL()) : null;
+  const roi    = entry ? calcPnlPct(mcx, entry) : null;
+
+  g('wi-r-xag').textContent  = '$' + xag.toFixed(2);
+  g('wi-r-fx').textContent   = fx.toFixed(2);
+  g('wi-r-mcx').textContent  = fmtINR(mcx);
+  setEl('wi-r-pnl',    pnl    !== null ? fmtINR(pnl)    : '—', pnlClass(pnl    || 0));
+  setEl('wi-r-pnlCur', pnlCur !== null ? fmtINR(pnlCur) : '—', pnlClass(pnlCur || 0));
+  setEl('wi-r-roi',    roi    !== null ? fmtPct(roi)     : '—', pnlClass(roi    || 0));
+  g('wi-r-prem').textContent = fmtINR(totalPrem);
+
+  updateWiChart(fx, totalPrem);
+}
+
+function updateWiChart(fixedFX, totalPrem) {
+  const xagRange = [];
+  const pnls     = [];
+  const entry    = getEntryMCX();
+  const prem     = totalPrem !== undefined ? totalPrem : getImpliedPremium();
+  for (let x = 20; x <= 80; x += 0.5) {
+    const mcx = xagToMCXwithPremium(x, fixedFX, prem);
+    xagRange.push(x.toFixed(2));
+    pnls.push(entry ? (calcPnl(mcx, entry, getLS(), getNL()) - getCharges()).toFixed(0) : 0);
+  }
+
+  const ctx = g('wiChart');
+  if (wiChartInst) wiChartInst.destroy();
+  wiChartInst = new Chart(ctx, buildLineChart(
+    xagRange, pnls, 'P&L (₹)', 'XAGUSD ($/oz)'
+  ));
+}
+
+// ═══════════════════════════════════════════════
+// SENSITIVITY TABLE
+// ═══════════════════════════════════════════════
+function buildSensTable() {
+  const xagMin  = parseFloat(g('sens-xagMin').value)  || 55;
+  const xagMax  = parseFloat(g('sens-xagMax').value)  || 63;
+  const xagStep = parseFloat(g('sens-xagStep').value) || 1;
+  const fxMin   = parseFloat(g('sens-fxMin').value)   || 84;
+  const fxMax   = parseFloat(g('sens-fxMax').value)   || 90;
+  const fxStep  = parseFloat(g('sens-fxStep').value)  || 1;
+  const entry   = getEntryMCX();
+
+  // Build FX values (columns)
+  const fxVals = [];
+  for (let f = fxMin; f <= fxMax + 0.001; f += fxStep) fxVals.push(+f.toFixed(4));
+
+  // Build XAG values (rows)
+  const xagVals = [];
+  for (let x = xagMin; x <= xagMax + 0.001; x += xagStep) xagVals.push(+x.toFixed(4));
+
+  // Compute all cell values — use implied premium so MCX levels are realistic
+  const prem = getImpliedPremium();
+  const allPnls = [];
+  xagVals.forEach(xag => fxVals.forEach(fx => {
+    const mcx = xagToMCXwithPremium(xag, fx, prem);
+    const pnl = entry ? calcPnl(mcx, entry, getLS(), getNL()) : 0;
+    allPnls.push(pnl);
+  }));
+  const maxPnl = Math.max(...allPnls);
+  const minPnl = Math.min(...allPnls);
+
+  function getColor(pnl) {
+    if (!entry) return '';
+    if (pnl > 0) {
+      const intensity = Math.min(pnl / Math.max(maxPnl, 1), 1);
+      return `background:rgba(0,200,122,${(0.08 + intensity * 0.35).toFixed(2)})`;
+    } else if (pnl < 0) {
+      const intensity = Math.min(Math.abs(pnl) / Math.max(Math.abs(minPnl), 1), 1);
+      return `background:rgba(255,69,96,${(0.08 + intensity * 0.35).toFixed(2)})`;
+    }
+    return '';
+  }
+
+  let html = `<table class="sens-table"><thead><tr>
+    <th>XAG↓ FX→</th>
+    ${fxVals.map(f => `<th>${f.toFixed(2)}</th>`).join('')}
+  </tr></thead><tbody>`;
+
+  xagVals.forEach(xag => {
+    html += `<tr><td class="row-header">$${xag.toFixed(2)}</td>`;
+    fxVals.forEach(fx => {
+      const mcx = xagToMCXwithPremium(xag, fx, prem);
+      const pnl = entry ? calcPnl(mcx, entry, getLS(), getNL()) : null;
+      const pnlCls = pnl !== null ? (pnl > 0 ? 'cell-profit' : pnl < 0 ? 'cell-loss' : 'cell-neutral') : '';
+      html += `<td style="${getColor(pnl || 0)}">
+        <div class="sens-cell-value">₹${(mcx/1000).toFixed(1)}K</div>
+        ${pnl !== null ? `<div class="sens-cell-pnl ${pnlCls}">${pnl >= 0 ? '+' : ''}₹${(pnl/1000).toFixed(1)}K</div>` : ''}
+      </td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  g('sens-table-container').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+// SCENARIOS
+// ═══════════════════════════════════════════════
+function addScenario() {
+  const label = g('sc-label').value.trim() || `Scenario ${scenarios.length + 1}`;
+  const xag   = numOrNull('sc-xag');
+  const usdinr= numOrNull('sc-usdinr');
+  if (!xag || !usdinr) { toast('Please enter XAGUSD and USDINR.'); return; }
+
+  scenarios.push({ label, xag, usdinr });
+  saveScenarios();
+  renderScenarios();
+  g('sc-label').value = '';
+  g('sc-xag').value   = '';
+  g('sc-usdinr').value = '';
+}
+
+function deleteScenario(i) {
+  scenarios.splice(i, 1);
+  saveScenarios();
+  renderScenarios();
+}
+
+function clearScenarios() {
+  scenarios = [];
+  saveScenarios();
+  renderScenarios();
+}
+
+function renderScenarios() {
+  const container = g('scenario-cards');
+  const entry = getEntryMCX();
+  const ls    = getLS(), nl = getNL(), ch = getCharges();
+
+  if (!scenarios.length) {
+    container.innerHTML = '<div class="text-muted" style="padding:12px">No scenarios saved yet.</div>';
+    g('scenario-compare-section').style.display = 'none';
+    return;
+  }
+
+  const prem = getImpliedPremium();
+  container.innerHTML = scenarios.map((sc, i) => {
+    const mcx  = xagToMCXwithPremium(sc.xag, sc.usdinr, prem);
+    const pnl  = entry ? calcPnl(mcx, entry, ls, nl) - ch : null;
+    const pct  = entry ? calcPnlPct(mcx, entry) : null;
+    const pnlCls = pnlClass(pnl || 0);
+    return `<div class="scenario-card">
+      <button class="scenario-del" onclick="deleteScenario(${i})">✕</button>
+      <div class="scenario-label">${sc.label}</div>
+      <div class="scenario-row"><span class="s-key">XAGUSD</span><span class="s-val">$${sc.xag.toFixed(2)}</span></div>
+      <div class="scenario-row"><span class="s-key">USDINR</span><span class="s-val">${sc.usdinr.toFixed(2)}</span></div>
+      <div class="scenario-row"><span class="s-key">Est. MCX</span><span class="s-val">₹${mcx.toFixed(0)}</span></div>
+      <div class="scenario-row">
+        <span class="s-key">P&L</span>
+        <span class="s-val ${pnlCls}">${pnl !== null ? fmtINR(pnl) : '—'}</span>
+      </div>
+      <div class="scenario-row">
+        <span class="s-key">ROI</span>
+        <span class="s-val ${pnlCls}">${pct !== null ? fmtPct(pct) : '—'}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Comparison table
+  const pnls = scenarios.map(sc => {
+    const mcx = xagToMCXwithPremium(sc.xag, sc.usdinr, prem);
+    return entry ? calcPnl(mcx, entry, ls, nl) - ch : 0;
+  });
+  const bestPnl = Math.max(...pnls);
+
+  g('scenario-compare-body').innerHTML = scenarios.map((sc, i) => {
+    const mcx    = xagToMCXwithPremium(sc.xag, sc.usdinr, prem);
+    const pnl    = pnls[i];
+    const pct    = entry ? calcPnlPct(mcx, entry) : null;
+    const vsBest = pnl - bestPnl;
+    const pnlCls = pnlClass(pnl || 0);
+    return `<tr>
+      <td>${sc.label}</td>
+      <td>$${sc.xag.toFixed(2)}</td>
+      <td>${sc.usdinr.toFixed(2)}</td>
+      <td>₹${mcx.toFixed(0)}</td>
+      <td class="${pnlCls}">${entry ? fmtINR(pnl) : '—'}</td>
+      <td class="${pnlCls}">${pct !== null ? fmtPct(pct) : '—'}</td>
+      <td class="${pnlClass(vsBest)}">${fmtINR(vsBest)}</td>
+    </tr>`;
+  }).join('');
+
+  g('scenario-compare-section').style.display = 'block';
+}
+
+function saveScenarios() {
+  localStorage.setItem('mcx_scenarios', JSON.stringify(scenarios));
+}
+
+// ═══════════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════════
+const CHART_DEFAULTS = {
+  responsive: true,
+  maintainAspectRatio: true,
+  plugins: {
+    legend: { labels: { color: '#8896b8', font: { size: 11 } } },
+    tooltip: {
+      backgroundColor: '#1a1f2e',
+      borderColor: '#3a4460',
+      borderWidth: 1,
+      titleColor: '#e4ecff',
+      bodyColor: '#8896b8',
+    }
+  },
+  scales: {
+    x: {
+      ticks: { color: '#556080', font: { size: 10 } },
+      grid:  { color: '#1a1f2e' }
+    },
+    y: {
+      ticks: { color: '#556080', font: { size: 10 } },
+      grid:  { color: '#252c3d' }
+    }
+  }
+};
+
+function buildLineChart(labels, data, yLabel, xLabel) {
+  const pnlData = data.map(Number);
+  return {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: yLabel,
+        data: pnlData,
+        borderColor: ctx => {
+          const v = ctx.raw;
+          return v >= 0 ? '#00c87a' : '#ff4560';
+        },
+        pointBackgroundColor: pnlData.map(v => v >= 0 ? '#00c87a' : '#ff4560'),
+        segment: {
+          borderColor: ctx => ctx.p0.parsed.y >= 0 ? '#00c87a' : '#ff4560'
+        },
+        fill: false,
+        tension: 0.3,
+        pointRadius: 2,
+        borderWidth: 2,
+      }]
+    },
+    options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins } }
+  };
+}
+
+function renderCharts() {
+  const entry  = getEntryMCX();
+  const entXAG = getEntryXAG();
+  const entFX  = getEntryFX();
+  const ls = getLS(), nl = getNL(), ch = getCharges();
+
+  const prem = getImpliedPremium();
+  // X-axis range for XAGUSD charts: centre around entryXAG or default 30
+  const baseXag = entXAG || 30;
+  const xMin = Math.max(1, baseXag - 20), xMax = baseXag + 20;
+
+  // Chart 1: P&L vs XAGUSD (with implied premium)
+  {
+    const xagRange = [], pnls = [];
+    for (let x = xMin; x <= xMax; x += 0.5) {
+      const mcx = xagToMCXwithPremium(x, entFX || 85, prem);
+      xagRange.push(x.toFixed(1));
+      pnls.push(entry ? (calcPnl(mcx, entry, ls, nl) - ch).toFixed(0) : 0);
+    }
+    const ctx = g('chart-pnl-xag');
+    if (chartPnlXag) chartPnlXag.destroy();
+    chartPnlXag = new Chart(ctx, buildLineChart(xagRange, pnls, 'P&L (₹)', 'XAGUSD'));
+  }
+
+  // Chart 2: P&L vs MCX (no change needed — MCX is the direct axis)
+  {
+    const base = entry || 200000;
+    const mcxRange = [], pnls = [];
+    for (let m = base * 0.8; m <= base * 1.2; m += base * 0.01) {
+      mcxRange.push('₹' + (m / 1000).toFixed(1) + 'K');
+      pnls.push((calcPnl(m, entry || base, ls, nl) - ch).toFixed(0));
+    }
+    const ctx = g('chart-pnl-mcx');
+    if (chartPnlMcx) chartPnlMcx.destroy();
+    chartPnlMcx = new Chart(ctx, buildLineChart(mcxRange, pnls, 'P&L (₹)', 'MCX Price'));
+  }
+
+  // Chart 3: P&L vs USDINR (with implied premium)
+  {
+    const fxRange = [], pnls = [];
+    for (let f = 75; f <= 110; f += 0.5) {
+      const mcx = xagToMCXwithPremium(entXAG || 59, f, prem);
+      fxRange.push(f.toFixed(1));
+      pnls.push(entry ? (calcPnl(mcx, entry, ls, nl) - ch).toFixed(0) : 0);
+    }
+    const ctx = g('chart-pnl-fx');
+    if (chartPnlFx) chartPnlFx.destroy();
+    chartPnlFx = new Chart(ctx, buildLineChart(fxRange, pnls, 'P&L (₹)', 'USDINR'));
+  }
+
+  // Chart 4: XAGUSD vs MCX Price (with implied premium so curve is at correct level)
+  {
+    const xagRange = [], mcxPrices = [];
+    for (let x = xMin; x <= xMax; x += 0.5) {
+      xagRange.push('$' + x.toFixed(1));
+      mcxPrices.push(xagToMCXwithPremium(x, entFX || 85, prem).toFixed(0));
+    }
+    const ctx = g('chart-xag-mcx');
+    if (chartXagMcx) chartXagMcx.destroy();
+    chartXagMcx = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: xagRange,
+        datasets: [{
+          label: 'MCX Price (₹/KG)',
+          data: mcxPrices.map(Number),
+          borderColor: '#f0a500',
+          pointRadius: 1,
+          fill: false,
+          tension: 0.3,
+          borderWidth: 2,
+        }]
+      },
+      options: CHART_DEFAULTS
+    });
+  }
+
+  // Chart 5: Waterfall bar chart
+  {
+    const lc = lastCalc;
+    const labels = ['Silver Effect', 'FX Effect', 'Basis', 'Charges', 'Net P&L'];
+    const values = [
+      lc.silverEffect || 0,
+      lc.usdinrEffect || 0,
+      (lc.importPrem + lc.basisDiff) * (lc.posSize || 5),
+      -(lc.totalCharges || 0),
+      lc.netPnl || 0,
+    ];
+    const bgColors = values.map(v =>
+      v > 0 ? 'rgba(0,200,122,0.7)' : v < 0 ? 'rgba(255,69,96,0.7)' : 'rgba(85,96,128,0.5)'
+    );
+    const ctx = g('chart-waterfall');
+    if (chartWaterfall) chartWaterfall.destroy();
+    chartWaterfall = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{ label: 'P&L Component (₹)', data: values, backgroundColor: bgColors }]
+      },
+      options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins } }
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════
+function showTab(name) {
+  document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  g('tab-' + name)?.classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    if (t.textContent.toLowerCase().includes(name.split('-')[0])) t.classList.add('active');
+  });
+  if (name === 'charts') setTimeout(renderCharts, 50);
+  if (name === 'sensitivity') buildSensTable();
+  if (name === 'scenarios') renderScenarios();
+  if (name === 'whatif') updateWhatif();
+}
+
+function switchMode(n) {
+  document.querySelectorAll('.mode-panel').forEach(p => { p.classList.add('hidden'); p.classList.remove('active'); });
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  g('mode-' + n)?.classList.remove('hidden');
+  g('mode-' + n)?.classList.add('active');
+  document.querySelectorAll('.mode-tab')[n - 1]?.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════════
+function toggleTheme() {
+  const isDark = g('themeToggle').checked;
+  document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  localStorage.setItem('mcx_theme', isDark ? 'dark' : 'light');
+}
+
+// ═══════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════
+function exportExcel() {
+  const lc = lastCalc;
+  const rows = [
+    ['MCX Silver Mini Trading Calculator', '', ''],
+    ['', '', ''],
+    ['INPUT PARAMETERS', '', ''],
+    ['Entry MCX Price (₹/KG)', lc.entryMCX || '', ''],
+    ['Current MCX Price (₹/KG)', lc.curMCX || '', ''],
+    ['Entry XAGUSD ($/oz)', lc.entryXAG || '', ''],
+    ['Current XAGUSD ($/oz)', lc.curXAG || '', ''],
+    ['Entry USDINR', lc.entryUSDINR || '', ''],
+    ['Current USDINR', lc.curUSDINR || '', ''],
+    ['Lot Size (KG)', lc.lotSize || '', ''],
+    ['Number of Lots', lc.numLots || '', ''],
+    ['Total Charges (₹)', lc.totalCharges || 0, ''],
+    ['', '', ''],
+    ['RESULTS', '', ''],
+    ['Entry Value (₹)', lc.entryVal || '', ''],
+    ['Current Value (₹)', lc.curVal || '', ''],
+    ['Gross P&L (₹)', lc.grossPnl || '', ''],
+    ['Net P&L (₹)', lc.netPnl || '', ''],
+    ['P&L %', lc.pnlPct ? lc.pnlPct.toFixed(4) + '%' : '', ''],
+    ['Break-even MCX (₹/KG)', lc.bevenMCX || '', ''],
+    ['Break-even XAGUSD', lc.bevenXAG || '', ''],
+    ['', '', ''],
+    ['SCENARIOS', 'XAGUSD', 'USDINR', 'Est. MCX', 'P&L (₹)'],
+    ...scenarios.map(sc => {
+      const mcx = xagToMCX(sc.xag, sc.usdinr);
+      const pnl = lc.entryMCX ? calcPnl(mcx, lc.entryMCX, lc.lotSize || 5, lc.numLots || 1) : '';
+      return [sc.label, sc.xag, sc.usdinr, mcx.toFixed(2), pnl ? pnl.toFixed(2) : ''];
+    })
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Calculator');
+  XLSX.writeFile(wb, 'MCX_Silver_Calculator.xlsx');
+  toast('Excel exported!');
+}
+
+function copyResults() {
+  const lc = lastCalc;
+  const text = [
+    '=== MCX Silver Mini Calculator ===',
+    `Entry MCX: ${lc.entryMCX ? '₹' + lc.entryMCX : '—'}`,
+    `Current MCX: ${lc.curMCX ? '₹' + lc.curMCX : '—'}`,
+    `Net P&L: ${lc.netPnl !== null && lc.netPnl !== undefined ? fmtINR(lc.netPnl) : '—'}`,
+    `P&L %: ${lc.pnlPct !== null && lc.pnlPct !== undefined ? fmtPct(lc.pnlPct) : '—'}`,
+    `Break-even MCX: ${lc.bevenMCX ? fmtINR(lc.bevenMCX) : '—'}`,
+    `XAGUSD: ${lc.curXAG ? '$' + lc.curXAG : '—'}`,
+    `USDINR: ${lc.curUSDINR || '—'}`,
+  ].join('\n');
+  navigator.clipboard.writeText(text).then(() => toast('Results copied!'));
+}
+
+function resetAll() {
+  if (!confirm('Reset all inputs?')) return;
+  document.querySelectorAll('.form-control').forEach(el => { el.value = ''; });
+  g('lotSize').value = '5';
+  g('numLots').value = '1';
+  lastCalc = {};
+  calc();
+  toast('Reset complete.');
+}
+
+// ═══════════════════════════════════════════════
+// TOAST NOTIFICATION
+// ═══════════════════════════════════════════════
+function toast(msg) {
+  const div = document.createElement('div');
+  div.className = 'toast';
+  div.textContent = msg;
+  g('toastContainer').appendChild(div);
+  setTimeout(() => div.remove(), 3000);
+}
+
+// ═══════════════════════════════════════════════
+// PERSISTENCE
+// ═══════════════════════════════════════════════
+function saveState() {
+  const state = {};
+  ['entryMCX','curMCX','entryXAG','curXAG','entryUSDINR','curUSDINR',
+   'lotSize','numLots','brokerage','taxes','importPremium','basisDiff']
+    .forEach(k => { state[k] = g(k)?.value || ''; });
+  localStorage.setItem('mcx_state', JSON.stringify(state));
+}
+
+function loadState() {
+  const saved = localStorage.getItem('mcx_state');
+  if (!saved) return;
+  try {
+    const state = JSON.parse(saved);
+    Object.entries(state).forEach(([k, v]) => { if (g(k)) g(k).value = v; });
+  } catch (e) {}
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+function init() {
+  // Theme
+  const savedTheme = localStorage.getItem('mcx_theme') || 'dark';
+  document.body.setAttribute('data-theme', savedTheme);
+  g('themeToggle').checked = savedTheme === 'dark';
+
+  // Load state
+  loadState();
+  calc();
+  updateWhatif();
+  buildSensTable();
+  renderScenarios();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
