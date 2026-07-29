@@ -1694,6 +1694,25 @@
             .targets-summary-values { grid-template-columns: 1fr 1fr; }
         }
 
+        /* ─── Contract Name Column Sort ─── */
+        .sort-header-label {
+            cursor: pointer;
+            user-select: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .sort-header-label:hover { color: var(--accent-cyan); }
+        .sort-icon {
+            font-size: 10px;
+            opacity: 0.5;
+            transition: opacity 0.15s, color 0.15s;
+        }
+        .sort-active .sort-icon {
+            opacity: 1;
+            color: var(--accent-cyan);
+        }
+
         /* ─── Card Accordion ─── */
         .card-section {
             background: var(--bg-secondary);
@@ -2011,7 +2030,12 @@
             '2026-3': '6a4f87b9f5f4af5e297705bc', // April 2026
             '2026-4': '6a4f87e1f5f4af5e29770672', // May 2026
             '2026-5': '6a4f87f5f5f4af5e297706c5', // June 2026
-            '2026-6': '6a4f8800da38895dfe457971'  // July 2026
+            '2026-6': '6a4f8800da38895dfe457971',  // July 2026
+            '2026-7': '6a634001da38895dfe8958a0',  // August 2026
+            '2026-8': '6a699ae2f5f4af5e29d007bd',  // September 2026
+            '2026-9': '6a699af2da38895dfe9e8b80',  // October 2026
+            '2026-10': '6a699b03da38895dfe9e8ba8', // November 2026
+            '2026-11': '6a699b12f5f4af5e29d0081f' // December 2026
         };
         // ═══════════════════════════════════════════════════════
 
@@ -2414,6 +2438,7 @@
         let currentYear = new Date().getFullYear();
         let draggedRow = null;
         let currentChartType = 'standing';
+        let contractNameSortDir = null; // 'asc' | 'desc'
 
         // Initialize
         function init() {
@@ -2576,6 +2601,11 @@
             }
         }
 
+        function toggleContractNameSort() {
+            contractNameSortDir = contractNameSortDir === 'asc' ? 'desc' : 'asc';
+            renderTable();
+        }
+
         function renderTable() {
             renderTableHead();
             renderTableBody();
@@ -2676,7 +2706,16 @@
             };
 
             const thLabel = document.createElement('span');
-            thLabel.textContent = 'Contract';
+            thLabel.className = 'sort-header-label' + (contractNameSortDir ? ' sort-active' : '');
+            thLabel.title = 'Click to sort by contract name';
+            thLabel.onclick = (e) => { e.stopPropagation(); toggleContractNameSort(); };
+            const thLabelText = document.createElement('span');
+            thLabelText.textContent = 'Contract';
+            const sortIcon = document.createElement('span');
+            sortIcon.className = 'sort-icon';
+            sortIcon.textContent = contractNameSortDir === 'asc' ? '↑' : contractNameSortDir === 'desc' ? '↓' : '⇅';
+            thLabel.appendChild(thLabelText);
+            thLabel.appendChild(sortIcon);
             th.appendChild(thLabel);
             th.appendChild(headerToggle);
             tr.appendChild(th);
@@ -2752,8 +2791,22 @@
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = '';
 
-            // Contract rows
-            portfolioData.contracts.forEach((contract, rowIndex) => {
+            // Contract rows — build a sorted display-order index list so cell
+            // lookups, drag-drop, hide, and edit still use the physical rowIndex.
+            const _displayOrder = portfolioData.contracts.map((_, i) => i);
+            if (contractNameSortDir) {
+                _displayOrder.sort((a, b) => {
+                    const na = (portfolioData.contracts[a] || '').trim().toLowerCase();
+                    const nb = (portfolioData.contracts[b] || '').trim().toLowerCase();
+                    if (!na && nb) return 1;
+                    if (na && !nb) return -1;
+                    if (!na && !nb) return 0;
+                    const cmp = na.localeCompare(nb);
+                    return contractNameSortDir === 'asc' ? cmp : -cmp;
+                });
+            }
+            _displayOrder.forEach((rowIndex) => {
+                const contract = portfolioData.contracts[rowIndex];
                 if (portfolioData.hiddenRows.has(rowIndex)) return;
 
                 const tr = document.createElement('tr');
