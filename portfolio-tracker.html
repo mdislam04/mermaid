@@ -2440,6 +2440,7 @@
         let currentChartType = 'standing';
         let contractNameSortDir = null; // 'asc' | 'desc'
         let targetsSortDir = null; // 'asc' | 'desc'
+        let _displayOrder = []; // physical→visual row mapping; kept in sync by renderTableBody
 
         // Initialize
         function init() {
@@ -2799,7 +2800,8 @@
 
             // Contract rows — build a sorted display-order index list so cell
             // lookups, drag-drop, hide, and edit still use the physical rowIndex.
-            const _displayOrder = portfolioData.contracts.map((_, i) => i);
+           // Module-level so navigateToNextCell can read the current visual order.
+            _displayOrder = portfolioData.contracts.map((_, i) => i);
             if (contractNameSortDir) {
                 _displayOrder.sort((a, b) => {
                     const na = (portfolioData.contracts[a] || '').trim().toLowerCase();
@@ -4120,27 +4122,29 @@
             document.getElementById('formatting-toolbar').classList.remove('active');
             renderTable();
         }
-
         function navigateToNextCell(cellKey, shiftKey) {
             // Parse the current cell key
             const parts = cellKey.split('-');
-            
-            // Handle special rows (unrealized, realized) and contract rows differently
+
+            // Handle special rows (unrealized, realized) — no navigation out of them
             if (parts[0] === 'unrealized' || parts[0] === 'realized') {
-                // For calculated rows, don't navigate - these are not in the contracts array
                 return;
             }
-            
+
+            // visibleOrder: physical row indices in the current visual (sorted) order,
+            // with hidden rows excluded — the single source of truth for Tab direction.
+            const visibleOrder = _displayOrder.filter(i => !portfolioData.hiddenRows.has(i));
+            const direction = shiftKey ? -1 : 1;
+
             if (cellKey.startsWith('contract-')) {
-                // Contract name cells - navigate to next/previous contract
+                // Contract name cells — navigate to next/previous contract in visual order
                 const rowIndex = parseInt(parts[1]);
-                const direction = shiftKey ? -1 : 1;
-                const nextRowIndex = rowIndex + direction;
-                
-                if (nextRowIndex >= 0 && nextRowIndex < portfolioData.contracts.length) {
-                    // Wait for table to re-render
+                const currentVisPos = visibleOrder.indexOf(rowIndex);
+                const nextVisPos = currentVisPos + direction;
+
+                if (nextVisPos >= 0 && nextVisPos < visibleOrder.length) {
+                    const nextRowIndex = visibleOrder[nextVisPos];
                     setTimeout(() => {
-                        const nextCellKey = `contract-${nextRowIndex}`;
                         const cells = document.querySelectorAll('.cell-editable');
                         for (let cell of cells) {
                             if (cell.parentElement.querySelector('.drag-handle')) {
@@ -4155,25 +4159,15 @@
                 }
                 return;
             }
-            
-            // Regular data cells - navigate down/up in same column
+
+            // Regular data cells — navigate down/up in same column using visual order
             const rowIndex = parseInt(parts[0]);
             const colIndex = parseInt(parts[1]);
-            const direction = shiftKey ? -1 : 1;
-            
-            // Find next visible row
-            let nextRowIndex = rowIndex + direction;
-            while (nextRowIndex >= 0 && nextRowIndex < portfolioData.contracts.length) {
-                if (!portfolioData.hiddenRows.has(nextRowIndex)) {
-                    break;
-                }
-                nextRowIndex += direction;
-            }
-            
-            // Check if we can navigate to calculated rows
-            if (nextRowIndex >= portfolioData.contracts.length && !shiftKey) {
-                // Move to unrealized row
-                const nextCellKey = `unrealized-${colIndex}`;
+            const currentVisPos = visibleOrder.indexOf(rowIndex);
+            const nextVisPos = currentVisPos + direction;
+
+            // Past the last visible row going forward → move to unrealized row
+            if (nextVisPos >= visibleOrder.length && !shiftKey) {
                 setTimeout(() => {
                     const cells = document.querySelectorAll('.cell-editable');
                     for (let cell of cells) {
@@ -4194,9 +4188,9 @@
                 }, 50);
                 return;
             }
-            
-            if (nextRowIndex >= 0 && nextRowIndex < portfolioData.contracts.length) {
-                const nextCellKey = `${nextRowIndex}-${colIndex}`;
+
+            if (nextVisPos >= 0 && nextVisPos < visibleOrder.length) {
+                const nextRowIndex = visibleOrder[nextVisPos];
                 setTimeout(() => {
                     const cells = document.querySelectorAll('.cell-editable');
                     for (let cell of cells) {
@@ -4219,7 +4213,7 @@
                 }, 50);
             }
         }
-
+       
         function formatCell(type) {
             if (!currentEditingCell) return;
             
