@@ -2439,6 +2439,7 @@
         let draggedRow = null;
         let currentChartType = 'standing';
         let contractNameSortDir = null; // 'asc' | 'desc'
+        let targetsSortDir = null; // 'asc' | 'desc'
 
         // Initialize
         function init() {
@@ -2604,6 +2605,11 @@
         function toggleContractNameSort() {
             contractNameSortDir = contractNameSortDir === 'asc' ? 'desc' : 'asc';
             renderTable();
+        }
+
+          function toggleTargetsSort() {
+            targetsSortDir = targetsSortDir === 'asc' ? 'desc' : 'asc';
+            renderTargetsCard();
         }
 
         function renderTable() {
@@ -5291,11 +5297,37 @@
                 summaryEl.innerHTML = '';
                 return;
             }
-
+            
+            // Sort uniqueContracts if a sort direction is active
+            if (targetsSortDir) {
+                uniqueContracts.sort((a, b) => {
+                    const na = (a || '').trim().toLowerCase();
+                    const nb = (b || '').trim().toLowerCase();
+                    if (!na && nb) return 1;
+                    if (na && !nb) return -1;
+                    if (!na && !nb) return 0;
+                    const cmp = na.localeCompare(nb);
+                    return targetsSortDir === 'asc' ? cmp : -cmp;
+                });
+            }
+            
             // Header row
             const header = document.createElement('div');
             header.className = 'target-header-row';
             const headerLeft = document.createElement('div');
+            const sortHeaderLabel = document.createElement('span');
+            sortHeaderLabel.className = 'sort-header-label' + (targetsSortDir ? ' sort-active' : '');
+            sortHeaderLabel.title = 'Click to sort by contract name';
+            sortHeaderLabel.style.fontSize = '11px';
+            sortHeaderLabel.onclick = (e) => { e.stopPropagation(); toggleTargetsSort(); };
+            const sortLabelText = document.createElement('span');
+            sortLabelText.textContent = 'Contract Name';
+            const sortIconSpan = document.createElement('span');
+            sortIconSpan.className = 'sort-icon';
+            sortIconSpan.textContent = targetsSortDir === 'asc' ? '↑' : targetsSortDir === 'desc' ? '↓' : '⇅';
+            sortHeaderLabel.appendChild(sortLabelText);
+            sortHeaderLabel.appendChild(sortIconSpan);
+            headerLeft.appendChild(sortHeaderLabel);
             const headerCols = document.createElement('div');
             headerCols.className = 'target-header-cols';
             headerCols.innerHTML = '<div class="target-header-col">Month Target</div><div class="target-header-col">Current (Today)</div><div class="target-header-col" style="text-align:right;">Progress</div>';
