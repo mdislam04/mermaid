@@ -1126,6 +1126,13 @@
             font-size: 13px;
         }
 
+        #hidden-contracts-search {
+            margin-bottom: 8px;
+            font-size: 12px;
+            position: sticky;
+            top: 0;
+        }
+
         /* ─── Current Status History Popup ─── */
         #status-history-backdrop {
             display: none;
@@ -1255,6 +1262,42 @@
         .unhide-btn:hover {
             background: var(--accent-green);
             transform: translateY(-1px);
+        }
+
+        #copy-contracts-banner {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            background: rgba(0, 245, 255, 0.05);
+            border: 1px dashed rgba(0, 245, 255, 0.25);
+            border-radius: 6px;
+        }
+
+        #copy-contracts-banner .copy-contracts-btn {
+            background: transparent;
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            transition: background 0.2s, color 0.2s;
+            white-space: nowrap;
+        }
+
+        #copy-contracts-banner .copy-contracts-btn:hover {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+
+        #copy-contracts-banner .copy-contracts-hint {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-style: italic;
         }
 
         .empty-state {
@@ -1802,6 +1845,10 @@
             </div>
             <div class="card-body">
                 <div class="card-body-inner">
+                    <div id="copy-contracts-banner">
+                        <button class="copy-contracts-btn" onclick="copyContractsFromPreviousMonth()" title="Copies all visible (non-hidden) contracts from the previous month. No data values are copied.">Copy Contracts from Previous Month</button>
+                        <span class="copy-contracts-hint">No contracts this month yet — copy visible contracts from last month as a starting point.</span>
+                    </div>
                     <div class="table-container">
                         <table id="portfolio-table">
                             <thead id="table-head"></thead>
@@ -1926,6 +1973,7 @@
                     <h4 style="color: var(--text-secondary); font-size: 12px; text-transform: uppercase; margin: 0;">Hidden Contracts</h4>
                     <button class="btn" style="padding: 4px 8px; font-size: 11px;" onclick="unhideAllRows()" id="unhide-all-rows-btn">Unhide All</button>
                 </div>
+                <input type="text" id="hidden-contracts-search" placeholder="Search hidden contracts..." oninput="filterHiddenContracts(this.value)" style="display: none;">
                 <div id="hidden-rows-list" style="max-height: 150px; overflow-y: auto;"></div>
             </div>
 
@@ -2608,7 +2656,7 @@
             renderTable();
         }
 
-          function toggleTargetsSort() {
+        function toggleTargetsSort() {
             targetsSortDir = targetsSortDir === 'asc' ? 'desc' : 'asc';
             renderTargetsCard();
         }
@@ -2619,6 +2667,57 @@
             renderTargetsCard();
             renderChart();
             updateContractsBadge();
+            updateCopyContractsBanner();
+        }
+
+        function updateCopyContractsBanner() {
+            const banner = document.getElementById('copy-contracts-banner');
+            if (!banner) return;
+
+            if (portfolioData.contracts.length > 0) {
+                banner.style.display = 'none';
+                return;
+            }
+
+            let prevMonth = currentMonth - 1;
+            let prevYear = currentYear;
+            if (prevMonth < 0) { prevMonth = 11; prevYear--; }
+
+            const prevData = allMonthsData[getMonthKey(prevMonth, prevYear)];
+            if (!prevData || !prevData.contracts || prevData.contracts.length === 0) {
+                banner.style.display = 'none';
+                return;
+            }
+
+            const prevHidden = new Set(prevData.hiddenRows || []);
+            const hasEligible = prevData.contracts.some((_, i) => !prevHidden.has(i));
+            banner.style.display = hasEligible ? 'flex' : 'none';
+        }
+
+        function copyContractsFromPreviousMonth() {
+            let prevMonth = currentMonth - 1;
+            let prevYear = currentYear;
+            if (prevMonth < 0) { prevMonth = 11; prevYear--; }
+
+            const prevData = allMonthsData[getMonthKey(prevMonth, prevYear)];
+            if (!prevData || !prevData.contracts) return;
+
+            const prevHidden = new Set(prevData.hiddenRows || []);
+
+            prevData.contracts.forEach((name, oldIndex) => {
+                if (prevHidden.has(oldIndex)) return;
+                const newIndex = portfolioData.contracts.length;
+                portfolioData.contracts.push(name);
+                if ((prevData.contractPositions || {})[oldIndex] === 'S') {
+                    portfolioData.contractPositions[newIndex] = 'S';
+                }
+            });
+
+            saveCurrentMonthData();
+            renderTable();
+
+            const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+            showNotification('Contracts copied', `Visible contracts from ${monthNames[prevMonth]} copied with empty data.`, 'success');
         }
 
         /** Update the compact stats badge in the Contracts card header. */
@@ -2800,7 +2899,7 @@
 
             // Contract rows — build a sorted display-order index list so cell
             // lookups, drag-drop, hide, and edit still use the physical rowIndex.
-           // Module-level so navigateToNextCell can read the current visual order.
+            // Module-level so navigateToNextCell can read the current visual order.
             _displayOrder = portfolioData.contracts.map((_, i) => i);
             if (contractNameSortDir) {
                 _displayOrder.sort((a, b) => {
@@ -4122,6 +4221,7 @@
             document.getElementById('formatting-toolbar').classList.remove('active');
             renderTable();
         }
+
         function navigateToNextCell(cellKey, shiftKey) {
             // Parse the current cell key
             const parts = cellKey.split('-');
@@ -4213,7 +4313,7 @@
                 }, 50);
             }
         }
-       
+
         function formatCell(type) {
             if (!currentEditingCell) return;
             
@@ -4291,30 +4391,61 @@
             }
         }
 
-        function showHiddenItemsModal() {
-            const modal = document.getElementById('hidden-items-modal');
+        function renderHiddenContractsList(query) {
             const rowsList = document.getElementById('hidden-rows-list');
-            const colsList = document.getElementById('hidden-cols-list');
             const unhideAllRowsBtn = document.getElementById('unhide-all-rows-btn');
-            const unhideAllColsBtn = document.getElementById('unhide-all-cols-btn');
+            const searchInput = document.getElementById('hidden-contracts-search');
 
-            // Populate hidden rows
             rowsList.innerHTML = '';
+
             if (portfolioData.hiddenRows.size === 0) {
                 rowsList.innerHTML = '<div class="empty-state">No hidden contracts</div>';
                 unhideAllRowsBtn.style.display = 'none';
-            } else {
-                unhideAllRowsBtn.style.display = 'inline-block';
-                portfolioData.hiddenRows.forEach(index => {
-                    const item = document.createElement('div');
-                    item.className = 'hidden-item';
-                    item.innerHTML = `
-                        <span class="hidden-item-name">${portfolioData.contracts[index] || 'Unknown'}</span>
-                        <button class="unhide-btn" onclick="unhideRow(${index})">Unhide</button>
-                    `;
-                    rowsList.appendChild(item);
-                });
+                searchInput.style.display = 'none';
+                return;
             }
+
+            unhideAllRowsBtn.style.display = 'inline-block';
+            searchInput.style.display = 'block';
+
+            const trimmed = (query || '').trim();
+            const indices = [...portfolioData.hiddenRows];
+            const filtered = trimmed.length >= 3
+                ? indices.filter(i => (portfolioData.contracts[i] || 'Unknown').toLowerCase().includes(trimmed.toLowerCase()))
+                : indices;
+
+            if (filtered.length === 0) {
+                rowsList.innerHTML = '<div class="empty-state">No matching hidden contracts found.</div>';
+                return;
+            }
+
+            filtered.forEach(index => {
+                const item = document.createElement('div');
+                item.className = 'hidden-item';
+                item.innerHTML = `
+                    <span class="hidden-item-name">${portfolioData.contracts[index] || 'Unknown'}</span>
+                    <button class="unhide-btn" onclick="unhideRow(${index})">Unhide</button>
+                `;
+                rowsList.appendChild(item);
+            });
+        }
+
+        function filterHiddenContracts(value) {
+            renderHiddenContractsList(value);
+        }
+
+        function showHiddenItemsModal() {
+            const modal = document.getElementById('hidden-items-modal');
+            const colsList = document.getElementById('hidden-cols-list');
+            const unhideAllColsBtn = document.getElementById('unhide-all-cols-btn');
+            const searchInput = document.getElementById('hidden-contracts-search');
+
+            // Reset search only when freshly opening the modal
+            if (!modal.classList.contains('active')) {
+                searchInput.value = '';
+            }
+
+            renderHiddenContractsList(searchInput.value);
 
             // Populate hidden columns
             colsList.innerHTML = '';
@@ -5291,7 +5422,7 @@
                 summaryEl.innerHTML = '';
                 return;
             }
-            
+
             // Sort uniqueContracts if a sort direction is active
             if (targetsSortDir) {
                 uniqueContracts.sort((a, b) => {
@@ -5304,7 +5435,7 @@
                     return targetsSortDir === 'asc' ? cmp : -cmp;
                 });
             }
-            
+
             // Header row
             const header = document.createElement('div');
             header.className = 'target-header-row';
