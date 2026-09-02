@@ -1411,6 +1411,35 @@
             font-weight: 700;
         }
 
+        /* ─── P&L Monthly Extremes Badges ─── */
+        .pnl-extremes-badge {
+            display: inline-flex;
+            align-items: center;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.4px;
+            border-radius: 4px;
+            padding: 2px 8px;
+            margin-left: 6px;
+            vertical-align: middle;
+            line-height: 1.6;
+            white-space: nowrap;
+        }
+        .pnl-extremes-badge.realized-badge {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+        .pnl-extremes-badge.unrealized-badge {
+            background: rgba(0, 245, 255, 0.05);
+            border: 1px solid rgba(0, 245, 255, 0.18);
+        }
+        .peb-label { color: var(--text-secondary); margin-right: 4px; }
+        .peb-min   { color: var(--accent-red); }
+        .peb-max   { color: var(--accent-green); }
+        .peb-sep   { color: var(--border); margin: 0 5px; }
+        .peb-date  { color: var(--text-secondary); font-size: 10px; margin-left: 2px; opacity: 0.8; }
+
         /* ─── Contracts header stats badge ─── */
         .contracts-stats-badge {
             display: inline-flex;
@@ -1840,7 +1869,7 @@
         <div class="card-section" id="card-table">
             <div class="card-header" onclick="toggleCard('card-table')" role="button" tabindex="0" aria-expanded="true"
                  onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCard('card-table');}">
-                <h3>&#9698; Contracts<span class="contracts-stats-badge" id="contracts-stats-badge" aria-label="contract statistics"><span class="csb-total">0</span><span class="csb-arrow">→</span><span class="csb-active">0</span><span class="csb-sep">|</span><span class="csb-hidden">0</span></span></h3>
+                <h3>&#9698; Contracts<span class="contracts-stats-badge" id="contracts-stats-badge" aria-label="contract statistics"><span class="csb-total">0</span><span class="csb-arrow">→</span><span class="csb-active">0</span><span class="csb-sep">|</span><span class="csb-hidden">0</span></span><span class="pnl-extremes-badge realized-badge" id="realized-extremes-badge" style="display:none;" aria-label="Net Realized P&L extremes"></span><span class="pnl-extremes-badge unrealized-badge" id="unrealized-extremes-badge" style="display:none;" aria-label="Unrealized P&L extremes"></span></h3>
                 <span class="card-chevron" aria-hidden="true">&#9660;</span>
             </div>
             <div class="card-body">
@@ -2667,6 +2696,7 @@
             renderTargetsCard();
             renderChart();
             updateContractsBadge();
+            updatePnlExtremeBadges();
             updateCopyContractsBanner();
         }
 
@@ -2732,6 +2762,53 @@
             badge.querySelector('.csb-hidden').textContent = hidden;
             badge.setAttribute('aria-label',
                 `${total} total, ${active} active, ${hidden} hidden`);
+        }
+
+        /** Compute monthly min/max for Realized and Unrealized P&L and update their badges. */
+        function updatePnlExtremeBadges() {
+            let realMin = null, realMax = null, realMinDate = null, realMaxDate = null;
+            let unrlMin = null, unrlMax = null, unrlMinDate = null, unrlMaxDate = null;
+
+            portfolioData.dates.forEach(function(dateStr, colIndex) {
+                var rRaw = (portfolioData.cells['realized-' + colIndex] || {}).value;
+                if (rRaw != null && rRaw !== '') {
+                    var rVal = parseFloat(rRaw.toString().replace(/,/g, ''));
+                    if (!isNaN(rVal)) {
+                        if (realMin === null || rVal < realMin) { realMin = rVal; realMinDate = dateStr; }
+                        if (realMax === null || rVal > realMax) { realMax = rVal; realMaxDate = dateStr; }
+                    }
+                }
+
+                var uRaw = (portfolioData.cells['unrealized-' + colIndex] || {}).value;
+                if (uRaw != null && uRaw !== '') {
+                    var uVal = parseFloat(uRaw.toString().replace(/,/g, ''));
+                    if (!isNaN(uVal)) {
+                        if (unrlMin === null || uVal < unrlMin) { unrlMin = uVal; unrlMinDate = dateStr; }
+                        if (unrlMax === null || uVal > unrlMax) { unrlMax = uVal; unrlMaxDate = dateStr; }
+                    }
+                }
+            });
+
+            _renderPnlExtremeBadge('realized-extremes-badge',   'R.PnL', realMin, realMinDate, realMax, realMaxDate);
+            _renderPnlExtremeBadge('unrealized-extremes-badge', 'U.PnL', unrlMin, unrlMinDate, unrlMax, unrlMaxDate);
+        }
+
+        function _renderPnlExtremeBadge(id, label, minVal, minDate, maxVal, maxDate) {
+            var badge = document.getElementById(id);
+            if (!badge) return;
+            if (minVal === null) { badge.style.display = 'none'; return; }
+            function fmt(v) {
+                return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+            function valClass(v) { return v >= 0 ? 'peb-max' : 'peb-min'; }
+            badge.innerHTML =
+                '<span class="peb-label">' + label + ':</span>' +
+                '<span class="' + valClass(minVal) + '">↓' + fmt(minVal) + '</span><span class="peb-date">(' + minDate + ')</span>' +
+                '<span class="peb-sep">·</span>' +
+                '<span class="' + valClass(maxVal) + '">↑' + fmt(maxVal) + '</span><span class="peb-date">(' + maxDate + ')</span>';
+            badge.style.display = 'inline-flex';
+            badge.setAttribute('aria-label',
+                label + ': Min ' + fmt(minVal) + ' on ' + minDate + ', Max ' + fmt(maxVal) + ' on ' + maxDate);
         }
 
         /**
