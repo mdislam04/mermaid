@@ -1964,6 +1964,7 @@
                         <button class="chart-tab active" onclick="switchChart('standing')" title="View cumulative P&L over time">Standing AT</button>
                         <button class="chart-tab" onclick="switchChart('contracts')" title="View P&L breakdown by contract">By Contract</button>
                         <button class="chart-tab" onclick="switchChart('daily')" title="View day-wise realized P&L">Daily P&L</button>
+                        <button class="chart-tab" onclick="switchChart('rvu')" title="Compare Realized vs Unrealized P&L trend over the month">R vs U</button>
                     </div>
                     <canvas id="pnl-chart"></canvas>
                 </div>
@@ -3130,6 +3131,8 @@
                 renderContractBreakdownChart();
             } else if (currentChartType === 'daily') {
                 renderDailyPnLChart();
+            } else if (currentChartType === 'rvu') {
+                renderRvUChart();
             }
             // Update summary stats whenever chart is rendered
             updateSummaryStats();
@@ -3189,6 +3192,10 @@
             const minVal = Math.min(...data);
             const maxIdx = data.indexOf(maxVal);
             const minIdx = data.lastIndexOf(minVal);
+
+            // High-water mark: running peak at each data point (for the reference line)
+            let hwm = data[0];
+            const hwmData = data.map(v => { if (v > hwm) hwm = v; return hwm; });
 
             // Build per-point styles to highlight min/max
             const pointRadii = data.map((_, i) => (i === maxIdx || i === minIdx) ? 8 : 4);
@@ -3304,23 +3311,37 @@
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'Standing AT',
-                        data: data,
-                        borderColor: '#00f5ff',
-                        backgroundColor: gradient,
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.3,
-                        pointRadius: pointRadii,
-                        pointBackgroundColor: pointBgColors,
-                        pointBorderColor: pointBorderColors,
-                        pointBorderWidth: pointBorderWidths,
-                        pointHoverRadius: 6,
-                        pointHoverBackgroundColor: '#00ff88',
-                        pointHoverBorderColor: '#00f5ff',
-                        pointHoverBorderWidth: 2
-                    }]
+                    datasets: [
+                        {
+                            label: 'Standing AT',
+                            data: data,
+                            borderColor: '#00f5ff',
+                            backgroundColor: gradient,
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: pointRadii,
+                            pointBackgroundColor: pointBgColors,
+                            pointBorderColor: pointBorderColors,
+                            pointBorderWidth: pointBorderWidths,
+                            pointHoverRadius: 6,
+                            pointHoverBackgroundColor: '#00ff88',
+                            pointHoverBorderColor: '#00f5ff',
+                            pointHoverBorderWidth: 2
+                        },
+                        {
+                            label: 'High Water Mark',
+                            data: hwmData,
+                            borderColor: 'rgba(255, 215, 0, 0.6)',
+                            borderWidth: 1.5,
+                            borderDash: [6, 4],
+                            backgroundColor: 'transparent',
+                            fill: false,
+                            tension: 0,
+                            pointRadius: 0,
+                            pointHoverRadius: 0
+                        }
+                    ]
                 },
                 plugins: [minMaxLabelPlugin],
                 options: {
@@ -3369,6 +3390,7 @@
                             },
                             callbacks: {
                                 label: function(context) {
+                                    if (context.datasetIndex === 1) return null;
                                     const value = context.parsed.y;
                                     return 'Standing AT: ' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                                 }
@@ -3711,6 +3733,141 @@
             });
         }
 
+        function renderRvUChart() {
+            const canvas = document.getElementById('pnl-chart');
+            const ctx = canvas.getContext('2d');
+
+            if (pnlChart) pnlChart.destroy();
+
+            const labels = [];
+            const realizedData = [];
+            const unrealizedData = [];
+
+            portfolioData.dates.forEach((date, colIndex) => {
+                if (portfolioData.hiddenCols.has(colIndex)) return;
+
+                const rRaw = (portfolioData.cells['realized-' + colIndex] || {}).value;
+                const uRaw = (portfolioData.cells['unrealized-' + colIndex] || {}).value;
+
+                const rVal = rRaw != null && rRaw !== '' ? parseFloat(rRaw.toString().replace(/,/g, '')) : null;
+                const uVal = uRaw != null && uRaw !== '' ? parseFloat(uRaw.toString().replace(/,/g, '')) : null;
+
+                // Only plot dates where at least one value exists
+                if ((rVal !== null && !isNaN(rVal)) || (uVal !== null && !isNaN(uVal))) {
+                    labels.push(date);
+                    realizedData.push((rVal !== null && !isNaN(rVal)) ? rVal : null);
+                    unrealizedData.push((uVal !== null && !isNaN(uVal)) ? uVal : null);
+                }
+            });
+
+            if (labels.length === 0) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#8b96b0';
+                ctx.font = '14px JetBrains Mono';
+                ctx.textAlign = 'center';
+                ctx.fillText('No Realized / Unrealized data to display', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
+            const gradientGreen = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradientGreen.addColorStop(0, 'rgba(0, 255, 136, 0.25)');
+            gradientGreen.addColorStop(1, 'rgba(0, 255, 136, 0.02)');
+
+            const gradientCyan = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradientCyan.addColorStop(0, 'rgba(0, 245, 255, 0.2)');
+            gradientCyan.addColorStop(1, 'rgba(0, 245, 255, 0.02)');
+
+            const sharedTooltipOptions = {
+                backgroundColor: '#1e2840',
+                titleColor: '#00f5ff',
+                bodyColor: '#e0e6f0',
+                borderColor: '#2a3752',
+                borderWidth: 1,
+                padding: 12,
+                titleFont: { family: 'JetBrains Mono', size: 13, weight: 'bold' },
+                bodyFont:  { family: 'JetBrains Mono', size: 12 },
+                callbacks: {
+                    label: function(context) {
+                        const val = context.parsed.y;
+                        if (val === null) return null;
+                        const sign = val >= 0 ? '+' : '';
+                        return context.dataset.label + ':  ' + sign + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    }
+                }
+            };
+
+            const sharedScaleOptions = {
+                x: {
+                    grid: { color: '#2a3752', drawBorder: false },
+                    ticks: { color: '#8b96b0', font: { family: 'JetBrains Mono', size: 11 }, maxRotation: 45, minRotation: 45 }
+                },
+                y: {
+                    grid: { color: '#2a3752', drawBorder: false },
+                    ticks: {
+                        color: '#8b96b0',
+                        font: { family: 'JetBrains Mono', size: 11 },
+                        callback: function(v) { return v.toLocaleString('en-US'); }
+                    }
+                }
+            };
+
+            pnlChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Net Realized P&L',
+                            data: realizedData,
+                            borderColor: '#00ff88',
+                            backgroundColor: gradientGreen,
+                            borderWidth: 2.5,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#00ff88',
+                            pointBorderColor: '#0a0e1a',
+                            pointBorderWidth: 2,
+                            tension: 0.3,
+                            fill: true,
+                            spanGaps: true
+                        },
+                        {
+                            label: 'Unrealized P&L',
+                            data: unrealizedData,
+                            borderColor: '#00f5ff',
+                            backgroundColor: gradientCyan,
+                            borderWidth: 2.5,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#00f5ff',
+                            pointBorderColor: '#0a0e1a',
+                            pointBorderWidth: 2,
+                            tension: 0.3,
+                            fill: true,
+                            spanGaps: true,
+                            borderDash: [6, 3]
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#8b96b0',
+                                font: { family: 'JetBrains Mono', size: 11 },
+                                usePointStyle: true,
+                                pointStyleWidth: 10
+                            }
+                        },
+                        tooltip: sharedTooltipOptions
+                    },
+                    scales: sharedScaleOptions
+                }
+            });
+        }
+
         function updateSummaryStats() {
             const container = document.getElementById('summary-stats');
 
@@ -3777,6 +3934,51 @@
             container.appendChild(makeTile('Total Profit', totalProfit, 'profit', profitByContract));
             container.appendChild(makeTile('Total Loss',   totalLoss,   'loss',   lossByContract));
             container.appendChild(makeTile('Gross P&L',    grossPnL,    'gross',  null));
+
+            // ── Drawdown tiles (Standing AT = Realized + Unrealized per date) ──
+            const standingAT = [];
+            portfolioData.dates.forEach((date, colIndex) => {
+                if (portfolioData.hiddenCols.has(colIndex)) return;
+                const uRaw = (portfolioData.cells['unrealized-' + colIndex] || {}).value;
+                const rRaw = (portfolioData.cells['realized-'   + colIndex] || {}).value;
+                if (!uRaw && !rRaw) return;
+                const u = uRaw ? (parseFloat(uRaw.toString().replace(/,/g, '')) || 0) : 0;
+                const r = rRaw ? (parseFloat(rRaw.toString().replace(/,/g, '')) || 0) : 0;
+                standingAT.push(u + r);
+            });
+
+            if (standingAT.length > 0) {
+                let peak = standingAT[0];
+                let maxDD = 0;
+                let currentDDDays = 0;
+
+                standingAT.forEach(val => {
+                    if (val > peak) { peak = val; currentDDDays = 0; }
+                    else currentDDDays++;
+                    const dd = val - peak;
+                    if (dd < maxDD) maxDD = dd;
+                });
+
+                // Max Drawdown tile
+                const ddTile = document.createElement('div');
+                ddTile.className = 'stat-tile';
+                ddTile.title = 'Largest peak-to-trough decline in Standing AT this month';
+                ddTile.innerHTML =
+                    '<div class="stat-tile-label">Max Drawdown</div>' +
+                    '<div class="stat-tile-value ' + (maxDD < 0 ? 'loss' : 'gross') + '">' + fmt(maxDD) + '</div>';
+                container.appendChild(ddTile);
+
+                // DD Duration tile
+                const durTile = document.createElement('div');
+                durTile.className = 'stat-tile';
+                durTile.title = 'Consecutive days the portfolio has been below its high-water mark';
+                durTile.innerHTML =
+                    '<div class="stat-tile-label">DD Duration</div>' +
+                    '<div class="stat-tile-value ' + (currentDDDays > 0 ? 'loss' : 'profit') + '" style="font-size:20px;">' +
+                    (currentDDDays > 0 ? currentDDDays + (currentDDDays === 1 ? ' day' : ' days') : 'Recovered') +
+                    '</div>';
+                container.appendChild(durTile);
+            }
         }
 
         // Generated by GitHub Copilot
