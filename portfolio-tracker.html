@@ -1440,6 +1440,44 @@
         .peb-sep   { color: var(--border); margin: 0 5px; }
         .peb-date  { color: var(--text-secondary); font-size: 10px; margin-left: 2px; opacity: 0.8; }
 
+        /* ─── Sessions Left Badge ─── */
+        .sessions-left-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            border-radius: 4px;
+            padding: 2px 8px;
+            margin-left: 6px;
+            vertical-align: middle;
+            line-height: 1.6;
+            white-space: nowrap;
+            letter-spacing: 0.4px;
+            transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+            cursor: default;
+        }
+        .sessions-left-badge.slb-cyan {
+            background: rgba(0, 245, 255, 0.07);
+            border: 1px solid rgba(0, 245, 255, 0.28);
+            color: var(--accent-cyan);
+        }
+        .sessions-left-badge.slb-amber {
+            background: rgba(255, 215, 0, 0.07);
+            border: 1px solid rgba(255, 215, 0, 0.38);
+            color: #ffd700;
+        }
+        .sessions-left-badge.slb-red {
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid rgba(255, 51, 102, 0.5);
+            color: var(--accent-red);
+            box-shadow: 0 0 8px rgba(255, 51, 102, 0.18);
+            font-weight: 800;
+        }
+        .slb-count  { font-size: 14px; font-weight: 800; }
+        .slb-label  { font-size: 10px; font-weight: 600; opacity: 0.85; }
+
         /* ─── Contracts header stats badge ─── */
         .contracts-stats-badge {
             display: inline-flex;
@@ -1869,7 +1907,7 @@
         <div class="card-section" id="card-table">
             <div class="card-header" onclick="toggleCard('card-table')" role="button" tabindex="0" aria-expanded="true"
                  onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCard('card-table');}">
-                <h3>&#9698; Contracts<span class="contracts-stats-badge" id="contracts-stats-badge" aria-label="contract statistics"><span class="csb-total">0</span><span class="csb-arrow">→</span><span class="csb-active">0</span><span class="csb-sep">|</span><span class="csb-hidden">0</span></span><span class="pnl-extremes-badge realized-badge" id="realized-extremes-badge" style="display:none;" aria-label="Net Realized P&L extremes"></span><span class="pnl-extremes-badge unrealized-badge" id="unrealized-extremes-badge" style="display:none;" aria-label="Unrealized P&L extremes"></span></h3>
+                <h3>&#9698; Contracts<span class="contracts-stats-badge" id="contracts-stats-badge" aria-label="contract statistics"><span class="csb-total">0</span><span class="csb-arrow">→</span><span class="csb-active">0</span><span class="csb-sep">|</span><span class="csb-hidden">0</span></span><span class="pnl-extremes-badge realized-badge" id="realized-extremes-badge" style="display:none;" aria-label="Net Realized P&L extremes"></span><span class="pnl-extremes-badge unrealized-badge" id="unrealized-extremes-badge" style="display:none;" aria-label="Unrealized P&L extremes"></span><span class="sessions-left-badge slb-cyan" id="sessions-left-badge" style="display:none;" aria-label="Remaining trading sessions until expiry"></span></h3>
                 <span class="card-chevron" aria-hidden="true">&#9660;</span>
             </div>
             <div class="card-body">
@@ -1962,7 +2000,6 @@
                     <div class="summary-stats" id="summary-stats"></div>
                     <div class="chart-tabs">
                         <button class="chart-tab active" onclick="switchChart('standing')" title="View cumulative P&L over time">Standing AT</button>
-                        <button class="chart-tab" onclick="switchChart('contracts')" title="View P&L breakdown by contract">By Contract</button>
                         <button class="chart-tab" onclick="switchChart('daily')" title="View day-wise realized P&L">Daily P&L</button>
                         <button class="chart-tab" onclick="switchChart('rvu')" title="Compare Realized vs Unrealized P&L trend over the month">R vs U</button>
                     </div>
@@ -2698,6 +2735,7 @@
             renderChart();
             updateContractsBadge();
             updatePnlExtremeBadges();
+            updateSessionsBadge();
             updateCopyContractsBanner();
         }
 
@@ -2810,6 +2848,67 @@
             badge.style.display = 'inline-flex';
             badge.setAttribute('aria-label',
                 label + ': Min ' + fmt(minVal) + ' on ' + minDate + ', Max ' + fmt(maxVal) + ' on ' + maxDate);
+        }
+
+        /**
+         * Returns the last Tuesday of the given month/year as a Date object (midnight).
+         * Formula: walk back from the last day of the month until we hit a Tuesday.
+         */
+        function getLastTuesdayOfMonth(month, year) {
+            const lastDay = new Date(year, month + 1, 0);
+            const daysBack = (lastDay.getDay() - 2 + 7) % 7; // days to subtract to reach Tuesday
+            return new Date(year, month + 1, -daysBack); // same as lastDay.getDate() - daysBack
+        }
+
+        /** Counts eligible remaining trading sessions until expiry and updates the badge. */
+        function updateSessionsBadge() {
+            const badge = document.getElementById('sessions-left-badge');
+            if (!badge) return;
+
+            const expiry = getLastTuesdayOfMonth(currentMonth, currentYear);
+
+            // Normalize today to midnight for clean date comparisons
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Past expiry → 0 sessions
+            if (today > expiry) {
+                _renderSessionsBadge(badge, 0, expiry);
+                return;
+            }
+
+            // Count dates in the Contract Table that are:
+            //   • not hidden (not in portfolioData.hiddenCols)
+            //   • on or after today
+            //   • on or before expiry
+            let count = 0;
+            portfolioData.dates.forEach(function(dateStr, colIndex) {
+                if (portfolioData.hiddenCols.has(colIndex)) return;
+                const d = parseDateStr(dateStr, currentMonth, currentYear);
+                if (!d || isNaN(d)) return;
+                d.setHours(0, 0, 0, 0);
+                if (d > today && d <= expiry) count++;
+            });
+
+            _renderSessionsBadge(badge, count, expiry);
+        }
+
+        function _renderSessionsBadge(badge, count, expiry) {
+            const expiryStr =
+                String(expiry.getDate()).padStart(2, '0') + '-' +
+                expiry.toLocaleDateString('en-US', { month: 'short' });
+
+            const colorClass = count > 10 ? 'slb-cyan' : count >= 5 ? 'slb-amber' : 'slb-red';
+            badge.className = 'sessions-left-badge ' + colorClass;
+            badge.style.display = 'inline-flex';
+            badge.title =
+                'Remaining eligible trading sessions until expiry (' + expiryStr +
+                ' — last Tuesday of the month), excluding hidden dates.';
+            badge.setAttribute('aria-label',
+                count + ' trading sessions remaining until expiry on ' + expiryStr);
+            badge.innerHTML =
+                '<span class="slb-count">' + count + '</span>' +
+                '<span class="slb-label">Sessions Left</span>';
         }
 
         /**
@@ -3127,8 +3226,6 @@
         function renderChart() {
             if (currentChartType === 'standing') {
                 renderStandingChart();
-            } else if (currentChartType === 'contracts') {
-                renderContractBreakdownChart();
             } else if (currentChartType === 'daily') {
                 renderDailyPnLChart();
             } else if (currentChartType === 'rvu') {
@@ -3430,139 +3527,6 @@
                             },
                             border: {
                                 dash: [5, 5]
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function renderContractBreakdownChart() {
-            const canvas = document.getElementById('pnl-chart');
-            const ctx = canvas.getContext('2d');
-
-            if (pnlChart) {
-                pnlChart.destroy();
-            }
-
-            // Calculate total realized P&L per contract (only bold cells)
-            const contractData = {};
-            const colors = ['#00f5ff', '#00ff88', '#ff3366', '#ffd700', '#9d4edd', '#ff6b35', '#4cc9f0', '#f72585'];
-            
-            portfolioData.contracts.forEach((contract, rowIndex) => {
-                let total = 0;
-                portfolioData.dates.forEach((date, colIndex) => {
-                    if (portfolioData.hiddenCols.has(colIndex)) return;
-                    const cellKey = `${rowIndex}-${colIndex}`;
-                    const cellData = portfolioData.cells[cellKey];
-                    
-                    // Only count bold/realized cells
-                    if (cellData?.value && cellData.bold) {
-                        const value = parseFloat(cellData.value.toString().replace(/,/g, '') || 0);
-                        total += value;
-                    }
-                });
-                
-                if (total !== 0) {
-                    contractData[contract] = total;
-                }
-            });
-
-            const labels = Object.keys(contractData);
-            const data = Object.values(contractData);
-            
-            if (labels.length === 0) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = '#8b96b0';
-                ctx.font = '14px JetBrains Mono';
-                ctx.textAlign = 'center';
-                ctx.fillText('No contract data to display', canvas.width / 2, canvas.height / 2);
-                return;
-            }
-
-            const backgroundColors = data.map((val, idx) => {
-                const baseColor = colors[idx % colors.length];
-                return val >= 0 ? baseColor : '#ff3366';
-            });
-
-            pnlChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Realized P&L',
-                        data: data,
-                        backgroundColor: backgroundColors,
-                        borderColor: backgroundColors.map(c => c),
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'nearest',
-                        axis: 'x',
-                        intersect: false
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            backgroundColor: '#1e2840',
-                            titleColor: '#00f5ff',
-                            bodyColor: '#e0e6f0',
-                            borderColor: '#00f5ff',
-                            borderWidth: 1,
-                            padding: 12,
-                            titleFont: {
-                                family: 'JetBrains Mono',
-                                size: 13,
-                                weight: 'bold'
-                            },
-                            bodyFont: {
-                                family: 'JetBrains Mono',
-                                size: 12
-                            },
-                            callbacks: {
-                                label: function(context) {
-                                    const value = context.parsed.y;
-                                    return 'Realized P&L: ' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: {
-                                color: '#2a3752',
-                                drawBorder: false
-                            },
-                            ticks: {
-                                color: '#8b96b0',
-                                font: {
-                                    family: 'JetBrains Mono',
-                                    size: 11
-                                },
-                                maxRotation: 45,
-                                minRotation: 45
-                            }
-                        },
-                        y: {
-                            grid: {
-                                color: '#2a3752',
-                                drawBorder: false
-                            },
-                            ticks: {
-                                color: '#8b96b0',
-                                font: {
-                                    family: 'JetBrains Mono',
-                                    size: 11
-                                },
-                                callback: function(value) {
-                                    return value.toLocaleString('en-US');
-                                }
                             }
                         }
                     }
