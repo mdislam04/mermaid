@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Job Switch Salary Impact Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#14181f;--mute:#5d6675;--line:#e3e7ee;--acc:#0f766e;--acc2:#b45309;--soft:#e6f4f2;--hl:#fff8e6;--sh:0 1px 2px rgba(20,24,31,.04),0 6px 18px rgba(20,24,31,.05);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1319;--card:#171c24;--ink:#eef1f5;--mute:#a1abba;--line:#2a323e;--acc:#2dd4bf;--acc2:#fbbf24;--soft:#12302d;--hl:#2b2510}}
+:root[data-theme="dark"]{--bg:#0f1319;--card:#171c24;--ink:#eef1f5;--mute:#a1abba;--line:#2a323e;--acc:#2dd4bf;--acc2:#fbbf24;--soft:#12302d;--hl:#2b2510}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 'Plus Jakarta Sans',system-ui,sans-serif}
+.wrap{max-width:1120px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:clamp(26px,4vw,38px);letter-spacing:-.02em;margin:8px 0 4px;font-weight:800}
+h2{font-size:20px;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--mute);margin:0 0 24px}.mute{color:var(--mute);font-size:13px}
+section{margin-top:32px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh);padding:20px;transition:box-shadow .2s,border-color .2s}
+.card:hover{border-color:color-mix(in srgb,var(--acc) 40%,var(--line))}
+.grid{display:grid;gap:14px}.g4{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.big{font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.lbl{font-size:13px;color:var(--mute);font-weight:600}
+.inputs{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));align-items:end}
+label{display:block;font-size:13px;font-weight:600;color:var(--mute);margin-bottom:6px}
+.f{display:flex;align-items:center;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:0 12px;min-height:48px}
+.f:focus-within{outline:2px solid var(--acc)}
+.f span{color:var(--mute);font-weight:600;margin:0 6px}
+input[type=number]{border:0;background:transparent;color:var(--ink);font:600 16px inherit;font-family:inherit;width:100%;min-height:44px;outline:0}
+button{font:600 14px 'Plus Jakarta Sans',sans-serif;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;transition:background .15s,border-color .15s}
+button:hover{border-color:var(--acc)}button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+button.p{background:var(--acc);border-color:var(--acc);color:var(--card)}
+.sw{display:flex;align-items:center;gap:10px;min-height:48px;font-weight:600;font-size:14px;color:var(--ink);margin:0;cursor:pointer}
+.sw input{width:22px;height:22px;accent-color:var(--acc)}
+.tip{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--soft);color:var(--acc);font-size:11px;font-weight:700;cursor:help;position:relative;margin-left:4px}
+.tip:hover::after,.tip:focus::after{content:attr(data-t);position:absolute;bottom:130%;left:50%;transform:translateX(-50%);width:230px;background:var(--ink);color:var(--bg);padding:8px 10px;border-radius:8px;font-weight:500;font-size:12px;line-height:1.4;z-index:5;text-align:left}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:860px}
+th{font-size:13px;color:var(--mute);text-align:right;padding:10px 12px;border-bottom:1px solid var(--line);font-weight:600}
+td{padding:14px 12px;text-align:right;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;font-weight:600}
+th:first-child,td:first-child{text-align:left}
+tbody tr{cursor:pointer;transition:background .15s}tbody tr:hover{background:var(--soft)}
+tr.sel{background:var(--hl)!important;box-shadow:inset 3px 0 var(--acc2)}
+td.tax{color:#b42318}td.net{color:var(--acc)}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--soft);color:var(--acc);border-radius:99px;padding:4px 10px;font-size:13px;font-weight:700}
+.x{border:0;background:none;min-height:0;padding:0;color:var(--mute);font-size:15px}
+.add{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:center}.add .f{width:150px}
+.chart{position:relative;height:320px}
+.spot{background:linear-gradient(135deg,var(--soft),var(--card));border-color:var(--acc)}
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin:16px 0}
+.sg b{display:block;font-size:24px;font-weight:800;letter-spacing:-.01em}
+.bar{margin:14px 0}.bar .row{display:flex;justify-content:space-between;font-weight:600;margin-bottom:6px;gap:8px}
+.track{height:12px;background:var(--line);border-radius:99px;position:relative;overflow:hidden}
+.track i{position:absolute;left:0;top:0;bottom:0;background:var(--acc);border-radius:99px;transition:width .3s}
+.track u{position:absolute;left:0;top:0;bottom:0;background:var(--acc2);opacity:.35;border-radius:99px;transition:width .3s}
+.mo{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);font-weight:600}
+.mo:last-child{border:0}
+.hd{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:8px 0;z-index:3}
+.tag{font-size:12px;font-weight:700;border-radius:6px;padding:2px 8px}
+.gt{background:var(--soft);color:var(--acc)}.pt{background:var(--hl);color:var(--acc2)}
+.disc{margin-top:40px;font-size:12.5px;color:var(--mute);border-top:1px solid var(--line);padding-top:16px;max-width:80ch}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+@media(max-width:600px){.big{font-size:26px}}
+</style></head><body><div class="wrap">
+<header><h1>Job Switch Salary Impact Calculator</h1>
+<p class="sub">Understand how much a salary hike actually adds to your post-tax income.</p></header>
+
+<div class="card"><div class="inputs">
+<div><label for="base">Current base pay (₹ lakh)</label><div class="f"><span>₹</span><input id="base" type="number" min="0" step="0.5" value="39"><span>L</span></div></div>
+<div><label for="var">Current variable pay (₹ lakh)</label><div class="f"><span>₹</span><input id="var" type="number" min="0" step="0.5" value="7"><span>L</span></div></div>
+<div><label>Current CTC <i class="tip" tabindex="0" data-t="CTC (Cost to Company) = Base + Variable. Calculated automatically.">?</i></label><div class="f" style="background:var(--soft)"><b id="ctcIn" style="font-size:18px;min-height:44px;line-height:44px">—</b></div></div>
+<div><label for="tax">Marginal tax rate (%) <i class="tip" tabindex="0" data-t="The tax rate applied to each extra rupee you earn. 30% is a simplified stand-in for the top slab; surcharge and cess can push it higher.">?</i></label><div class="f"><input id="tax" type="number" min="0" max="60" step="1" value="30"><span>%</span></div></div>
+<label class="sw"><input id="inc" type="checkbox" checked>Apply tax only to incremental compensation</label>
+<button id="reset" type="button">Reset defaults</button>
+</div></div>
+
+<section><div class="grid g4" id="cards"></div></section>
+
+<section><div class="hd"><h2>Scenario table</h2><div class="mute">Click a row to spotlight it. Highlighted row is your reference scenario.</div></div>
+<div class="card"><div class="scroll"><table><thead><tr><th>Hike</th><th>Incremental CTC</th><th>New CTC</th><th>Tax on increment</th><th>Net increment</th><th>Monthly net gain</th><th>Monthly take-home (new regime) <i class="tip" tabindex="0" data-t="Uses the current new tax regime slabs, applied to the whole new CTC only (not the tax rate above). Includes ₹75,000 standard deduction, 87A rebate up to ₹12L taxable income, surcharge and 4% cess. Take-home = (New CTC − tax) ÷ 12, before PF and other deductions.">?</i></th></tr></thead><tbody id="tb"></tbody></table></div>
+<div class="add"><label for="nh" style="margin:0">Add scenario</label><div class="f"><input id="nh" type="number" min="1" max="500" placeholder="e.g. 40"><span>%</span></div><button class="p" id="addb" type="button">+ Add Scenario</button></div>
+<div id="chips" class="add"></div></div></section>
+
+<section><div class="hd"><h2>Visualisation</h2></div>
+<div class="grid g2"><div class="card"><b>New CTC vs post-tax effective CTC</b><div class="mute">₹ lakh per year</div><div class="chart"><canvas id="c1"></canvas></div></div>
+<div class="card"><b>Hike vs monthly net gain</b><div class="mute">₹ lakh per month</div><div class="chart"><canvas id="c2"></canvas></div></div></div></section>
+
+<section><div class="card spot" id="spot"></div></section>
+
+<section><div class="grid g2">
+<div><div class="hd"><h2>Headline Hike vs Actual Gain</h2></div><div class="card" id="cmp"></div></div>
+<div><div class="hd"><h2>What Does This Mean Every Month?</h2></div><div class="card" id="mon"></div></div></div></section>
+
+<section><div class="hd"><h2>Compare Two Job Offers</h2><div class="mute">Guaranteed pay is kept separate from potential pay, since variable pay is not assured.</div></div>
+<div class="grid g2">
+<div class="card"><b>Current job</b><div class="inputs" style="margin-top:12px">
+<div><label for="cb">Base (₹L)</label><div class="f"><input id="cb" type="number" value="39" step="0.5"></div></div>
+<div><label for="cv">Variable (₹L)</label><div class="f"><input id="cv" type="number" value="7" step="0.5"></div></div>
+<div><label>Total CTC</label><b class="big" id="cct" style="font-size:24px">—</b></div></div></div>
+<div class="card"><b>New job</b><div class="inputs" style="margin-top:12px">
+<div><label for="nb">Base (₹L)</label><div class="f"><input id="nb" type="number" value="55" step="0.5"></div></div>
+<div><label for="nv">Fixed variable (₹L)</label><div class="f"><input id="nv" type="number" value="5" step="0.5"></div></div>
+<div><label for="jb">Joining bonus (₹L) <i class="tip" tabindex="0" data-t="One-time, paid in year 1 only. Shown separately in year-1 figures.">?</i></label><div class="f"><input id="jb" type="number" value="5" step="0.5"></div></div>
+<div><label for="gb">Guaranteed bonus (₹L)</label><div class="f"><input id="gb" type="number" value="0" step="0.5"></div></div>
+<div><label for="pv">Performance variable (₹L)</label><div class="f"><input id="pv" type="number" value="10" step="0.5"></div></div>
+<div><label for="es">ESOP/RSU per year (₹L)</label><div class="f"><input id="es" type="number" value="0" step="0.5"></div></div></div></div></div>
+<div class="grid g2" style="margin-top:14px" id="offer"></div></section>
+
+<p class="disc">Tax figures are illustrative estimates based on the assumed marginal tax rate entered above. Actual Indian income tax may differ based on tax regime, deductions, surcharge, cess, exemptions, salary structure, PF, variable compensation, and other factors. This dashboard is intended for comparison and planning, not tax advice. The new-regime take-home column uses FY 2026-27 slabs (₹4L nil, 5% to ₹8L, 10% to ₹12L, 15% to ₹16L, 20% to ₹20L, 25% to ₹24L, 30% above), ₹75,000 standard deduction, 87A rebate, surcharge with marginal relief and 4% cess, on the new CTC alone; it ignores PF, professional tax and employer NPS.</p>
+</div>
+<script>
+const $=id=>document.getElementById(id),L=1e5,Cr=1e7;
+const DEF=[20,30,50,70,100];let hikes=[...DEF],sel=50,c1,c2;
+const inr=n=>Math.round(n).toLocaleString('en-IN');
+function fmt(v){const a=Math.abs(v),s=v<0?'-':'';
+ if(a>=Cr)return s+'₹'+(a/Cr).toFixed(2).replace(/0$/,'')+'Cr';
+ if(a>=L)return s+'₹'+(a/L).toFixed(a/L<10&&(a/L*100)%10?2:1)+'L';
+ return s+'₹'+inr(a)}
+const n=id=>Math.max(0,parseFloat($(id).value)||0);
+
+function slabTax(ti){const S=[[4e5,0],[8e5,.05],[12e5,.1],[16e5,.15],[20e5,.2],[24e5,.25],[Infinity,.3]];let t=0,lo=0;for(const[hi,r]of S){if(ti>lo)t+=(Math.min(ti,hi)-lo)*r;lo=hi}return t}
+function nrTax(gross){const ti=Math.max(0,gross-75000);let t=slabTax(ti);
+ if(ti<=12e5)t=0;else t=Math.min(t,ti-12e5);
+ const TH=[[2e7,.25,.15],[1e7,.15,.1],[5e6,.1,0]];
+ for(const[T,r,rp]of TH){if(ti>T){const cap=slabTax(T)*(1+rp)+(ti-T);t=Math.min(t*(1+r),cap);return t*1.04}}
+ return t*1.04}
+function calc(ctc,h,t,only){const inc=ctc*h/100,tax=(only?inc:ctc+inc)*t,net=inc*(1-t);
+ const rt=nrTax(ctc+inc);return{h,inc,rt,th:(ctc+inc-rt)/12,ctc:ctc+inc,tax,net,eff:only?ctc+net:(ctc+inc)*(1-t),mo:net/12,pct:ctc?net/ctc*100:0}}
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+function render(){
+ const base=n('base')*L,vr=n('var')*L,t=Math.min(n('tax'),100)/100,only=$('inc').checked,ctc=base+vr;
+ $('ctcIn').textContent=fmt(ctc);
+ $('cards').innerHTML=[['Current CTC',fmt(ctc),'Base + variable'],['Base Pay',fmt(base),ctc?Math.round(base/ctc*100)+'% of CTC':''],['Variable',fmt(vr),ctc?Math.round(vr/ctc*100)+'% of CTC':''],['Tax Assumption',Math.round(t*1000)/10+'%','Marginal rate'],['Monthly Take-Home','₹'+inr((ctc-nrTax(ctc))/12),'New regime, before PF']]
+ .map(c=>`<div class="card"><div class="lbl">${c[0]}</div><div class="big">${c[1]}</div><div class="mute">${c[2]}</div></div>`).join('');
+ hikes.sort((a,b)=>a-b);if(!hikes.includes(sel))sel=hikes[0];
+ const R=hikes.map(h=>calc(ctc,h,t,only));
+ $('tb').innerHTML=R.map(r=>`<tr class="${r.h==sel?'sel':''}" data-h="${r.h}" tabindex="0"><td>${r.h}%</td><td>${fmt(r.inc)}</td><td>${fmt(r.ctc)}</td><td class="tax">−${fmt(r.tax)}</td><td class="net">${fmt(r.net)}</td><td>${fmt(r.mo)}</td><td class="net">₹${inr(r.th)}</td></tr>`).join('');
+ $('chips').innerHTML=hikes.map(h=>`<span class="chip">${h}%<button class="x" data-r="${h}" aria-label="Remove ${h}% scenario" type="button">✕</button></span>`).join('');
+ const s=calc(ctc,sel,t,only);
+ $('spot').innerHTML=`<h2>${sel}% Hike — What You Actually Gain</h2><div class="sg">
+ ${[['Current CTC',fmt(ctc)],['New CTC',fmt(s.ctc)],['Additional CTC',fmt(s.inc)],['Estimated Tax',fmt(s.tax)],['Net Annual Gain',fmt(s.net)],['Net Monthly Gain',fmt(s.mo)]].map(x=>`<div><span class="lbl">${x[0]}</span><b>${x[1]}</b></div>`).join('')}</div>
+ <span class="chip">Effective post-tax increase: ${s.pct.toFixed(0)}% of current CTC</span>
+ <p style="max-width:70ch">A ${sel}% headline hike becomes a ${s.pct.toFixed(0)}% post-tax increase under the simplified ${Math.round(t*100)}% marginal-tax assumption, because ${Math.round(t*100)}% of every extra rupee goes to tax. <i class="tip" tabindex="0" data-t="Simplified: the current CTC is assumed already taxed; only the increment is reduced by tax.">?</i></p><p class="mute">New tax regime: estimated tax on new CTC ₹${inr(s.rt)}, monthly take-home ₹${inr(s.th)}.</p>`;
+ const mx=Math.max(...R.map(r=>r.h),1);
+ $('cmp').innerHTML=R.map(r=>`<div class="bar"><div class="row"><span>${r.h}% hike</span><span>${r.pct.toFixed(0)}% post-tax</span></div><div class="track"><u style="width:${r.h/mx*100}%"></u><i style="width:${r.pct/mx*100}%"></i></div></div>`).join('')+'<div class="mute">Light bar: headline hike. Dark bar: effective post-tax increase.</div>';
+ $('mon').innerHTML=R.map(r=>`<div class="mo"><span>${r.h}%</span><span>≈ ₹${inr(r.mo)}/month <span class="mute">after assumed tax</span></span></div>`).join('');
+ charts(R);offer(t);
+}
+function charts(R){
+ const ink=css('--mute'),ln=css('--line'),lb=R.map(r=>r.h+'%');
+ const opt={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:ink,font:{family:'Plus Jakarta Sans'}}},tooltip:{callbacks:{label:c=>c.dataset.label+': ₹'+c.parsed.y.toFixed(2)+'L'}}},scales:{x:{ticks:{color:ink},grid:{display:false},title:{display:true,text:'Hike %',color:ink}},y:{ticks:{color:ink},grid:{color:ln},beginAtZero:true}}};
+ const d1={labels:lb,datasets:[{label:'New CTC',data:R.map(r=>r.ctc/L),backgroundColor:css('--acc2'),borderRadius:6},{label:'Net effective CTC',data:R.map(r=>r.eff/L),backgroundColor:css('--acc'),borderRadius:6}]};
+ const d2={labels:lb,datasets:[{label:'Monthly net gain',data:R.map(r=>r.mo/L),backgroundColor:css('--acc'),borderRadius:6}]};
+ const o1=JSON.parse(JSON.stringify(opt));o1.scales.y.title={display:true,text:'₹ lakh / year',color:ink};
+ o1.plugins.tooltip=opt.plugins.tooltip;
+ if(!window.Chart){$('c1').parentNode.innerHTML='<p class="mute">Chart library could not load.</p>';$('c2').parentNode.innerHTML='';return}
+ [c1,c2].forEach(c=>c&&c.destroy());
+ c1=new Chart($('c1'),{type:'bar',data:d1,options:{...opt,scales:{...opt.scales,y:{...opt.scales.y,title:{display:true,text:'₹ lakh / year',color:ink}}}}});
+ c2=new Chart($('c2'),{type:'bar',data:d2,options:{...opt,animation:{duration:300}}});
+}
+function offer(t){
+ const cur=(n('cb')+n('cv'))*L;$('cct').textContent=fmt(cur);
+ const g=(n('nb')+n('nv')+n('gb'))*L,pot=n('pv')*L+n('es')*L,mx=g+pot,jb=n('jb')*L;
+ const blk=(title,tag,cls,amt,extra)=>{const inc=amt-cur,net=inc>0?inc*(1-t):inc;return`<div class="card"><span class="tag ${cls}">${tag}</span><h2 style="margin-top:8px">${title}</h2>
+ <div class="big">${fmt(amt)}</div><div class="mo"><span>Increment vs current CTC</span><span>${fmt(inc)} (${cur?(inc/cur*100).toFixed(0):0}%)</span></div>
+ <div class="mo"><span>Est. post-tax incremental income</span><span>${fmt(net)}/yr</span></div>
+ <div class="mo"><span>Monthly post-tax gain</span><span>₹${inr(net/12)}</span></div>${extra}</div>`};
+ $('offer').innerHTML=blk('Guaranteed Compensation','Guaranteed','gt',g,`<div class="mo"><span>Year 1 with joining bonus</span><span>${fmt(g+jb)}</span></div><div class="mute">Base + fixed variable + guaranteed bonus.</div>`)
+ +blk('Potential Compensation (maximum)','Potential','pt',mx,`<div class="mo"><span>Potential above guaranteed</span><span>${fmt(pot)}</span></div><div class="mute">Adds performance variable and ESOP/RSU, which depend on performance and share value.</div>`);
+}
+document.addEventListener('input',e=>{if(e.target.matches('input'))render()});
+document.addEventListener('click',e=>{const r=e.target.closest('[data-r]');if(r){hikes=hikes.filter(h=>h!=r.dataset.r);render();return}
+ const tr=e.target.closest('tr[data-h]');if(tr){sel=+tr.dataset.h;render()}});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('tr[data-h]')){sel=+e.target.dataset.h;render()}if(e.key==='Enter'&&e.target.id==='nh')$('addb').click()});
+$('addb').onclick=()=>{const v=parseFloat($('nh').value);if(v>0&&!hikes.includes(v)){hikes.push(v);sel=v}$('nh').value='';render()};
+$('reset').onclick=()=>{$('base').value=39;$('var').value=7;$('tax').value=30;$('inc').checked=true;hikes=[...DEF];sel=50;render()};
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',render);
+render();
+</script></body></html>
