@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>P&L Dashboard</title>
+<style>
+:root {
+  --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --border:#2e3350;
+  --text:#e8eaf6; --muted:#8b90a8;
+  --green:#22c55e; --green-dim:#16a34a22;
+  --red:#ef4444;   --red-dim:#dc262622;
+  --gold:#f59e0b;  --radius:12px; --radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;min-height:100vh}
+
+/* Header */
+header{
+  background:#0c0e1a;
+  border-bottom:1px solid var(--border);
+  padding:0;
+  position:relative;
+  overflow:hidden;
+}
+.header-bg{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 60% 120% at 10% 50%, #6366f118 0%, transparent 70%),
+    radial-gradient(ellipse 40% 100% at 90% 50%, #06b6d418 0%, transparent 70%);
+  pointer-events:none;
+}
+.header-grid-lines{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size:48px 48px;
+  opacity:.25;
+  pointer-events:none;
+}
+.header-inner{
+  position:relative;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;
+  padding:32px 40px 28px;
+}
+.header-left{}
+.header-eyebrow{
+  display:flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:10px;
+}
+.header-dot{width:6px;height:6px;border-radius:50%;background:#6366f1;display:inline-block;box-shadow:0 0 8px #6366f1aa}
+header h1{
+  font-size:clamp(2rem,5vw,3.2rem);
+  font-weight:900;
+  letter-spacing:-2px;
+  line-height:1;
+  color:var(--text);
+}
+header h1 em{
+  font-style:normal;
+  background:linear-gradient(90deg,#6366f1,#06b6d4);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.header-sub{
+  margin-top:10px;
+  display:flex;align-items:center;gap:10px;
+  flex-wrap:wrap;
+}
+.header-sub span{
+  font-size:13px;color:var(--muted);
+}
+.header-pill{
+  font-size:11px;font-weight:600;letter-spacing:.5px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:20px;padding:3px 11px;color:var(--muted);
+}
+.header-pill.live{border-color:#6366f144;color:#818cf8;background:#6366f111}
+.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.header-stat{text-align:right}
+.header-stat .hs-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.header-stat .hs-val{font-size:clamp(1.1rem,2.5vw,1.6rem);font-weight:800;letter-spacing:-0.5px;margin-top:2px}
+.header-stat .hs-val.pos{color:var(--green)} .header-stat .hs-val.neg{color:var(--red)}
+.header-hint{font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 14px;white-space:nowrap}
+
+/* Layout */
+.page{max-width:1200px;margin:0 auto;padding:28px 20px 100px}
+.section-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:32px 0 14px}
+.section-title:first-child{margin-top:0}
+
+/* Overview cards */
+.overview-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.year-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;position:relative;overflow:hidden}
+.year-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--yc,#6366f1)}
+.year-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.year-total{font-size:clamp(1.3rem,3vw,1.8rem);font-weight:800;letter-spacing:-0.5px;margin-bottom:14px}
+.year-total.pos{color:var(--green)} .year-total.neg{color:var(--red)}
+.year-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.stat-mini{background:var(--surface2);border-radius:var(--radius-sm);padding:8px 6px;text-align:center}
+.stat-mini .sv{font-size:14px;font-weight:700}
+.stat-mini .sl{font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:0.4px}
+.sv.g{color:var(--green)} .sv.r{color:var(--red)} .sv.b{color:#6366f1}
+
+/* Best / Worst */
+.bw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:11px}
+.bw-card{border-radius:var(--radius-sm);padding:14px 16px;display:flex;align-items:center;gap:12px;border:1px solid transparent}
+.bw-card.best{background:var(--green-dim);border-color:#22c55e44}
+.bw-card.worst{background:var(--red-dim);border-color:#ef444444}
+.bw-icon{font-size:20px;flex-shrink:0}
+.bw-tag{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.bw-mo{font-size:13px;font-weight:600;margin:2px 0}
+.bw-amt{font-size:15px;font-weight:800}
+.bw-amt.pos{color:var(--green)} .bw-amt.neg{color:var(--red)}
+
+/* Tables */
+.tables-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px}
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.table-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.th-year{font-size:15px;font-weight:700}
+.th-net{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px}
+.th-net.pos{background:var(--green-dim);color:var(--green)} .th-net.neg{background:var(--red-dim);color:var(--red)}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--surface2)}
+th{padding:9px 14px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);text-align:left}
+th:last-child{text-align:right}
+td{padding:9px 14px;border-top:1px solid var(--border);vertical-align:middle}
+tr:hover td{background:var(--surface2)}
+.mc{font-weight:600}
+.bc{width:80px}
+.bw{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.bf{height:100%;border-radius:3px}
+.bf.pos{background:linear-gradient(90deg,#16a34a,#22c55e)}
+.bf.neg{background:linear-gradient(90deg,#b91c1c,#ef4444)}
+.vc{font-weight:700;font-size:13px;text-align:right;white-space:nowrap}
+.vc.pos{color:var(--green)} .vc.neg{color:var(--red)}
+.badge-new{display:inline-block;background:#6366f122;color:#818cf8;border-radius:4px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:5px;vertical-align:middle;letter-spacing:0.4px}
+
+/* Metrics */
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px}
+.m-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.m-val{font-size:clamp(.95rem,2.5vw,1.25rem);font-weight:800;line-height:1}
+.m-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.m-val.pos{color:var(--green)} .m-val.neg{color:var(--red)} .m-val.gold{color:var(--gold)} .m-val.blue{color:#6366f1}
+
+/* FAB */
+.fab{position:fixed;bottom:30px;right:26px;width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 20px #6366f155;z-index:100;display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s}
+.fab:hover{transform:scale(1.1);box-shadow:0 6px 28px #6366f177}
+.fab-label{position:fixed;bottom:38px;right:84px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--muted);z-index:100;pointer-events:none;white-space:nowrap}
+
+/* Modal */
+.overlay{display:none;position:fixed;inset:0;background:#00000099;z-index:200;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:26px;width:100%;max-width:350px}
+.modal h3{font-size:15px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.modal h3 span{font-size:11px;font-weight:400;color:var(--muted)}
+.frow{margin-bottom:13px}
+.frow label{display:block;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.frow input,.frow select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s}
+.frow input:focus,.frow select:focus{border-color:#6366f1}
+.frow small{display:block;color:var(--muted);font-size:11px;margin-top:4px}
+.factions{display:flex;gap:9px;margin-top:20px}
+.btn-c,.btn-s{flex:1;padding:10px;border-radius:var(--radius-sm);border:none;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s}
+.btn-c{background:var(--surface2);color:var(--muted)}
+.btn-s{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff}
+.btn-c:hover,.btn-s:hover{opacity:.82}
+
+footer{text-align:center;color:var(--muted);font-size:11px;padding:18px;border-top:1px solid var(--border)}
+
+@media(max-width:600px){
+  header{padding:18px 14px 12px}
+  .page{padding:18px 10px 90px}
+  .tables-grid{grid-template-columns:1fr}
+  .bc{display:none}
+  .fab-label{display:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-bg"></div>
+  <div class="header-grid-lines"></div>
+  <div class="header-inner">
+    <div class="header-left">
+      <div class="header-eyebrow">
+        <span class="header-dot"></span>
+        Portfolio Tracker
+      </div>
+      <h1>Profit &amp; <em>Loss</em></h1>
+      <div class="header-sub">
+        <span>Realized &amp; Unrealized P&amp;L</span>
+        <div class="header-pill live">● Live</div>
+        <div class="header-pill">2025 – 2026</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="header-stat" id="hdr-stat">
+        <!-- filled by JS -->
+      </div>
+      <div class="header-hint">Click <strong>+</strong> to add a month</div>
+    </div>
+  </div>
+</header>
+
+<div class="page" id="app"></div>
+
+<div class="fab-label">Add / Edit entry</div>
+<button class="fab" onclick="openForm()" title="Add Entry">+</button>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3>Add / Update Entry <span>— existing month will be overwritten</span></h3>
+    <div class="frow">
+      <label>Year</label>
+      <input type="number" id="f-year" min="2020" max="2099" placeholder="e.g. 2026 or 2027"/>
+    </div>
+    <div class="frow">
+      <label>Month</label>
+      <select id="f-month"><option value="">— select month —</option></select>
+    </div>
+    <div class="frow">
+      <label>P&amp;L Value</label>
+      <input type="number" id="f-value" placeholder="e.g. 85000 or -42000"/>
+      <small>Positive = Profit &nbsp;·&nbsp; Negative = Loss</small>
+    </div>
+    <div class="factions">
+      <button class="btn-c" onclick="closeForm()">Cancel</button>
+      <button class="btn-s" onclick="submitEntry()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<footer>Values in INR &nbsp;·&nbsp; Entries persist in browser storage &nbsp;·&nbsp; Click + to add future months or new years</footer>
+
+<script>
+// ── Constants ─────────────────────────────────────────────────────────
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const LS_KEY  = 'pl_extra_v1';
+const YEAR_COLORS = ['#6366f1','#06b6d4','#10b981','#f59e0b','#ec4899','#84cc16','#a78bfa'];
+
+// ── Base historical data ──────────────────────────────────────────────
+const BASE_DATA = {
+  2025: [
+    {month:'January',   value:  35000},
+    {month:'February',  value: -72000},
+    {month:'March',     value:  38000},
+    {month:'April',     value: -10000},
+    {month:'May',       value:  18000},
+    {month:'June',      value:  41000},
+    {month:'July',      value:  67000},
+    {month:'August',    value: -11000},
+    {month:'September', value:  72000},
+    {month:'October',   value: -30000},
+    {month:'November',  value: -26000},
+    {month:'December',  value:-140000},
+  ],
+  2026: [
+    {month:'January',   value:-154000},
+    {month:'February',  value: 135000},
+    {month:'March',     value:  13000},
+    {month:'April',     value: -67000},
+    {month:'May',       value: -50000},
+    {month:'June',      value:  40000},
+    {month:'July',      value:  60000},
+    {month:'August',    value: -10000},
+    {month:'September', value:  -5000},
+  ],
+};
+
+// ── LocalStorage ──────────────────────────────────────────────────────
+function getExtra() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); }
+  catch { return {}; }
+}
+function saveExtra(d) { localStorage.setItem(LS_KEY, JSON.stringify(d)); }
+
+// ── Merge base + user-added entries ───────────────────────────────────
+function getMerged() {
+  const extra = getExtra();
+  const merged = {};
+
+  // seed from base
+  Object.entries(BASE_DATA).forEach(([yr, rows]) => {
+    merged[yr] = rows.map(r => ({...r, _base: true}));
+  });
+
+  // apply extras (add new months or override existing)
+  Object.entries(extra).forEach(([yr, rows]) => {
+    if (!merged[yr]) merged[yr] = [];
+    rows.forEach(e => {
+      const i = merged[yr].findIndex(r => r.month === e.month);
+      if (i >= 0) merged[yr][i] = {...e};
+      else merged[yr].push({...e});
+    });
+  });
+
+  // sort each year chronologically and sort years ascending
+  const out = {};
+  Object.keys(merged).map(Number).sort().forEach(yr => {
+    out[yr] = [...merged[yr]].sort((a,b) => MONTHS.indexOf(a.month) - MONTHS.indexOf(b.month));
+  });
+  return out;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────
+function yColor(yr, years) { return YEAR_COLORS[years.indexOf(yr) % YEAR_COLORS.length]; }
+function pc(v) { return v >= 0 ? 'pos' : 'neg'; }
+
+function fmtFull(v) {
+  return (v < 0 ? '−' : '+') + '₹' + Math.abs(v).toLocaleString('en-IN');
+}
+function fmtShort(v) {
+  const a = Math.abs(v), s = v < 0 ? '−' : '+';
+  if (a >= 100000) return s + '₹' + (a/100000).toFixed(2) + 'L';
+  if (a >= 1000)   return s + '₹' + (a/1000).toFixed(1) + 'K';
+  return s + '₹' + a;
+}
+
+function calcStats(rows) {
+  const total = rows.reduce((s,r) => s + r.value, 0);
+  const wins  = rows.filter(r => r.value > 0).length;
+  return {
+    total, wins, losses: rows.length - wins,
+    winRate: Math.round(wins / rows.length * 100),
+    avg: Math.round(total / rows.length),
+    best:  rows.reduce((a,b) => b.value > a.value ? b : a),
+    worst: rows.reduce((a,b) => b.value < a.value ? b : a),
+  };
+}
+
+function longestStreak(rows) {
+  let max = 0, cur = 0;
+  rows.forEach(r => { r.value > 0 ? (cur++, max = Math.max(max,cur)) : (cur=0); });
+  return max;
+}
+
+// ── Build HTML sections ───────────────────────────────────────────────
+function buildOverview(data, years) {
+  let h = `<div class="section-title">Year Overview</div><div class="overview-grid">`;
+  years.forEach(yr => {
+    const s = calcStats(data[yr]);
+    const c = yColor(yr, years);
+    h += `<div class="year-card" style="--yc:${c}">
+      <div class="year-label">${yr} &nbsp;·&nbsp; ${data[yr].length} month${data[yr].length!==1?'s':''} tracked</div>
+      <div class="year-total ${pc(s.total)}">${fmtFull(s.total)}</div>
+      <div class="year-stats">
+        <div class="stat-mini"><div class="sv g">${s.wins}</div><div class="sl">Profitable</div></div>
+        <div class="stat-mini"><div class="sv r">${s.losses}</div><div class="sl">Loss</div></div>
+        <div class="stat-mini"><div class="sv b">${s.winRate}%</div><div class="sl">Win Rate</div></div>
+      </div>
+    </div>`;
+  });
+  return h + `</div>`;
+}
+
+function buildBW(data, years) {
+  let h = `<div class="section-title">Best &amp; Worst Months</div><div class="bw-grid">`;
+  years.forEach(yr => {
+    const s = calcStats(data[yr]);
+    h += `
+    <div class="bw-card best">
+      <div class="bw-icon">🏆</div>
+      <div>
+        <div class="bw-tag">Best · ${yr}</div>
+        <div class="bw-mo">${s.best.month}</div>
+        <div class="bw-amt pos">${fmtFull(s.best.value)}</div>
+      </div>
+    </div>
+    <div class="bw-card worst">
+      <div class="bw-icon">📉</div>
+      <div>
+        <div class="bw-tag">Worst · ${yr}</div>
+        <div class="bw-mo">${s.worst.month}</div>
+        <div class="bw-amt neg">${fmtFull(s.worst.value)}</div>
+      </div>
+    </div>`;
+  });
+  return h + `</div>`;
+}
+
+function buildTables(data, years) {
+  let h = `<div class="section-title">Monthly Breakdown</div><div class="tables-grid">`;
+  years.forEach(yr => {
+    const rows = data[yr];
+    const s = calcStats(rows);
+    const maxAbs = Math.max(...rows.map(r => Math.abs(r.value)));
+    const c = yColor(yr, years);
+    let tbody = '';
+    rows.forEach(r => {
+      const pct = Math.round(Math.abs(r.value) / maxAbs * 100);
+      const icon = r.value >= 0 ? '▲' : '▼';
+      const iClr = r.value >= 0 ? 'color:var(--green)' : 'color:var(--red)';
+      const newBadge = !r._base ? `<span class="badge-new">new</span>` : '';
+      tbody += `<tr>
+        <td class="mc">${r.month}${newBadge}</td>
+        <td style="${iClr};font-size:12px">${icon}</td>
+        <td class="bc"><div class="bw"><div class="bf ${pc(r.value)}" style="width:${pct}%"></div></div></td>
+        <td class="vc ${pc(r.value)}">${fmtFull(r.value)}</td>
+      </tr>`;
+    });
+    h += `<div class="table-card">
+      <div class="table-header" style="border-top:3px solid ${c}">
+        <span class="th-year">${yr}</span>
+        <span class="th-net ${pc(s.total)}">${fmtFull(s.total)}</span>
+      </div>
+      <table>
+        <thead><tr><th>Month</th><th></th><th>Bar</th><th>P&amp;L</th></tr></thead>
+        <tbody>${tbody}</tbody>
+      </table>
+    </div>`;
+  });
+  return h + `</div>`;
+}
+
+function buildMetrics(data, years) {
+  const all = Object.values(data).flat();
+  const vals = all.map(r => r.value);
+  const total = vals.reduce((a,b) => a+b, 0);
+  const wins  = all.filter(r => r.value > 0).length;
+  const avg   = Math.round(total / all.length);
+  const bestRow  = all.reduce((a,b) => b.value > a.value ? b : a);
+  const worstRow = all.reduce((a,b) => b.value < a.value ? b : a);
+
+  // find which year each belongs to (match by reference)
+  const findYr = row => years.find(yr => data[yr].includes(row)) ?? '';
+
+  const tiles = [
+    {label:'Combined Net P&L',   val:fmtFull(total),                    cls:pc(total),             sub:`${years.length} year${years.length>1?'s':''} · ${all.length} months`},
+    {label:'Overall Win Rate',    val:Math.round(wins/all.length*100)+'%', cls:wins/all.length>=.5?'pos':'neg', sub:wins+' of '+all.length+' months profitable'},
+    {label:'Avg Monthly P&L',     val:fmtShort(avg),                     cls:pc(avg),               sub:'across all months'},
+    {label:'All-Time Best Month', val:fmtFull(bestRow.value),            cls:'pos',                 sub:bestRow.month+' '+findYr(bestRow)},
+    {label:'All-Time Worst Month',val:fmtFull(worstRow.value),           cls:'neg',                 sub:worstRow.month+' '+findYr(worstRow)},
+    {label:'Largest Single Gain', val:fmtFull(Math.max(...vals)),        cls:'pos',                 sub:'single month record'},
+    {label:'Largest Single Loss', val:fmtFull(Math.min(...vals)),        cls:'neg',                 sub:'single month record'},
+  ];
+
+  years.forEach(yr => {
+    const str = longestStreak(data[yr]);
+    tiles.push({label:`Best Streak ${yr}`, val:str+' month'+(str!==1?'s':''), cls:'gold', sub:'consecutive profitable months'});
+  });
+
+  let h = `<div class="section-title">Key Metrics · Combined (${years.join(' &amp; ')})</div><div class="metrics-grid">`;
+  tiles.forEach(t => {
+    h += `<div class="metric-card">
+      <div class="m-label">${t.label}</div>
+      <div class="m-val ${t.cls}">${t.val}</div>
+      <div class="m-sub">${t.sub}</div>
+    </div>`;
+  });
+  return h + `</div>`;
+}
+
+// ── Render everything ─────────────────────────────────────────────────
+function render() {
+  const data  = getMerged();
+  const years = Object.keys(data).map(Number).sort();
+  document.getElementById('app').innerHTML =
+    buildOverview(data, years) +
+    buildBW(data, years) +
+    buildTables(data, years) +
+    buildMetrics(data, years);
+}
+
+// ── Form ──────────────────────────────────────────────────────────────
+function openForm() {
+  const sel = document.getElementById('f-month');
+  sel.innerHTML = '<option value="">— select month —</option>';
+  MONTHS.forEach(m => sel.insertAdjacentHTML('beforeend', `<option>${m}</option>`));
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('f-year').focus();
+}
+function closeForm() {
+  document.getElementById('overlay').classList.remove('open');
+}
+document.getElementById('overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('overlay')) closeForm();
+});
+
+function submitEntry() {
+  const yr  = parseInt(document.getElementById('f-year').value);
+  const mo  = document.getElementById('f-month').value;
+  const val = parseInt(document.getElementById('f-value').value);
+
+  if (!yr || yr < 2020 || yr > 2099) return alert('Enter a valid year (2020–2099)');
+  if (!mo) return alert('Select a month');
+  if (isNaN(val)) return alert('Enter a P&L value (e.g. 85000 or -42000)');
+
+  const extra = getExtra();
+  if (!extra[yr]) extra[yr] = [];
+  const i = extra[yr].findIndex(r => r.month === mo);
+  const entry = {month: mo, value: val};
+  if (i >= 0) extra[yr][i] = entry; else extra[yr].push(entry);
+  saveExtra(extra);
+
+  // reset
+  document.getElementById('f-year').value  = '';
+  document.getElementById('f-month').value = '';
+  document.getElementById('f-value').value = '';
+  closeForm();
+  renderAll();
+}
+
+// ── Header stat (combined net P&L) ───────────────────────────────────
+function renderHeader() {
+  const data  = getMerged();
+  const all   = Object.values(data).flat();
+  const total = all.reduce((s,r) => s + r.value, 0);
+  const years = Object.keys(data).map(Number).sort();
+  const el = document.getElementById('hdr-stat');
+  if (el) el.innerHTML = `
+    <div class="hs-label">Combined Net P&amp;L · ${years[0]}${years.length>1?' – '+years[years.length-1]:''}</div>
+    <div class="hs-val ${pc(total)}">${fmtFull(total)}</div>`;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+function renderAll() { renderHeader(); render(); }
+renderAll();
+</script>
+</body>
+</html>
