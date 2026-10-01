@@ -65,8 +65,8 @@ td.tax{color:#b42318}td.net{color:var(--acc)}
 <p class="sub">Understand how much a salary hike actually adds to your post-tax income.</p></header>
 
 <div class="card"><div class="inputs">
-<div><label for="base">Current base pay (₹ lakh)</label><div class="f"><span>₹</span><input id="base" type="number" min="0" step="0.5" value="39"><span>L</span></div></div>
-<div><label for="var">Current variable pay (₹ lakh)</label><div class="f"><span>₹</span><input id="var" type="number" min="0" step="0.5" value="7"><span>L</span></div></div>
+<div><label for="base">Current base pay (₹ lakh)</label><div class="f"><span>₹</span><input id="base" type="number" min="0" step="0.5" value="10"><span>L</span></div></div>
+<div><label for="var">Current variable pay (₹ lakh)</label><div class="f"><span>₹</span><input id="var" type="number" min="0" step="0.5" value="1"><span>L</span></div></div>
 <div><label>Current CTC <i class="tip" tabindex="0" data-t="CTC (Cost to Company) = Base + Variable. Calculated automatically.">?</i></label><div class="f" style="background:var(--soft)"><b id="ctcIn" style="font-size:18px;min-height:44px;line-height:44px">—</b></div></div>
 <div><label for="tax">Marginal tax rate (%) <i class="tip" tabindex="0" data-t="The tax rate applied to each extra rupee you earn. 30% is a simplified stand-in for the top slab; surcharge and cess can push it higher.">?</i></label><div class="f"><input id="tax" type="number" min="0" max="60" step="1" value="30"><span>%</span></div></div>
 <label class="sw"><input id="inc" type="checkbox" checked>Apply tax only to incremental compensation</label>
@@ -93,8 +93,8 @@ td.tax{color:#b42318}td.net{color:var(--acc)}
 <section><div class="hd"><h2>Compare Two Job Offers</h2><div class="mute">Guaranteed pay is kept separate from potential pay, since variable pay is not assured.</div></div>
 <div class="grid g2">
 <div class="card"><b>Current job</b><div class="inputs" style="margin-top:12px">
-<div><label for="cb">Base (₹L)</label><div class="f"><input id="cb" type="number" value="39" step="0.5"></div></div>
-<div><label for="cv">Variable (₹L)</label><div class="f"><input id="cv" type="number" value="7" step="0.5"></div></div>
+<div><label for="cb">Base (₹L)</label><div class="f"><input id="cb" type="number" value="10" step="0.5"></div></div>
+<div><label for="cv">Variable (₹L)</label><div class="f"><input id="cv" type="number" value="1" step="0.5"></div></div>
 <div><label>Total CTC</label><b class="big" id="cct" style="font-size:24px">—</b></div></div></div>
 <div class="card"><b>New job</b><div class="inputs" style="margin-top:12px">
 <div><label for="nb">Base (₹L)</label><div class="f"><input id="nb" type="number" value="55" step="0.5"></div></div>
@@ -172,7 +172,7 @@ document.addEventListener('click',e=>{const r=e.target.closest('[data-r]');if(r)
  const tr=e.target.closest('tr[data-h]');if(tr){sel=+tr.dataset.h;render()}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('tr[data-h]')){sel=+e.target.dataset.h;render()}if(e.key==='Enter'&&e.target.id==='nh')$('addb').click()});
 $('addb').onclick=()=>{const v=parseFloat($('nh').value);if(v>0&&!hikes.includes(v)){hikes.push(v);sel=v}$('nh').value='';render()};
-$('reset').onclick=()=>{$('base').value=39;$('var').value=7;$('tax').value=30;$('inc').checked=true;hikes=[...DEF];sel=50;render()};
+$('reset').onclick=()=>{$('base').value=10;$('var').value=1;$('tax').value=30;$('inc').checked=true;hikes=[...DEF];sel=50;render()};
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',render);
 render();
 </script></body></html>
