@@ -3,522 +3,546 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>P&L Dashboard</title>
+<title>P&L Dashboard v2</title>
 <style>
-:root {
-  --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --border:#2e3350;
-  --text:#e8eaf6; --muted:#8b90a8;
-  --green:#22c55e; --green-dim:#16a34a22;
-  --red:#ef4444;   --red-dim:#dc262622;
-  --gold:#f59e0b;  --radius:12px; --radius-sm:8px;
+:root{
+  --bg:#0c0e1a;--surface:#13162a;--card:#1a1d2e;--card2:#20243a;--border:#252844;
+  --text:#e8eaf6;--muted:#7b80a0;--dim:#4a4f70;
+  --green:#22c55e;--green-d:#16a34a18;--green-b:#22c55e33;
+  --red:#ef4444;--red-d:#dc262618;--red-b:#ef444433;
+  --amber:#f59e0b;--blue:#6366f1;--cyan:#06b6d4;
+  --radius:12px;--rsm:8px;--rxs:5px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;min-height:100vh}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;min-height:100vh}
 
-/* Header */
-header{
-  background:#0c0e1a;
-  border-bottom:1px solid var(--border);
-  padding:0;
-  position:relative;
-  overflow:hidden;
-}
-.header-bg{
-  position:absolute;inset:0;
-  background:
-    radial-gradient(ellipse 60% 120% at 10% 50%, #6366f118 0%, transparent 70%),
-    radial-gradient(ellipse 40% 100% at 90% 50%, #06b6d418 0%, transparent 70%);
-  pointer-events:none;
-}
-.header-grid-lines{
-  position:absolute;inset:0;
-  background-image:
-    linear-gradient(var(--border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border) 1px, transparent 1px);
-  background-size:48px 48px;
-  opacity:.25;
-  pointer-events:none;
-}
-.header-inner{
-  position:relative;
-  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;
-  padding:32px 40px 28px;
-}
-.header-left{}
-.header-eyebrow{
-  display:flex;align-items:center;gap:8px;
-  font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
-  color:var(--muted);margin-bottom:10px;
-}
-.header-dot{width:6px;height:6px;border-radius:50%;background:#6366f1;display:inline-block;box-shadow:0 0 8px #6366f1aa}
-header h1{
-  font-size:clamp(2rem,5vw,3.2rem);
-  font-weight:900;
-  letter-spacing:-2px;
-  line-height:1;
-  color:var(--text);
-}
-header h1 em{
-  font-style:normal;
-  background:linear-gradient(90deg,#6366f1,#06b6d4);
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-  background-clip:text;
-}
-.header-sub{
-  margin-top:10px;
-  display:flex;align-items:center;gap:10px;
-  flex-wrap:wrap;
-}
-.header-sub span{
-  font-size:13px;color:var(--muted);
-}
-.header-pill{
-  font-size:11px;font-weight:600;letter-spacing:.5px;
-  background:var(--surface2);border:1px solid var(--border);
-  border-radius:20px;padding:3px 11px;color:var(--muted);
-}
-.header-pill.live{border-color:#6366f144;color:#818cf8;background:#6366f111}
-.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
-.header-stat{text-align:right}
-.header-stat .hs-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
-.header-stat .hs-val{font-size:clamp(1.1rem,2.5vw,1.6rem);font-weight:800;letter-spacing:-0.5px;margin-top:2px}
-.header-stat .hs-val.pos{color:var(--green)} .header-stat .hs-val.neg{color:var(--red)}
-.header-hint{font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 14px;white-space:nowrap}
+/* ── Header ── */
+header{background:#0a0c18;border-bottom:1px solid var(--border);padding:0;position:relative;overflow:hidden}
+.h-bg{position:absolute;inset:0;background:radial-gradient(ellipse 55% 130% at 8% 50%,#6366f11a,transparent 65%),radial-gradient(ellipse 40% 110% at 92% 50%,#06b6d41a,transparent 65%);pointer-events:none}
+.h-grid{position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:48px 48px;opacity:.2;pointer-events:none}
+.h-inner{position:relative;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;padding:28px 36px 24px}
+.h-eyebrow{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.h-dot{width:6px;height:6px;border-radius:50%;background:#6366f1;box-shadow:0 0 8px #6366f1bb}
+h1{font-size:clamp(1.9rem,5vw,3rem);font-weight:900;letter-spacing:-2px;line-height:1}
+h1 em{font-style:normal;background:linear-gradient(90deg,#6366f1,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.h-sub{margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.h-pill{font-size:11px;font-weight:600;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:3px 11px;color:var(--muted)}
+.h-pill.live{border-color:#6366f144;color:#818cf8;background:#6366f111}
+.h-pill.v2{border-color:#06b6d444;color:#67e8f9;background:#06b6d411}
+.h-right{text-align:right}
+.h-stat-lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.h-stat-val{font-size:clamp(1.1rem,3vw,1.7rem);font-weight:800;letter-spacing:-0.5px;margin-top:3px}
+.h-stat-val.pos{color:var(--green)}.h-stat-val.neg{color:var(--red)}
 
-/* Layout */
-.page{max-width:1200px;margin:0 auto;padding:28px 20px 100px}
-.section-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:32px 0 14px}
-.section-title:first-child{margin-top:0}
+/* ── Page ── */
+.page{max-width:1280px;margin:0 auto;padding:24px 20px 80px}
+.stitle{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:28px 0 12px}
+.stitle:first-child{margin-top:0}
 
-/* Overview cards */
-.overview-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
-.year-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;position:relative;overflow:hidden}
-.year-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--yc,#6366f1)}
-.year-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
-.year-total{font-size:clamp(1.3rem,3vw,1.8rem);font-weight:800;letter-spacing:-0.5px;margin-bottom:14px}
-.year-total.pos{color:var(--green)} .year-total.neg{color:var(--red)}
-.year-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
-.stat-mini{background:var(--surface2);border-radius:var(--radius-sm);padding:8px 6px;text-align:center}
-.stat-mini .sv{font-size:14px;font-weight:700}
-.stat-mini .sl{font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:0.4px}
-.sv.g{color:var(--green)} .sv.r{color:var(--red)} .sv.b{color:#6366f1}
+/* ── KPI strip ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kc,#6366f1)}
+.kpi-lbl{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.kpi-val{font-size:clamp(.9rem,2vw,1.15rem);font-weight:800;line-height:1}
+.kpi-val.pos{color:var(--green)}.kpi-val.neg{color:var(--red)}.kpi-val.amber{color:var(--amber)}.kpi-val.blue{color:var(--blue)}.kpi-val.cyan{color:var(--cyan)}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:4px}
 
-/* Best / Worst */
-.bw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:11px}
-.bw-card{border-radius:var(--radius-sm);padding:14px 16px;display:flex;align-items:center;gap:12px;border:1px solid transparent}
-.bw-card.best{background:var(--green-dim);border-color:#22c55e44}
-.bw-card.worst{background:var(--red-dim);border-color:#ef444444}
-.bw-icon{font-size:20px;flex-shrink:0}
-.bw-tag{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
-.bw-mo{font-size:13px;font-weight:600;margin:2px 0}
-.bw-amt{font-size:15px;font-weight:800}
-.bw-amt.pos{color:var(--green)} .bw-amt.neg{color:var(--red)}
+/* ── Tabs ── */
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tab-btn{background:var(--card2);border:1px solid var(--border);border-radius:var(--rsm);padding:7px 18px;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .18s;letter-spacing:.3px}
+.tab-btn:hover{border-color:var(--blue);color:var(--text)}
+.tab-btn.active{background:#6366f118;border-color:#6366f1;color:#a5b4fc}
 
-/* Tables */
-.tables-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px}
-.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.table-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.th-year{font-size:15px;font-weight:700}
-.th-net{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px}
-.th-net.pos{background:var(--green-dim);color:var(--green)} .th-net.neg{background:var(--red-dim);color:var(--red)}
-table{width:100%;border-collapse:collapse}
-thead tr{background:var(--surface2)}
-th{padding:9px 14px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);text-align:left}
-th:last-child{text-align:right}
-td{padding:9px 14px;border-top:1px solid var(--border);vertical-align:middle}
-tr:hover td{background:var(--surface2)}
-.mc{font-weight:600}
-.bc{width:80px}
-.bw{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
-.bf{height:100%;border-radius:3px}
-.bf.pos{background:linear-gradient(90deg,#16a34a,#22c55e)}
-.bf.neg{background:linear-gradient(90deg,#b91c1c,#ef4444)}
-.vc{font-weight:700;font-size:13px;text-align:right;white-space:nowrap}
-.vc.pos{color:var(--green)} .vc.neg{color:var(--red)}
-.badge-new{display:inline-block;background:#6366f122;color:#818cf8;border-radius:4px;font-size:9px;font-weight:700;padding:1px 5px;margin-left:5px;vertical-align:middle;letter-spacing:0.4px}
+/* ── Table ── */
+.tbl-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;min-width:760px}
+thead tr{background:var(--card2)}
+th{padding:10px 12px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);text-align:right;white-space:nowrap}
+th:first-child{text-align:left}
+td{padding:9px 12px;border-top:1px solid var(--border);text-align:right;font-size:12px;white-space:nowrap;vertical-align:middle}
+td:first-child{text-align:left;font-weight:600;font-size:13px}
+tr:hover td{background:#ffffff06}
+.num.pos{color:var(--green)}.num.neg{color:var(--red)}.num.dim{color:var(--muted)}
+.num.amber{color:var(--amber)}
 
-/* Metrics */
-.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px}
-.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px}
-.m-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-.m-val{font-size:clamp(.95rem,2.5vw,1.25rem);font-weight:800;line-height:1}
-.m-sub{font-size:11px;color:var(--muted);margin-top:4px}
-.m-val.pos{color:var(--green)} .m-val.neg{color:var(--red)} .m-val.gold{color:var(--gold)} .m-val.blue{color:#6366f1}
+/* Final P&L cell */
+.final-cell{font-weight:800;font-size:13px}
+.final-cell.pos{color:var(--green)}.final-cell.neg{color:var(--red)}
 
-/* FAB */
-.fab{position:fixed;bottom:30px;right:26px;width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 20px #6366f155;z-index:100;display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s}
-.fab:hover{transform:scale(1.1);box-shadow:0 6px 28px #6366f177}
-.fab-label{position:fixed;bottom:38px;right:84px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--muted);z-index:100;pointer-events:none;white-space:nowrap}
+/* Running total */
+.run-cell{font-size:11px;font-weight:600}
+.run-cell.pos{color:var(--green)}.run-cell.neg{color:var(--red)}
 
-/* Modal */
-.overlay{display:none;position:fixed;inset:0;background:#00000099;z-index:200;align-items:center;justify-content:center;padding:20px}
-.overlay.open{display:flex}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:26px;width:100%;max-width:350px}
-.modal h3{font-size:15px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:8px}
-.modal h3 span{font-size:11px;font-weight:400;color:var(--muted)}
-.frow{margin-bottom:13px}
-.frow label{display:block;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
-.frow input,.frow select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s}
-.frow input:focus,.frow select:focus{border-color:#6366f1}
-.frow small{display:block;color:var(--muted);font-size:11px;margin-top:4px}
-.factions{display:flex;gap:9px;margin-top:20px}
-.btn-c,.btn-s{flex:1;padding:10px;border-radius:var(--radius-sm);border:none;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s}
-.btn-c{background:var(--surface2);color:var(--muted)}
-.btn-s{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff}
-.btn-c:hover,.btn-s:hover{opacity:.82}
+/* Tag badges */
+.tag{display:inline-block;border-radius:var(--rxs);font-size:9px;font-weight:700;padding:2px 7px;letter-spacing:.4px;white-space:nowrap;text-align:center}
+.tag-green{background:var(--green-d);color:var(--green);border:1px solid var(--green-b)}
+.tag-blue{background:#6366f118;color:#a5b4fc;border:1px solid #6366f133}
+.tag-amber{background:#f59e0b18;color:var(--amber);border:1px solid #f59e0b33}
+.tag-red{background:var(--red-d);color:var(--red);border:1px solid var(--red-b)}
+.tag-muted{background:var(--card2);color:var(--muted);border:1px solid var(--border)}
+.tag-cyan{background:#06b6d418;color:var(--cyan);border:1px solid #06b6d433}
 
-footer{text-align:center;color:var(--muted);font-size:11px;padding:18px;border-top:1px solid var(--border)}
+/* Table footer totals row */
+.tfoot-row td{border-top:2px solid var(--border);background:var(--card2);font-weight:700;font-size:12px}
+.tfoot-row td:first-child{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px}
 
-@media(max-width:600px){
-  header{padding:18px 14px 12px}
-  .page{padding:18px 10px 90px}
-  .tables-grid{grid-template-columns:1fr}
-  .bc{display:none}
-  .fab-label{display:none}
+/* ── Instrument section ── */
+.inst-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.inst-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px}
+.inst-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.inst-name{font-size:14px;font-weight:700}
+.inst-total{font-size:16px;font-weight:800}
+.inst-total.pos{color:var(--green)}.inst-total.neg{color:var(--red)}
+.inst-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.inst-stat{background:var(--card2);border-radius:var(--rsm);padding:8px;text-align:center}
+.inst-stat .isv{font-size:13px;font-weight:700}
+.inst-stat .isl{font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:.3px}
+.isv.g{color:var(--green)}.isv.r{color:var(--red)}.isv.b{color:var(--blue)}
+.yr-breakdown{display:flex;gap:8px;flex-wrap:wrap}
+.yr-chip{background:var(--card2);border:1px solid var(--border);border-radius:var(--rxs);padding:4px 10px;font-size:11px}
+.yr-chip span{font-weight:700;margin-left:4px}
+.yr-chip span.pos{color:var(--green)}.yr-chip span.neg{color:var(--red)}
+
+/* ── Insights ── */
+.insights-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.insight-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px}
+.insight-icon{font-size:20px;margin-bottom:8px}
+.insight-title{font-size:12px;font-weight:700;margin-bottom:6px;color:var(--text)}
+.insight-body{font-size:11px;color:var(--muted);line-height:1.7}
+.insight-body strong{color:var(--text);font-weight:600}
+.insight-card.good{border-color:var(--green-b)}
+.insight-card.bad{border-color:var(--red-b)}
+.insight-card.info{border-color:#6366f133}
+.insight-card.warn{border-color:#f59e0b33}
+
+/* ── Month rank table ── */
+.rank-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.rank-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.rank-header{padding:12px 16px;background:var(--card2);border-bottom:1px solid var(--border);font-size:12px;font-weight:700}
+.rank-row{display:flex;align-items:center;padding:9px 14px;border-top:1px solid var(--border);gap:10px}
+.rank-row:first-of-type{border-top:none}
+.rank-num{font-size:11px;font-weight:700;color:var(--dim);width:18px;flex-shrink:0}
+.rank-month{flex:1;font-weight:600;font-size:12px}
+.rank-yr{font-size:10px;color:var(--muted);margin-left:4px}
+.rank-val{font-size:13px;font-weight:800}
+.rank-val.pos{color:var(--green)}.rank-val.neg{color:var(--red)}
+.rank-eff{font-size:10px;font-weight:600;color:var(--muted);margin-left:6px}
+
+@media(max-width:640px){
+  .h-inner{padding:20px 16px 16px}
+  .page{padding:16px 10px 60px}
 }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="header-bg"></div>
-  <div class="header-grid-lines"></div>
-  <div class="header-inner">
-    <div class="header-left">
-      <div class="header-eyebrow">
-        <span class="header-dot"></span>
-        Portfolio Tracker
-      </div>
+  <div class="h-bg"></div>
+  <div class="h-grid"></div>
+  <div class="h-inner">
+    <div>
+      <div class="h-eyebrow"><span class="h-dot"></span>Portfolio Tracker</div>
       <h1>Profit &amp; <em>Loss</em></h1>
-      <div class="header-sub">
-        <span>Realized &amp; Unrealized P&amp;L</span>
-        <div class="header-pill live">● Live</div>
-        <div class="header-pill">2025 – 2026</div>
+      <div class="h-sub">
+        <div class="h-pill live">● Live</div>
+        <div class="h-pill">2025 – 2026</div>
+        <div class="h-pill v2">v2 · Full Analytics</div>
       </div>
     </div>
-    <div class="header-right">
-      <div class="header-stat" id="hdr-stat">
-        <!-- filled by JS -->
-      </div>
-      <div class="header-hint">Click <strong>+</strong> to add a month</div>
-    </div>
+    <div class="h-right" id="hdr-stat"></div>
   </div>
 </header>
 
-<div class="page" id="app"></div>
+<div class="page">
+  <div class="stitle">Global Performance</div>
+  <div class="kpi-grid" id="kpi"></div>
 
-<div class="fab-label">Add / Edit entry</div>
-<button class="fab" onclick="openForm()" title="Add Entry">+</button>
-
-<div class="overlay" id="overlay">
-  <div class="modal">
-    <h3>Add / Update Entry <span>— existing month will be overwritten</span></h3>
-    <div class="frow">
-      <label>Year</label>
-      <input type="number" id="f-year" min="2020" max="2099" placeholder="e.g. 2026 or 2027"/>
-    </div>
-    <div class="frow">
-      <label>Month</label>
-      <select id="f-month"><option value="">— select month —</option></select>
-    </div>
-    <div class="frow">
-      <label>P&amp;L Value</label>
-      <input type="number" id="f-value" placeholder="e.g. 85000 or -42000"/>
-      <small>Positive = Profit &nbsp;·&nbsp; Negative = Loss</small>
-    </div>
-    <div class="factions">
-      <button class="btn-c" onclick="closeForm()">Cancel</button>
-      <button class="btn-s" onclick="submitEntry()">Save Entry</button>
-    </div>
+  <div class="stitle">Monthly Breakdown</div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="setTab(2025,this)">2025 (12 months)</button>
+    <button class="tab-btn" onclick="setTab(2026,this)">2026 (9 months)</button>
   </div>
+  <div id="tbl-area"></div>
+
+  <div class="stitle">Instrument Analysis · Nifty Futures vs Options</div>
+  <div class="inst-grid" id="inst-area"></div>
+
+  <div class="stitle">Month Rankings</div>
+  <div class="rank-grid" id="rank-area"></div>
+
+  <div class="stitle">Learning Insights</div>
+  <div class="insights-grid" id="insights-area"></div>
 </div>
 
-<footer>Values in INR &nbsp;·&nbsp; Entries persist in browser storage &nbsp;·&nbsp; Click + to add future months or new years</footer>
-
 <script>
-// ── Constants ─────────────────────────────────────────────────────────
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const LS_KEY  = 'pl_extra_v1';
-const YEAR_COLORS = ['#6366f1','#06b6d4','#10b981','#f59e0b','#ec4899','#84cc16','#a78bfa'];
-
-// ── Base historical data ──────────────────────────────────────────────
-const BASE_DATA = {
-  2025: [
-    {month:'January',   value:  35000},
-    {month:'February',  value: -72000},
-    {month:'March',     value:  38000},
-    {month:'April',     value: -10000},
-    {month:'May',       value:  18000},
-    {month:'June',      value:  41000},
-    {month:'July',      value:  67000},
-    {month:'August',    value: -11000},
-    {month:'September', value:  72000},
-    {month:'October',   value: -30000},
-    {month:'November',  value: -26000},
-    {month:'December',  value:-140000},
+// ─── Raw Data ────────────────────────────────────────────────────────────────
+const RAW = {
+  2025:[
+    {m:'Jan', fut:0,        opt:0,          profit:103483.75, loss:-68595,      brok:-2986,  finalPL:31902.75},
+    {m:'Feb', fut:0,        opt:8085,        profit:55436.5,   loss:-128167,     brok:-3850,  finalPL:-76581},
+    {m:'Mar', fut:0,        opt:971,         profit:113945.5,  loss:-75940,      brok:-3655,  finalPL:34350},
+    {m:'Apr', fut:0,        opt:-35943.75,   profit:74965,     loss:-84856,      brok:-3618,  finalPL:-13509},
+    {m:'May', fut:28702.5,  opt:-19751.25,   profit:161748.75, loss:-143445.5,   brok:-8974,  finalPL:9329},
+    {m:'Jun', fut:21892.5,  opt:-29351,      profit:105593.25, loss:-64061,      brok:-9039,  finalPL:32493},
+    {m:'Jul', fut:-37822.5, opt:13773.75,    profit:163291.25, loss:-96263,      brok:-6081,  finalPL:60946},
+    {m:'Aug', fut:50160,    opt:2073,        profit:103328.75, loss:-114662,     brok:-4066,  finalPL:-15399},
+    {m:'Sep', fut:0,        opt:1680,        profit:214330,    loss:-142150,     brok:-3232,  finalPL:68948},
+    {m:'Oct', fut:9105,     opt:-3686,       profit:68713.75,  loss:-98798,      brok:-4254,  finalPL:-34339},
+    {m:'Nov', fut:16887.5,  opt:-17201,      profit:70127.5,   loss:-95960,      brok:-4900,  finalPL:-30732},
+    {m:'Dec', fut:3191,     opt:46,          profit:76638.5,   loss:-217273.75,  brok:-3171,  finalPL:-143806},
   ],
-  2026: [
-    {month:'January',   value:-154000},
-    {month:'February',  value: 135000},
-    {month:'March',     value:  13000},
-    {month:'April',     value: -67000},
-    {month:'May',       value: -50000},
-    {month:'June',      value:  40000},
-    {month:'July',      value:  60000},
-    {month:'August',    value: -10000},
-    {month:'September', value:  -5000},
+  2026:[
+    {m:'Jan', fut:8775,     opt:-4244.5,     profit:98206.25,  loss:-252352,     brok:-2638,  finalPL:-156783},
+    {m:'Feb', fut:0,        opt:-2109,       profit:175573,    loss:-40386.25,   brok:-5200,  finalPL:129986.75},
+    {m:'Mar', fut:0,        opt:380,         profit:46524,     loss:-45250,      brok:-1000,  finalPL:274},
+    {m:'Apr', fut:0,        opt:2564.25,     profit:73961,     loss:-141264,     brok:-4460,  finalPL:-71763},
+    {m:'May', fut:30563,    opt:-15096,      profit:117115.5,  loss:-167016,     brok:-6878,  finalPL:-56779},
+    {m:'Jun', fut:5850,     opt:3886.75,     profit:49716.75,  loss:-9490,       brok:-4400,  finalPL:35826.75},
+    {m:'Jul', fut:18125,    opt:-9532.5,     profit:103424.25, loss:-43447.25,   brok:-9770,  finalPL:50207},
+    {m:'Aug', fut:9405.5,   opt:-13962,      profit:108508.75, loss:-118074,     brok:-9363,  finalPL:-18928},
+    {m:'Sep', fut:-34027.5, opt:-21479.25,   profit:101751.25, loss:-106373,     brok:-6600,  finalPL:-11221},
   ],
 };
 
-// ── LocalStorage ──────────────────────────────────────────────────────
-function getExtra() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); }
-  catch { return {}; }
-}
-function saveExtra(d) { localStorage.setItem(LS_KEY, JSON.stringify(d)); }
-
-// ── Merge base + user-added entries ───────────────────────────────────
-function getMerged() {
-  const extra = getExtra();
-  const merged = {};
-
-  // seed from base
-  Object.entries(BASE_DATA).forEach(([yr, rows]) => {
-    merged[yr] = rows.map(r => ({...r, _base: true}));
+// ─── Derived: add netPL, running total, efficiency tag ───────────────────────
+const YEARS = [2025, 2026];
+const DATA  = {};
+YEARS.forEach(yr => {
+  let running = 0;
+  DATA[yr] = RAW[yr].map(r => {
+    const netPL = r.profit + r.loss;
+    running += r.finalPL;
+    const eff = r.profit > 0 ? r.finalPL / r.profit : 0;
+    const lossBias = Math.abs(r.loss) / r.profit;
+    const brokBias = Math.abs(r.brok) / Math.max(Math.abs(r.finalPL), 1);
+    let tag;
+    if (r.finalPL >= 0) {
+      if      (eff > 0.40)  tag = {l:'Efficient',  c:'tag-green'};
+      else if (eff > 0.12)  tag = {l:'Moderate',   c:'tag-blue'};
+      else                  tag = {l:'High Churn',  c:'tag-amber'};
+    } else {
+      if      (lossBias > 1.8) tag = {l:'Loss Heavy', c:'tag-red'};
+      else if (brokBias > 0.25) tag = {l:'Broker Drag',c:'tag-amber'};
+      else                      tag = {l:'Controlled', c:'tag-muted'};
+    }
+    return {...r, netPL, running: Math.round(running), tag};
   });
+});
 
-  // apply extras (add new months or override existing)
-  Object.entries(extra).forEach(([yr, rows]) => {
-    if (!merged[yr]) merged[yr] = [];
-    rows.forEach(e => {
-      const i = merged[yr].findIndex(r => r.month === e.month);
-      if (i >= 0) merged[yr][i] = {...e};
-      else merged[yr].push({...e});
-    });
-  });
-
-  // sort each year chronologically and sort years ascending
-  const out = {};
-  Object.keys(merged).map(Number).sort().forEach(yr => {
-    out[yr] = [...merged[yr]].sort((a,b) => MONTHS.indexOf(a.month) - MONTHS.indexOf(b.month));
-  });
-  return out;
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+const MONTH_FULL = {Jan:'January',Feb:'February',Mar:'March',Apr:'April',May:'May',Jun:'June',Jul:'July',Aug:'August',Sep:'September',Oct:'October',Nov:'November',Dec:'December'};
+function pc(v){return v>=0?'pos':'neg'}
+function f(v,short=false){
+  const a=Math.abs(v),s=v<0?'−':'+';
+  if(short){
+    if(a>=100000) return s+'₹'+(a/100000).toFixed(2)+'L';
+    if(a>=1000)   return s+'₹'+(a/1000).toFixed(1)+'K';
+    return s+'₹'+a;
+  }
+  return (v<0?'−':'+')+'₹'+a.toLocaleString('en-IN',{maximumFractionDigits:0});
 }
+function pct(num,den){return den===0?'—':(num/den*100).toFixed(1)+'%'}
 
-// ── Helpers ───────────────────────────────────────────────────────────
-function yColor(yr, years) { return YEAR_COLORS[years.indexOf(yr) % YEAR_COLORS.length]; }
-function pc(v) { return v >= 0 ? 'pos' : 'neg'; }
+function allRows(){return YEARS.flatMap(yr=>DATA[yr].map(r=>({...r,yr})))}
 
-function fmtFull(v) {
-  return (v < 0 ? '−' : '+') + '₹' + Math.abs(v).toLocaleString('en-IN');
-}
-function fmtShort(v) {
-  const a = Math.abs(v), s = v < 0 ? '−' : '+';
-  if (a >= 100000) return s + '₹' + (a/100000).toFixed(2) + 'L';
-  if (a >= 1000)   return s + '₹' + (a/1000).toFixed(1) + 'K';
-  return s + '₹' + a;
-}
-
-function calcStats(rows) {
-  const total = rows.reduce((s,r) => s + r.value, 0);
-  const wins  = rows.filter(r => r.value > 0).length;
+function yearTotals(yr){
+  const rows=DATA[yr];
   return {
-    total, wins, losses: rows.length - wins,
-    winRate: Math.round(wins / rows.length * 100),
-    avg: Math.round(total / rows.length),
-    best:  rows.reduce((a,b) => b.value > a.value ? b : a),
-    worst: rows.reduce((a,b) => b.value < a.value ? b : a),
+    profit:  rows.reduce((s,r)=>s+r.profit,0),
+    loss:    rows.reduce((s,r)=>s+r.loss,0),
+    netPL:   rows.reduce((s,r)=>s+r.netPL,0),
+    brok:    rows.reduce((s,r)=>s+r.brok,0),
+    finalPL: rows.reduce((s,r)=>s+r.finalPL,0),
+    wins:    rows.filter(r=>r.finalPL>0).length,
+    total:   rows.length,
   };
 }
 
-function longestStreak(rows) {
-  let max = 0, cur = 0;
-  rows.forEach(r => { r.value > 0 ? (cur++, max = Math.max(max,cur)) : (cur=0); });
-  return max;
+// ─── Header stat ─────────────────────────────────────────────────────────────
+function renderHeader(){
+  const combined = YEARS.reduce((s,yr)=>s+yearTotals(yr).finalPL,0);
+  document.getElementById('hdr-stat').innerHTML=`
+    <div class="h-stat-lbl">Combined Final P&amp;L · 2025–2026</div>
+    <div class="h-stat-val ${pc(combined)}">${f(combined)}</div>`;
 }
 
-// ── Build HTML sections ───────────────────────────────────────────────
-function buildOverview(data, years) {
-  let h = `<div class="section-title">Year Overview</div><div class="overview-grid">`;
-  years.forEach(yr => {
-    const s = calcStats(data[yr]);
-    const c = yColor(yr, years);
-    h += `<div class="year-card" style="--yc:${c}">
-      <div class="year-label">${yr} &nbsp;·&nbsp; ${data[yr].length} month${data[yr].length!==1?'s':''} tracked</div>
-      <div class="year-total ${pc(s.total)}">${fmtFull(s.total)}</div>
-      <div class="year-stats">
-        <div class="stat-mini"><div class="sv g">${s.wins}</div><div class="sl">Profitable</div></div>
-        <div class="stat-mini"><div class="sv r">${s.losses}</div><div class="sl">Loss</div></div>
-        <div class="stat-mini"><div class="sv b">${s.winRate}%</div><div class="sl">Win Rate</div></div>
+// ─── KPI strip ───────────────────────────────────────────────────────────────
+function renderKPI(){
+  const all = allRows();
+  const tProfit = all.reduce((s,r)=>s+r.profit,0);
+  const tLoss   = all.reduce((s,r)=>s+r.loss,0);
+  const tBrok   = all.reduce((s,r)=>s+r.brok,0);
+  const tFinal  = all.reduce((s,r)=>s+r.finalPL,0);
+  const wins    = all.filter(r=>r.finalPL>0).length;
+  const pf      = Math.abs(tLoss)>0 ? (tProfit/Math.abs(tLoss)).toFixed(2) : '∞';
+  const avgWin  = all.filter(r=>r.finalPL>0).reduce((s,r)=>s+r.finalPL,0) / Math.max(wins,1);
+  const avgLoss = all.filter(r=>r.finalPL<0).reduce((s,r)=>s+r.finalPL,0) / Math.max(all.length-wins,1);
+  const best    = all.reduce((a,b)=>b.finalPL>a.finalPL?b:a);
+  const worst   = all.reduce((a,b)=>b.finalPL<a.finalPL?b:a);
+
+  const tiles=[
+    {lbl:'Final P&L (Combined)', val:f(tFinal),        cls:pc(tFinal),     sub:'2025 + 2026',                       c:'#6366f1'},
+    {lbl:'Gross Profit',         val:f(tProfit,true),  cls:'pos',           sub:'total earned before losses',         c:'#22c55e'},
+    {lbl:'Gross Loss',           val:f(tLoss,true),    cls:'neg',           sub:'total lost before brokerage',        c:'#ef4444'},
+    {lbl:'Brokerage Paid',       val:f(tBrok,true),    cls:'neg',           sub:pct(Math.abs(tBrok),tProfit)+' of gross profit', c:'#f59e0b'},
+    {lbl:'Win Rate',             val:Math.round(wins/all.length*100)+'%', cls:wins/all.length>=.5?'pos':'neg', sub:wins+' of '+all.length+' months', c:'#06b6d4'},
+    {lbl:'Profit Factor',        val:pf,               cls:parseFloat(pf)>=1?'pos':'neg', sub:'gross profit ÷ gross loss', c:'#a78bfa'},
+    {lbl:'Avg Winning Month',    val:f(avgWin,true),   cls:'pos',           sub:'when profitable',                    c:'#22c55e'},
+    {lbl:'Avg Losing Month',     val:f(avgLoss,true),  cls:'neg',           sub:'when loss-making',                   c:'#ef4444'},
+  ];
+  document.getElementById('kpi').innerHTML=tiles.map(t=>`
+    <div class="kpi" style="--kc:${t.c}">
+      <div class="kpi-lbl">${t.lbl}</div>
+      <div class="kpi-val ${t.cls}">${t.val}</div>
+      <div class="kpi-sub">${t.sub}</div>
+    </div>`).join('');
+}
+
+// ─── Table ───────────────────────────────────────────────────────────────────
+let activeYear=2025;
+function setTab(yr,btn){
+  activeYear=yr;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function renderTable(){
+  const rows = DATA[activeYear];
+  const t    = yearTotals(activeYear);
+  const maxAbs = Math.max(...rows.map(r=>Math.abs(r.finalPL)));
+
+  const thead=`<thead><tr>
+    <th>Month</th>
+    <th>Nifty Fut</th>
+    <th>Nifty Opt</th>
+    <th>Gross Profit</th>
+    <th>Gross Loss</th>
+    <th>Net P&amp;L</th>
+    <th>Brokerage</th>
+    <th>Final P&amp;L</th>
+    <th>Running</th>
+    <th>Efficiency</th>
+    <th>Tag</th>
+  </tr></thead>`;
+
+  const tbody=rows.map(r=>{
+    const effVal = r.profit>0 ? (r.finalPL/r.profit*100).toFixed(0)+'%' : '—';
+    const effCls = r.finalPL>=0 ? 'pos' : 'neg';
+    const barW   = Math.round(Math.abs(r.finalPL)/maxAbs*100);
+    return `<tr>
+      <td>${MONTH_FULL[r.m]}</td>
+      <td class="num ${r.fut===0?'dim':pc(r.fut)}">${r.fut===0?'—':f(r.fut,true)}</td>
+      <td class="num ${r.opt===0?'dim':pc(r.opt)}">${r.opt===0?'—':f(r.opt,true)}</td>
+      <td class="num pos">${f(r.profit,true)}</td>
+      <td class="num neg">${f(r.loss,true)}</td>
+      <td class="num ${pc(r.netPL)}">${f(r.netPL,true)}</td>
+      <td class="num neg">${f(r.brok,true)}</td>
+      <td class="final-cell ${pc(r.finalPL)}">${f(r.finalPL)}</td>
+      <td class="run-cell ${pc(r.running)}">${f(r.running,true)}</td>
+      <td class="num ${effCls}" style="font-size:11px">${effVal}</td>
+      <td><span class="tag ${r.tag.c}">${r.tag.l}</span></td>
+    </tr>`;
+  }).join('');
+
+  const tfoot=`<tr class="tfoot-row">
+    <td>TOTAL</td>
+    <td class="num ${pc(DATA[activeYear].reduce((s,r)=>s+r.fut,0))}">${f(DATA[activeYear].reduce((s,r)=>s+r.fut,0),true)}</td>
+    <td class="num ${pc(DATA[activeYear].reduce((s,r)=>s+r.opt,0))}">${f(DATA[activeYear].reduce((s,r)=>s+r.opt,0),true)}</td>
+    <td class="num pos">${f(t.profit,true)}</td>
+    <td class="num neg">${f(t.loss,true)}</td>
+    <td class="num ${pc(t.netPL)}">${f(t.netPL,true)}</td>
+    <td class="num neg">${f(t.brok,true)}</td>
+    <td class="final-cell ${pc(t.finalPL)}">${f(t.finalPL)}</td>
+    <td>—</td>
+    <td class="num ${pc(t.finalPL)}" style="font-size:11px">${pct(t.finalPL,t.profit)}</td>
+    <td></td>
+  </tr>`;
+
+  document.getElementById('tbl-area').innerHTML=`
+    <div class="tbl-wrap">
+      <table>${thead}<tbody>${tbody}</tbody><tfoot>${tfoot}</tfoot></table>
+    </div>`;
+}
+
+// ─── Instrument Analysis ─────────────────────────────────────────────────────
+function renderInstruments(){
+  const instData=[
+    {name:'Nifty Futures',key:'fut',icon:'📈'},
+    {name:'Nifty Options',key:'opt',icon:'⚡'},
+  ];
+  document.getElementById('inst-area').innerHTML=instData.map(inst=>{
+    const all=allRows();
+    const vals=all.map(r=>r[inst.key]);
+    const total=vals.reduce((s,v)=>s+v,0);
+    const active=all.filter(r=>r[inst.key]!==0);
+    const wins=active.filter(r=>r[inst.key]>0).length;
+    const losses=active.length-wins;
+    const best=active.length?active.reduce((a,b)=>b[inst.key]>a[inst.key]?b:a):{m:'—',yr:'',fut:0,opt:0};
+    const worst=active.length?active.reduce((a,b)=>b[inst.key]<a[inst.key]?b:a):{m:'—',yr:'',fut:0,opt:0};
+    const yr2025=DATA[2025].reduce((s,r)=>s+r[inst.key],0);
+    const yr2026=DATA[2026].reduce((s,r)=>s+r[inst.key],0);
+    return `<div class="inst-card">
+      <div class="inst-header">
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${inst.icon} ${inst.name}</div>
+          <div class="inst-total ${pc(total)}">${f(total)}</div>
+        </div>
+        <span class="tag ${total>=0?'tag-green':'tag-red'}">${total>=0?'NET GAIN':'NET LOSS'}</span>
+      </div>
+      <div class="inst-stats">
+        <div class="inst-stat"><div class="isv g">${wins}</div><div class="isl">Win Months</div></div>
+        <div class="inst-stat"><div class="isv r">${losses}</div><div class="isl">Loss Months</div></div>
+        <div class="inst-stat"><div class="isv b">${active.length>0?Math.round(wins/active.length*100):0}%</div><div class="isl">Win Rate</div></div>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-weight:700;letter-spacing:.5px">BEST · WORST MONTHS</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:110px;background:var(--green-d);border:1px solid var(--green-b);border-radius:var(--rxs);padding:6px 10px">
+          <div style="font-size:10px;color:var(--muted)">Best</div>
+          <div style="font-size:12px;font-weight:700">${best.m} ${best.yr}</div>
+          <div style="font-size:13px;font-weight:800;color:var(--green)">${f(best[inst.key],true)}</div>
+        </div>
+        <div style="flex:1;min-width:110px;background:var(--red-d);border:1px solid var(--red-b);border-radius:var(--rxs);padding:6px 10px">
+          <div style="font-size:10px;color:var(--muted)">Worst</div>
+          <div style="font-size:12px;font-weight:700">${worst.m} ${worst.yr}</div>
+          <div style="font-size:13px;font-weight:800;color:var(--red)">${f(worst[inst.key],true)}</div>
+        </div>
+      </div>
+      <div class="yr-breakdown">
+        <div class="yr-chip">2025<span class="${pc(yr2025)}">${f(yr2025,true)}</span></div>
+        <div class="yr-chip">2026<span class="${pc(yr2026)}">${f(yr2026,true)}</span></div>
       </div>
     </div>`;
-  });
-  return h + `</div>`;
+  }).join('');
 }
 
-function buildBW(data, years) {
-  let h = `<div class="section-title">Best &amp; Worst Months</div><div class="bw-grid">`;
-  years.forEach(yr => {
-    const s = calcStats(data[yr]);
-    h += `
-    <div class="bw-card best">
-      <div class="bw-icon">🏆</div>
-      <div>
-        <div class="bw-tag">Best · ${yr}</div>
-        <div class="bw-mo">${s.best.month}</div>
-        <div class="bw-amt pos">${fmtFull(s.best.value)}</div>
-      </div>
+// ─── Month Rankings ───────────────────────────────────────────────────────────
+function renderRankings(){
+  const all=allRows().sort((a,b)=>b.finalPL-a.finalPL);
+  const top5=all.slice(0,5);
+  const bot5=[...all].sort((a,b)=>a.finalPL-b.finalPL).slice(0,5);
+
+  function rankRows(arr){
+    return arr.map((r,i)=>{
+      const eff=r.profit>0?(r.finalPL/r.profit*100).toFixed(0)+'%':'—';
+      return `<div class="rank-row">
+        <div class="rank-num">${i+1}</div>
+        <div class="rank-month">${r.m}<span class="rank-yr">${r.yr}</span></div>
+        <div>
+          <div class="rank-val ${pc(r.finalPL)}">${f(r.finalPL,true)}</div>
+          <div class="rank-eff">Eff: ${eff} · Brok: ${f(r.brok,true)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('rank-area').innerHTML=`
+    <div class="rank-card">
+      <div class="rank-header">🏆 Best 5 Months</div>
+      ${rankRows(top5)}
     </div>
-    <div class="bw-card worst">
-      <div class="bw-icon">📉</div>
-      <div>
-        <div class="bw-tag">Worst · ${yr}</div>
-        <div class="bw-mo">${s.worst.month}</div>
-        <div class="bw-amt neg">${fmtFull(s.worst.value)}</div>
-      </div>
+    <div class="rank-card">
+      <div class="rank-header">📉 Worst 5 Months</div>
+      ${rankRows(bot5)}
     </div>`;
-  });
-  return h + `</div>`;
 }
 
-function buildTables(data, years) {
-  let h = `<div class="section-title">Monthly Breakdown</div><div class="tables-grid">`;
-  years.forEach(yr => {
-    const rows = data[yr];
-    const s = calcStats(rows);
-    const maxAbs = Math.max(...rows.map(r => Math.abs(r.value)));
-    const c = yColor(yr, years);
-    let tbody = '';
-    rows.forEach(r => {
-      const pct = Math.round(Math.abs(r.value) / maxAbs * 100);
-      const icon = r.value >= 0 ? '▲' : '▼';
-      const iClr = r.value >= 0 ? 'color:var(--green)' : 'color:var(--red)';
-      const newBadge = !r._base ? `<span class="badge-new">new</span>` : '';
-      tbody += `<tr>
-        <td class="mc">${r.month}${newBadge}</td>
-        <td style="${iClr};font-size:12px">${icon}</td>
-        <td class="bc"><div class="bw"><div class="bf ${pc(r.value)}" style="width:${pct}%"></div></div></td>
-        <td class="vc ${pc(r.value)}">${fmtFull(r.value)}</td>
-      </tr>`;
-    });
-    h += `<div class="table-card">
-      <div class="table-header" style="border-top:3px solid ${c}">
-        <span class="th-year">${yr}</span>
-        <span class="th-net ${pc(s.total)}">${fmtFull(s.total)}</span>
-      </div>
-      <table>
-        <thead><tr><th>Month</th><th></th><th>Bar</th><th>P&amp;L</th></tr></thead>
-        <tbody>${tbody}</tbody>
-      </table>
-    </div>`;
-  });
-  return h + `</div>`;
-}
+// ─── Learning Insights ────────────────────────────────────────────────────────
+function renderInsights(){
+  const all=allRows();
 
-function buildMetrics(data, years) {
-  const all = Object.values(data).flat();
-  const vals = all.map(r => r.value);
-  const total = vals.reduce((a,b) => a+b, 0);
-  const wins  = all.filter(r => r.value > 0).length;
-  const avg   = Math.round(total / all.length);
-  const bestRow  = all.reduce((a,b) => b.value > a.value ? b : a);
-  const worstRow = all.reduce((a,b) => b.value < a.value ? b : a);
+  // Most efficient month (winning, highest eff%)
+  const winners=all.filter(r=>r.finalPL>0);
+  const efficient=winners.sort((a,b)=>(b.finalPL/b.profit)-(a.finalPL/a.profit))[0];
 
-  // find which year each belongs to (match by reference)
-  const findYr = row => years.find(yr => data[yr].includes(row)) ?? '';
+  // Most churned profitable month (lowest eff% but still positive)
+  const churned=winners.sort((a,b)=>(a.finalPL/a.profit)-(b.finalPL/b.profit))[0];
 
-  const tiles = [
-    {label:'Combined Net P&L',   val:fmtFull(total),                    cls:pc(total),             sub:`${years.length} year${years.length>1?'s':''} · ${all.length} months`},
-    {label:'Overall Win Rate',    val:Math.round(wins/all.length*100)+'%', cls:wins/all.length>=.5?'pos':'neg', sub:wins+' of '+all.length+' months profitable'},
-    {label:'Avg Monthly P&L',     val:fmtShort(avg),                     cls:pc(avg),               sub:'across all months'},
-    {label:'All-Time Best Month', val:fmtFull(bestRow.value),            cls:'pos',                 sub:bestRow.month+' '+findYr(bestRow)},
-    {label:'All-Time Worst Month',val:fmtFull(worstRow.value),           cls:'neg',                 sub:worstRow.month+' '+findYr(worstRow)},
-    {label:'Largest Single Gain', val:fmtFull(Math.max(...vals)),        cls:'pos',                 sub:'single month record'},
-    {label:'Largest Single Loss', val:fmtFull(Math.min(...vals)),        cls:'neg',                 sub:'single month record'},
+  // Highest brokerage month
+  const brokHeavy=all.reduce((a,b)=>b.brok<a.brok?b:a);
+
+  // Worst loss month
+  const worst=all.reduce((a,b)=>b.finalPL<a.finalPL?b:a);
+
+  // Best month
+  const best=all.reduce((a,b)=>b.finalPL>a.finalPL?b:a);
+
+  // Total brokerage % of gross profit
+  const tP=all.reduce((s,r)=>s+r.profit,0);
+  const tB=Math.abs(all.reduce((s,r)=>s+r.brok,0));
+  const brokPct=(tB/tP*100).toFixed(1);
+
+  // Nifty Opt total
+  const optTotal=all.reduce((s,r)=>s+r.opt,0);
+  const futTotal=all.reduce((s,r)=>s+r.fut,0);
+
+  // Months where loss > 2× profit (runaway loss)
+  const runaway=all.filter(r=>Math.abs(r.loss)>r.profit*2).sort((a,b)=>a.finalPL-b.finalPL);
+
+  // Dec 2025 insight (biggest single loss)
+  const dec25=DATA[2025].find(r=>r.m==='Dec');
+
+  const cards=[
+    {
+      cls:'good',icon:'✅',
+      title:`Best Decision: ${best.m} ${best.yr}`,
+      body:`Final P&L of <strong>${f(best.finalPL)}</strong> — Efficiency: <strong>${(best.finalPL/best.profit*100).toFixed(0)}%</strong>. Gross profit was ${f(best.profit,true)} and you kept most of it. Gross loss was contained at ${f(best.loss,true)}. Replicate: low gross loss relative to gross profit.`
+    },
+    {
+      cls:'good',icon:'🎯',
+      title:`Most Efficient: ${efficient.m} ${efficient.yr}`,
+      body:`Kept <strong>${(efficient.finalPL/efficient.profit*100).toFixed(0)}%</strong> of gross profit as final P&L (${f(efficient.finalPL,true)} of ${f(efficient.profit,true)}). This is your benchmark for what good risk management looks like.`
+    },
+    {
+      cls:'bad',icon:'🚨',
+      title:`Worst Month: ${worst.m} ${worst.yr}`,
+      body:`Lost <strong>${f(worst.finalPL)}</strong>. Gross loss was ${f(worst.loss,true)} against gross profit of only ${f(worst.profit,true)}. Loss was <strong>${(Math.abs(worst.loss)/worst.profit).toFixed(1)}×</strong> the profit. Exiting positions earlier could have cut this significantly.`
+    },
+    {
+      cls:'warn',icon:'⚠️',
+      title:`High-Churn Alert: ${churned.m} ${churned.yr}`,
+      body:`Despite ending positive, you kept only <strong>${(churned.finalPL/churned.profit*100).toFixed(0)}%</strong> of your gross profit (${f(churned.finalPL,true)} from ${f(churned.profit,true)}). High turnover — trades offset each other. Reduce contra-trades.`
+    },
+    {
+      cls:'warn',icon:'💸',
+      title:`Brokerage Drag: ${brokPct}% of Gross Profit`,
+      body:`Total brokerage paid: <strong>${f(-tB)}</strong> across both years. Worst month: <strong>${brokHeavy.m} ${brokHeavy.yr}</strong> at ${f(brokHeavy.brok,true)}. ${parseFloat(brokPct)>8?'This is high — fewer but larger trades would reduce this cost significantly.':'Brokerage is within acceptable range.'}`
+    },
+    {
+      cls:'info',icon:'📊',
+      title:'Instrument Performance',
+      body:`Nifty Futures net: <strong class="${futTotal>=0?'':''}${futTotal>=0?'':''}">${f(futTotal,true)}</strong>. Nifty Options net: <strong>${f(optTotal,true)}</strong>. ${futTotal>optTotal?'Futures have outperformed options — consider increasing futures allocation when trend is clear.':'Options have outperformed futures — your options strategy shows more consistency.'}`
+    },
+    {
+      cls:runaway.length>0?'bad':'good',icon:'🔍',
+      title:`Runaway Loss Months (Loss > 2× Profit)`,
+      body:runaway.length>0
+        ?`${runaway.length} month${runaway.length>1?'s':''} where gross loss exceeded 2× gross profit: <strong>${runaway.map(r=>r.m+' '+r.yr).join(', ')}</strong>. These are your worst risk management moments — set hard stop-losses to avoid these.`
+        :`No months where gross loss exceeded 2× gross profit. Good risk awareness overall.`
+    },
+    {
+      cls:'info',icon:'📅',
+      title:'Year-on-Year Comparison',
+      body:`2025 Final P&L: <strong>${f(yearTotals(2025).finalPL,true)}</strong> over 12 months. 2026 Final P&L: <strong>${f(yearTotals(2026).finalPL,true)}</strong> over 9 months. 2026 monthly average: <strong>${f(Math.round(yearTotals(2026).finalPL/9),true)}</strong> vs 2025: <strong>${f(Math.round(yearTotals(2025).finalPL/12),true)}</strong>.`
+    },
   ];
 
-  years.forEach(yr => {
-    const str = longestStreak(data[yr]);
-    tiles.push({label:`Best Streak ${yr}`, val:str+' month'+(str!==1?'s':''), cls:'gold', sub:'consecutive profitable months'});
-  });
-
-  let h = `<div class="section-title">Key Metrics · Combined (${years.join(' &amp; ')})</div><div class="metrics-grid">`;
-  tiles.forEach(t => {
-    h += `<div class="metric-card">
-      <div class="m-label">${t.label}</div>
-      <div class="m-val ${t.cls}">${t.val}</div>
-      <div class="m-sub">${t.sub}</div>
-    </div>`;
-  });
-  return h + `</div>`;
+  document.getElementById('insights-area').innerHTML=cards.map(c=>`
+    <div class="insight-card ${c.cls}">
+      <div class="insight-icon">${c.icon}</div>
+      <div class="insight-title">${c.title}</div>
+      <div class="insight-body">${c.body}</div>
+    </div>`).join('');
 }
 
-// ── Render everything ─────────────────────────────────────────────────
-function render() {
-  const data  = getMerged();
-  const years = Object.keys(data).map(Number).sort();
-  document.getElementById('app').innerHTML =
-    buildOverview(data, years) +
-    buildBW(data, years) +
-    buildTables(data, years) +
-    buildMetrics(data, years);
-}
-
-// ── Form ──────────────────────────────────────────────────────────────
-function openForm() {
-  const sel = document.getElementById('f-month');
-  sel.innerHTML = '<option value="">— select month —</option>';
-  MONTHS.forEach(m => sel.insertAdjacentHTML('beforeend', `<option>${m}</option>`));
-  document.getElementById('overlay').classList.add('open');
-  document.getElementById('f-year').focus();
-}
-function closeForm() {
-  document.getElementById('overlay').classList.remove('open');
-}
-document.getElementById('overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('overlay')) closeForm();
-});
-
-function submitEntry() {
-  const yr  = parseInt(document.getElementById('f-year').value);
-  const mo  = document.getElementById('f-month').value;
-  const val = parseInt(document.getElementById('f-value').value);
-
-  if (!yr || yr < 2020 || yr > 2099) return alert('Enter a valid year (2020–2099)');
-  if (!mo) return alert('Select a month');
-  if (isNaN(val)) return alert('Enter a P&L value (e.g. 85000 or -42000)');
-
-  const extra = getExtra();
-  if (!extra[yr]) extra[yr] = [];
-  const i = extra[yr].findIndex(r => r.month === mo);
-  const entry = {month: mo, value: val};
-  if (i >= 0) extra[yr][i] = entry; else extra[yr].push(entry);
-  saveExtra(extra);
-
-  // reset
-  document.getElementById('f-year').value  = '';
-  document.getElementById('f-month').value = '';
-  document.getElementById('f-value').value = '';
-  closeForm();
-  renderAll();
-}
-
-// ── Header stat (combined net P&L) ───────────────────────────────────
-function renderHeader() {
-  const data  = getMerged();
-  const all   = Object.values(data).flat();
-  const total = all.reduce((s,r) => s + r.value, 0);
-  const years = Object.keys(data).map(Number).sort();
-  const el = document.getElementById('hdr-stat');
-  if (el) el.innerHTML = `
-    <div class="hs-label">Combined Net P&amp;L · ${years[0]}${years.length>1?' – '+years[years.length-1]:''}</div>
-    <div class="hs-val ${pc(total)}">${fmtFull(total)}</div>`;
-}
-
-// ── Init ──────────────────────────────────────────────────────────────
-function renderAll() { renderHeader(); render(); }
-renderAll();
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+renderHeader();
+renderKPI();
+renderTable();
+renderInstruments();
+renderRankings();
+renderInsights();
 </script>
 </body>
 </html>
